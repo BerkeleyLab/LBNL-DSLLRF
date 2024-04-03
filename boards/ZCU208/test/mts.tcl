@@ -7,6 +7,8 @@
 # IP Integrator Tcl commands easier.
 ################################################################
 
+set origin_dir "."
+
 namespace eval _tcl {
 proc get_script_folder {} {
    set script_path [file normalize [info script]]
@@ -52,6 +54,64 @@ set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
    create_project project_1 myproj -part xczu48dr-fsvg1517-2-e
    set_property BOARD_PART xilinx.com:zcu208:part0:2.0 [current_project]
+
+   # Create 'sources_1' fileset (if not found)
+  if {[string equal [get_filesets -quiet sources_1] ""]} {
+    create_fileset -srcset sources_1
+  }
+
+  # Set IP repository paths
+  set obj [get_filesets sources_1]
+  if { $obj != {} } {
+    set_property "ip_repo_paths" "[file normalize "$origin_dir/../../ip"]" $obj
+
+    # Rebuild user ip_repo's index before adding any source files
+    update_ip_catalog -rebuild
+  }
+
+  # Set 'sources_1' fileset object
+  set obj [get_filesets sources_1]
+  set files [list \
+  [file normalize "${origin_dir}/../../ip/rtl/ADCRAMcapture.v"] \
+  [file normalize "${origin_dir}/../../ip/rtl/DACRAMstreamer.v"] \
+  ]
+  add_files -norecurse -fileset $obj $files
+
+  # Set 'sources_1' fileset properties
+  set obj [get_filesets sources_1]
+  set_property -name "top" -value "mts_wrapper" -objects $obj
+  set_property -name "top_auto_set" -value "0" -objects $obj
+
+  # Create 'constrs_1' fileset (if not found)
+  if {[string equal [get_filesets -quiet constrs_1] ""]} {
+    create_fileset -constrset constrs_1
+  }
+
+  # Set 'constrs_1' fileset object
+  set obj [get_filesets constrs_1]
+
+  # Add/Import constrs file and set constrs file properties
+  set file "[file normalize "$origin_dir/mts.xdc"]"
+  set file_added [add_files -norecurse -fileset $obj [list $file]]
+  set file "$origin_dir/mts.xdc"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
+  set_property -name "file_type" -value "XDC" -objects $file_obj
+
+  # Set 'constrs_1' fileset properties
+  set obj [get_filesets constrs_1]
+
+  # Create 'sim_1' fileset (if not found)
+  if {[string equal [get_filesets -quiet sim_1] ""]} {
+    create_fileset -simset sim_1
+  }
+  # Adding sources referenced in BDs, if not already added
+  if { [get_files ADCRAMcapture.v] == "" } {
+    import_files -quiet -fileset sources_1 ADCRAMcapture.v
+  }
+  if { [get_files DACRAMstreamer.v] == "" } {
+    import_files -quiet -fileset sources_1 DACRAMstreamer.v
+  }
 }
 
 
