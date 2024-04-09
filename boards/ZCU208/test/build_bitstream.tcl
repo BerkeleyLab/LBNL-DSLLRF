@@ -31,4 +31,5 @@ set_property BITSTREAM.CONFIG.UNUSEDPIN PULLNONE [get_designs impl_1]
 set_property BITSTREAM.CONFIG.OVERTEMPSHUTDOWN ENABLE [get_designs impl_1]
 set_property BITSTREAM.CONFIG.USR_ACCESS TIMESTAMP [get_design impl_1]
 
-write_bitstream -force ${design}.bit
+# write_bitstream -force ${design}.bit
+launch_runs impl_1 -to_step write_bitstream -jobs 4
