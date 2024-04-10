@@ -3465,9 +3465,9 @@ proc create_root_design { parentCell } {
    CONFIG.ADC_Mixer_Type32 {2} \
    CONFIG.ADC_Mixer_Type33 {2} \
    CONFIG.ADC_NCO_Freq00 {0} \
-   CONFIG.ADC_NCO_Freq02 {0.5} \
+   CONFIG.ADC_NCO_Freq02 {0} \
    CONFIG.ADC_NCO_Freq10 {0} \
-   CONFIG.ADC_NCO_Freq12 {0.5} \
+   CONFIG.ADC_NCO_Freq12 {0} \
    CONFIG.ADC_OBS00 {false} \
    CONFIG.ADC_OBS01 {false} \
    CONFIG.ADC_OBS02 {false} \
@@ -3578,8 +3578,8 @@ proc create_root_design { parentCell } {
    CONFIG.DAC_Mixer_Type22 {2} \
    CONFIG.DAC_Mixer_Type30 {2} \
    CONFIG.DAC_Mixer_Type32 {2} \
-   CONFIG.DAC_NCO_Freq00 {0.5} \
-   CONFIG.DAC_NCO_Freq02 {0.5} \
+   CONFIG.DAC_NCO_Freq00 {0} \
+   CONFIG.DAC_NCO_Freq02 {0} \
    CONFIG.DAC_NCO_Freq10 {0.5} \
    CONFIG.DAC_NCO_Freq12 {0.5} \
    CONFIG.DAC_NCO_Freq20 {0.5} \
@@ -5240,6 +5240,11 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net rfdc_m12_axis [get_bd_intf_pins receiver/S_AXIS_ADC3_I] [get_bd_intf_pins rfdc/m12_axis]
   connect_bd_intf_net -intf_net rfdc_m13_axis [get_bd_intf_pins receiver/S_AXIS_ADC3_Q] [get_bd_intf_pins rfdc/m13_axis]
   connect_bd_intf_net -intf_net rfdc_m32_axis [get_bd_intf_pins axis_broadcaster_0/S_AXIS] [get_bd_intf_pins rfdc/m32_axis]
+  connect_bd_intf_net -intf_net rfdc_vout00 [get_bd_intf_ports vout00] [get_bd_intf_pins rfdc/vout00]
+  connect_bd_intf_net -intf_net rfdc_vout02 [get_bd_intf_ports vout02] [get_bd_intf_pins rfdc/vout02]
+  connect_bd_intf_net -intf_net rfdc_vout10 [get_bd_intf_ports vout10] [get_bd_intf_pins rfdc/vout10]
+  connect_bd_intf_net -intf_net rfdc_vout12 [get_bd_intf_ports vout12] [get_bd_intf_pins rfdc/vout12]
+  connect_bd_intf_net -intf_net rfdc_vout20 [get_bd_intf_ports vout20] [get_bd_intf_pins rfdc/vout20]
   connect_bd_intf_net -intf_net rfdc_vout22 [get_bd_intf_ports vout22] [get_bd_intf_pins rfdc/vout22]
   connect_bd_intf_net -intf_net rfdc_vout30 [get_bd_intf_ports vout30] [get_bd_intf_pins rfdc/vout30]
   connect_bd_intf_net -intf_net rfdc_vout32 [get_bd_intf_ports vout32] [get_bd_intf_pins rfdc/vout32]
@@ -5254,11 +5259,6 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net transmitter_M05_AXIS [get_bd_intf_pins rfdc/s22_axis] [get_bd_intf_pins transmitter/M05_AXIS]
   connect_bd_intf_net -intf_net transmitter_M06_AXIS [get_bd_intf_pins rfdc/s30_axis] [get_bd_intf_pins transmitter/M06_AXIS]
   connect_bd_intf_net -intf_net transmitter_M07_AXIS [get_bd_intf_pins rfdc/s32_axis] [get_bd_intf_pins transmitter/M07_AXIS]
-  connect_bd_intf_net -intf_net rfdc_vout00 [get_bd_intf_ports vout00] [get_bd_intf_pins rfdc/vout00]
-  connect_bd_intf_net -intf_net rfdc_vout02 [get_bd_intf_ports vout02] [get_bd_intf_pins rfdc/vout02]
-  connect_bd_intf_net -intf_net rfdc_vout10 [get_bd_intf_ports vout10] [get_bd_intf_pins rfdc/vout10]
-  connect_bd_intf_net -intf_net rfdc_vout12 [get_bd_intf_ports vout12] [get_bd_intf_pins rfdc/vout12]
-  connect_bd_intf_net -intf_net rfdc_vout20 [get_bd_intf_ports vout20] [get_bd_intf_pins rfdc/vout20]
   connect_bd_intf_net -intf_net vin0_01_0_1 [get_bd_intf_ports vin0_01] [get_bd_intf_pins rfdc/vin0_01]
   connect_bd_intf_net -intf_net vin0_23_0_1 [get_bd_intf_ports vin0_23] [get_bd_intf_pins rfdc/vin0_23]
   connect_bd_intf_net -intf_net vin1_01_1_1 [get_bd_intf_ports vin1_01] [get_bd_intf_pins rfdc/vin1_01]

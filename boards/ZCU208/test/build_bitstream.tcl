@@ -19,17 +19,5 @@ update_compile_order -fileset sources_1
 # set_property platform.design_intent.datacenter "false" [current_project]
 
 # call implement
-launch_runs impl_1 -to_step route_design -jobs 8
-wait_on_run impl_1
-open_run impl_1
-
-# -------------- -------------- -------------- -------------- -------------- -------------- -------
-# Bitstream Generation
-# -------------- -------------- -------------- -------------- -------------- -------------- -------
-set_property BITSTREAM.GENERAL.COMPRESS TRUE [get_designs impl_1]
-set_property BITSTREAM.CONFIG.UNUSEDPIN PULLNONE [get_designs impl_1]
-set_property BITSTREAM.CONFIG.OVERTEMPSHUTDOWN ENABLE [get_designs impl_1]
-set_property BITSTREAM.CONFIG.USR_ACCESS TIMESTAMP [get_design impl_1]
-
-# write_bitstream -force ${design}.bit
 launch_runs impl_1 -to_step write_bitstream -jobs 4
+wait_on_run impl_1
