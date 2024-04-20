@@ -37,8 +37,13 @@ module ADCRAMcapture #(parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 65536)
   input  wire [DWIDTH-1:0] CAP_AXIS_tdata,
   output wire              CAP_AXIS_tready,
   input  wire              CAP_AXIS_tvalid,
+  input  wire              trig_cap,
 
-  input  wire              trig_cap );
+  output wire [7:0] trigger_counter,
+  output wire [7:0] rollover_counter,
+  output reg  [DWIDTH-1:0] first_tdata,
+  output reg  [DWIDTH-1:0] last_tdata
+);
 
   localparam ADDR_INC = DWIDTH/8;
   localparam CAP_SIZE = MEM_SIZE_BYTES;
@@ -49,7 +54,30 @@ module ADCRAMcapture #(parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 65536)
   assign bram_rst = ~axis_aresetn;
   assign CAP_AXIS_tready = 1'b1;
   assign trig_cap_posedge = ~trig_cap_p[TRIGCAP_HI] & trig_cap_p[TRIGCAP_HI-1];
- 
+
+  // ============================ Diagnostics ================================
+  // Count the number of triggers
+  reg [7:0] trigger_counter_r=0;
+  assign trigger_counter = trigger_counter_r;
+  // Count the number of times the BRAM rolls over (should be identical to the
+  // number of triggers if everything is working).
+  reg [7:0] rollover_counter_r=0;
+  assign rollover_counter = rollover_counter_r;
+  reg rollover_strobe=1'b0;
+  always @(posedge axis_clk) begin
+    if (~axis_aresetn) begin
+      trigger_counter_r <= 0;
+      rollover_counter_r <= 0;
+    end else begin
+      if (trig_cap_posedge) begin
+        trigger_counter_r <= trigger_counter_r + 1;
+      end
+      if (rollover_strobe) begin
+        rollover_counter_r <= rollover_counter_r + 1;
+      end
+    end
+  end
+
   //sync trig_cap to cap_clk and add bit for rising pulse detect
   always @(posedge axis_clk) begin
     if (~axis_aresetn) begin
@@ -61,16 +89,20 @@ module ADCRAMcapture #(parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 65536)
 
   //BRAM Port B address control
   always @(posedge axis_clk) begin
+    rollover_strobe <= 1'b0;
     bram_wdata <= CAP_AXIS_tdata;  // pipline registers for in data to bram and passthrough outputs
     if (~axis_aresetn) begin
       bram_addr <= 0;
       bram_we   <= 0;
       bram_en   <= 0;
+      last_tdata <= 0;
+      first_tdata <= 0;
     end else begin
       if (trig_cap_posedge) begin
         bram_addr <= 0;
         bram_we   <= CAP_AXIS_tvalid ? {DWIDTH/8{1'b1}} : {DWIDTH/8{1'b0}};
         bram_en   <= 1'b1;
+        first_tdata <= CAP_AXIS_tdata;
       end else begin
         if (bram_en && CAP_AXIS_tvalid) begin
           if (bram_addr < (CAP_SIZE-ADDR_INC)) begin
@@ -78,8 +110,10 @@ module ADCRAMcapture #(parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 65536)
             bram_we   <= {DWIDTH/8{1'b1}};
             bram_en   <= 1'b1;
           end else begin
+            rollover_strobe <= 1'b1;
             bram_we <= {DWIDTH/8{1'b0}};
             bram_en <= 1'b0;
+            last_tdata <= CAP_AXIS_tdata;
           end
         end
       end
