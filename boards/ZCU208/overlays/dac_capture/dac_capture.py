@@ -110,3 +110,25 @@ def resolve_binary_path(bitfile_name):
         raise FileNotFoundError(f'Cannot find {bitfile_name}.')
 # -------------------------------------------------------------------------------------------------
 
+class DiagReadback():
+    def __init__(self, baseAddr, num_regs=18):
+        self._base = baseAddr
+        mmios = [MMIO(baseAddr + 4*n) for n in range(num_regs)]
+        # ========================= Memory Map =================================
+        self._mmios_first_tdata = mmios[:8]
+        self._mmios_last_tdata = mmios[8:16]
+        self._mmios_trigger_counter = mmios[16:17]
+        self._mmios_rollover_counter = mmios[17:18]
+
+    def get_first_tdata_list(self):
+        return [mmio.read() for mmio in self._mmios_first_tdata]
+
+    def get_last_tdata_list(self):
+        return [mmio.read() for mmio in self._mmios_last_tdata]
+
+    def get_trigger_counter(self):
+        return self._mmios_trigger_counter[0].read() & 0xff
+
+    def get_rollover_counter(self):
+        return self._mmios_rollover_counter[0].read() & 0xff
+
