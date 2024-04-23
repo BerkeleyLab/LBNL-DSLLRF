@@ -13,6 +13,7 @@ module diag_readback #(
   // USER Ports
   input [7:0] trigger_counter,
   input [7:0] rollover_counter,
+  input [7:0] tvalid_counter,
   input [DWIDTH-1:0] first_tdata,
   input [DWIDTH-1:0] last_tdata,
   // AXI4LITE Ports
@@ -58,6 +59,13 @@ localparam integer NUM_HA_REGS = (1 << HA_REG_AW);
 integer byte_index;
 
 // Need to cross the ref_clk->axi_clk boundary
+// Let's just lazily cross this domain and consume extra resources
+reg [DWIDTH-1:0] first_tdata_ms=0, first_tdata_axi=0;
+reg [DWIDTH-1:0] last_tdata_ms=0, last_tdata_axi=0;
+reg [7:0] trigger_counter_ms=0, trigger_counter_axi=0;
+reg [7:0] rollover_counter_ms=0, rollover_counter_axi=0;
+reg [7:0] tvalid_counter_ms=0, tvalid_counter_axi=0;
+
 always @(posedge s_axi_aclk) begin
   first_tdata_ms <= first_tdata;
   first_tdata_axi <= first_tdata_ms;
@@ -71,14 +79,10 @@ always @(posedge s_axi_aclk) begin
   rollover_counter_ms <= rollover_counter;
   rollover_counter_axi <= rollover_counter_ms;
 
-end
+  tvalid_counter_ms <= tvalid_counter;
+  tvalid_counter_axi <= tvalid_counter_ms;
 
-// Let's just lazily cross this domain and consume extra resources
-reg [DWIDTH-1:0] first_tdata_ms=0, first_tdata_axi=0;
-reg [DWIDTH-1:0] last_tdata_ms=0, last_tdata_axi=0;
-reg [7:0] trigger_counter_ms=0, trigger_counter_axi=0;
-reg [7:0] rollover_counter_ms=0, rollover_counter_axi=0;
-wire ref_clk_buf, unk_clk_buf;
+end
 
 localparam [HA_REG_AW-1:0] NSLICES = DWIDTH/32;
 
@@ -103,6 +107,7 @@ localparam [HA_REG_AW-1:0] NSLICES = DWIDTH/32;
 // 15       [31:0]    RO      last_tdata[255:224]
 // 16       [7:0]     RO      trigger_counter
 // 17       [7:0]     RO      rollover_counter
+// 18       [7:0]     RO      tvalid_counter
 
 // ====================== AXI4LITE signals ==============================
 reg [C_S_AXI_ADDR_WIDTH-1:0] axi_awaddr=0, axi_araddr=0;
@@ -159,6 +164,8 @@ always @(*) begin
     reg_data_out = {24'h000000, trigger_counter_axi};
   end else if (r_reg_sel == 17) begin
     reg_data_out = {24'h000000, rollover_counter_axi};
+  end else if (r_reg_sel == 18) begin
+    reg_data_out = {24'h000000, tvalid_counter_axi};
   end
   /*
   case (r_reg_sel)

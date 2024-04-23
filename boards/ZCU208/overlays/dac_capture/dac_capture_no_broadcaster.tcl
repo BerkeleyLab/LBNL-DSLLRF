@@ -814,8 +814,6 @@ proc create_root_design { parentCell } {
 
   # Create ports
   set GPIO_LED0_LS [ create_bd_port -dir O GPIO_LED0_LS ]
-  set GPIO_LED3_LS [ create_bd_port -dir O -from 0 -to 0 GPIO_LED3_LS ]
-  set GPIO_LED7_LS [ create_bd_port -dir O -from 0 -to 0 GPIO_LED7_LS ]
 
   # Create instance: clocktreeMTS
   create_hier_cell_clocktreeMTS [current_bd_instance .] clocktreeMTS
@@ -2462,8 +2460,8 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
 
   # Create port connections
   connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins clocktreeMTS/egress_aresetn] [get_bd_pins hier_dac_cap/s_axi_aresetn] [get_bd_pins hier_dac_cap/s_axi_aresetn_diag] [get_bd_pins hier_dac_play/s_axi_aresetn] [get_bd_pins internalRAM_interconnect/ARESETN] [get_bd_pins internalRAM_interconnect/M00_ARESETN] [get_bd_pins internalRAM_interconnect/M01_ARESETN] [get_bd_pins internalRAM_interconnect/M02_ARESETN] [get_bd_pins internalRAM_interconnect/S00_ARESETN]
-  connect_bd_net -net axi_gpio_bram_cap_gpio_io_o [get_bd_ports GPIO_LED7_LS] [get_bd_pins gpio_control/dest_out] [get_bd_pins hier_dac_cap/trig_cap]
-  connect_bd_net -net axi_gpio_dac_gpio_io_o [get_bd_ports GPIO_LED3_LS] [get_bd_pins gpio_control/dac_enable] [get_bd_pins hier_dac_play/enable]
+  connect_bd_net -net axi_gpio_bram_cap_gpio_io_o [get_bd_pins gpio_control/dest_out] [get_bd_pins hier_dac_cap/trig_cap]
+  connect_bd_net -net axi_gpio_dac_gpio_io_o [get_bd_pins gpio_control/dac_enable] [get_bd_pins hier_dac_play/enable]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clocktreeMTS/clkRF] [get_bd_pins hier_dac_cap/aclk] [get_bd_pins hier_dac_play/aclk]
   connect_bd_net -net clk_wiz_adc0_clk_out2 [get_bd_pins clocktreeMTS/clkRFdiv2] [get_bd_pins gpio_control/dest_clk] [get_bd_pins hier_dac_cap/axis_clk] [get_bd_pins hier_dac_cap/s_axi_aclk_diag] [get_bd_pins hier_dac_play/axis_clk] [get_bd_pins internalRAM_interconnect/ACLK] [get_bd_pins internalRAM_interconnect/M00_ACLK] [get_bd_pins internalRAM_interconnect/M01_ACLK] [get_bd_pins internalRAM_interconnect/M02_ACLK] [get_bd_pins internalRAM_interconnect/S00_ACLK] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
   connect_bd_net -net clocktreeMTS_interrupt [get_bd_pins clocktreeMTS/interrupt] [get_bd_pins xlconcat_0/In2]
@@ -2488,7 +2486,6 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2500,4 +2497,6 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

@@ -131,6 +131,7 @@ set bCheckIPsPassed 1
 set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
+xilinx.com:ip:axis_broadcaster:1.1\
 xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:xlconcat:2.1\
 xilinx.com:ip:zynq_ultra_ps_e:3.4\
@@ -814,8 +815,19 @@ proc create_root_design { parentCell } {
 
   # Create ports
   set GPIO_LED0_LS [ create_bd_port -dir O GPIO_LED0_LS ]
-  set GPIO_LED3_LS [ create_bd_port -dir O -from 0 -to 0 GPIO_LED3_LS ]
-  set GPIO_LED7_LS [ create_bd_port -dir O -from 0 -to 0 GPIO_LED7_LS ]
+
+  # Create instance: axis_broadcaster_0, and set properties
+  set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
+  set_property -dict [ list \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.M02_TDATA_REMAP {tdata[127:0]} \
+   CONFIG.M03_TDATA_REMAP {tdata[127:0]} \
+   CONFIG.M04_TDATA_REMAP {tdata[127:0]} \
+   CONFIG.M05_TDATA_REMAP {tdata[127:0]} \
+   CONFIG.M_TDATA_NUM_BYTES {16} \
+   CONFIG.NUM_MI {6} \
+   CONFIG.S_TDATA_NUM_BYTES {16} \
+ ] $axis_broadcaster_0
 
   # Create instance: clocktreeMTS
   create_hier_cell_clocktreeMTS [current_bd_instance .] clocktreeMTS
@@ -2448,11 +2460,12 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net CLK_IN_D_0_1 [get_bd_intf_ports PL_CLK] [get_bd_intf_pins clocktreeMTS/PL_CLK]
   connect_bd_intf_net -intf_net CLK_IN_D_1_1 [get_bd_intf_ports PL_SYSREF] [get_bd_intf_pins clocktreeMTS/SYSREF]
   connect_bd_intf_net -intf_net S_AXI1_1 [get_bd_intf_pins control_interconnect/M01_AXI] [get_bd_intf_pins gpio_control/S_AXI1]
+  connect_bd_intf_net -intf_net S_AXIS_1 [get_bd_intf_pins axis_broadcaster_0/M01_AXIS] [get_bd_intf_pins hier_dac_cap/S_AXIS]
   connect_bd_intf_net -intf_net S_AXI_1 [get_bd_intf_pins hier_dac_cap/S_AXI] [get_bd_intf_pins internalRAM_interconnect/M01_AXI]
   connect_bd_intf_net -intf_net axi_gpio_spi_mux_GPIO [get_bd_intf_ports clk104_clk_spi_mux_sel] [get_bd_intf_pins gpio_control/clk104_clk_spi_mux_sel]
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins hier_dac_play/S_AXI] [get_bd_intf_pins internalRAM_interconnect/M00_AXI]
   connect_bd_intf_net -intf_net control_interconnect_M00_AXI [get_bd_intf_pins clocktreeMTS/s_axi_lite] [get_bd_intf_pins control_interconnect/M00_AXI]
-  connect_bd_intf_net -intf_net hier_dac_play_M_AXIS_0 [get_bd_intf_pins hier_dac_cap/S_AXIS] [get_bd_intf_pins hier_dac_play/M_AXIS_0]
+  connect_bd_intf_net -intf_net hier_dac_play_M_AXIS_0 [get_bd_intf_pins axis_broadcaster_0/S_AXIS] [get_bd_intf_pins hier_dac_play/M_AXIS_0]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M02_AXI [get_bd_intf_pins control_interconnect/M02_AXI] [get_bd_intf_pins gpio_control/S_AXI3]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M03_AXI [get_bd_intf_pins control_interconnect/M03_AXI] [get_bd_intf_pins gpio_control/S_AXI2]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M04_AXI [get_bd_intf_pins control_interconnect/M04_AXI] [get_bd_intf_pins gpio_control/S_AXI]
@@ -2461,10 +2474,10 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_LPD [get_bd_intf_pins control_interconnect/S00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_LPD]
 
   # Create port connections
-  connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins clocktreeMTS/egress_aresetn] [get_bd_pins hier_dac_cap/s_axi_aresetn] [get_bd_pins hier_dac_cap/s_axi_aresetn_diag] [get_bd_pins hier_dac_play/s_axi_aresetn] [get_bd_pins internalRAM_interconnect/ARESETN] [get_bd_pins internalRAM_interconnect/M00_ARESETN] [get_bd_pins internalRAM_interconnect/M01_ARESETN] [get_bd_pins internalRAM_interconnect/M02_ARESETN] [get_bd_pins internalRAM_interconnect/S00_ARESETN]
-  connect_bd_net -net axi_gpio_bram_cap_gpio_io_o [get_bd_ports GPIO_LED7_LS] [get_bd_pins gpio_control/dest_out] [get_bd_pins hier_dac_cap/trig_cap]
-  connect_bd_net -net axi_gpio_dac_gpio_io_o [get_bd_ports GPIO_LED3_LS] [get_bd_pins gpio_control/dac_enable] [get_bd_pins hier_dac_play/enable]
-  connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clocktreeMTS/clkRF] [get_bd_pins hier_dac_cap/aclk] [get_bd_pins hier_dac_play/aclk]
+  connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins clocktreeMTS/egress_aresetn] [get_bd_pins hier_dac_cap/s_axi_aresetn] [get_bd_pins hier_dac_cap/s_axi_aresetn_diag] [get_bd_pins hier_dac_play/s_axi_aresetn] [get_bd_pins internalRAM_interconnect/ARESETN] [get_bd_pins internalRAM_interconnect/M00_ARESETN] [get_bd_pins internalRAM_interconnect/M01_ARESETN] [get_bd_pins internalRAM_interconnect/M02_ARESETN] [get_bd_pins internalRAM_interconnect/S00_ARESETN]
+  connect_bd_net -net axi_gpio_bram_cap_gpio_io_o [get_bd_pins gpio_control/dest_out] [get_bd_pins hier_dac_cap/trig_cap]
+  connect_bd_net -net axi_gpio_dac_gpio_io_o [get_bd_pins gpio_control/dac_enable] [get_bd_pins hier_dac_play/enable]
+  connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins clocktreeMTS/clkRF] [get_bd_pins hier_dac_cap/aclk] [get_bd_pins hier_dac_play/aclk]
   connect_bd_net -net clk_wiz_adc0_clk_out2 [get_bd_pins clocktreeMTS/clkRFdiv2] [get_bd_pins gpio_control/dest_clk] [get_bd_pins hier_dac_cap/axis_clk] [get_bd_pins hier_dac_cap/s_axi_aclk_diag] [get_bd_pins hier_dac_play/axis_clk] [get_bd_pins internalRAM_interconnect/ACLK] [get_bd_pins internalRAM_interconnect/M00_ACLK] [get_bd_pins internalRAM_interconnect/M01_ACLK] [get_bd_pins internalRAM_interconnect/M02_ACLK] [get_bd_pins internalRAM_interconnect/S00_ACLK] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
   connect_bd_net -net clocktreeMTS_interrupt [get_bd_pins clocktreeMTS/interrupt] [get_bd_pins xlconcat_0/In2]
   connect_bd_net -net const_zero_dout [get_bd_pins const_zero/dout] [get_bd_pins xlconcat_0/In0] [get_bd_pins xlconcat_0/In1]

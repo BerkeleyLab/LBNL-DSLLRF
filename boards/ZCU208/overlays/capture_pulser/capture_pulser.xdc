@@ -45,12 +45,12 @@ create_clock -period 2.000 -name PL_CLK_clk -waveform {0.000 1.000} [get_ports {
 # Input Delay for PL_SYSREF to ensure MTS requirements via PG269
 set_input_delay -clock [get_clocks PL_CLK_clk] -min -add_delay 2.000 [get_ports PL_SYSREF_clk_p]
 set_input_delay -clock [get_clocks PL_CLK_clk] -max -add_delay 2.031 [get_ports PL_SYSREF_clk_p]
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets dac_capture_i/clocktreeMTS/IBUFDS_PL_CLK/U0/USE_IBUFDS.GEN_IBUFDS[0].IBUFDS_I/O]
-set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets dac_capture_i/clocktreeMTS/BUFG_PL_CLK/U0/BUFG_O[0]]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets capture_pulser_i/clocktreeMTS/IBUFDS_PL_CLK/U0/USE_IBUFDS.GEN_IBUFDS[0].IBUFDS_I/O]
+set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets capture_pulser_i/clocktreeMTS/BUFG_PL_CLK/U0/BUFG_O[0]]
 
 #set_false_path -from [get_ports reset]
-set_false_path -from [get_pins {dac_capture_i/gpio_control/axi_gpio_dac/U0/gpio_core_1/Not_Dual.gpio_Data_Out_reg[*]/C}]
-set_false_path -from [get_pins {dac_capture_i/clocktreeMTS/RFegressReset/U0/ACTIVE_LOW_PR_OUT_DFF[*].*/C}]
+set_false_path -from [get_pins {capture_pulser_i/gpio_control/axi_gpio_dac/U0/gpio_core_1/Not_Dual.gpio_Data_Out_reg[*]/C}]
+set_false_path -from [get_pins {capture_pulser_i/clocktreeMTS/RFegressReset/U0/ACTIVE_LOW_PR_OUT_DFF[*].*/C}]
 
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
 # Debug / Chipscope

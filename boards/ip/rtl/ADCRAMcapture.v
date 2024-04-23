@@ -41,9 +41,15 @@ module ADCRAMcapture #(parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 65536)
 
   output wire [7:0] trigger_counter,
   output wire [7:0] rollover_counter,
+  output wire [7:0] tvalid_counter,
   output reg  [DWIDTH-1:0] first_tdata,
-  output reg  [DWIDTH-1:0] last_tdata
+  output reg  [DWIDTH-1:0] last_tdata,
+  output tvalid_out
 );
+
+  // The block diagram scheme requires such silliness to tap into one signal
+  // of an "interface"
+  assign tvalid_out = CAP_AXIS_tvalid;
 
   localparam ADDR_INC = DWIDTH/8;
   localparam CAP_SIZE = MEM_SIZE_BYTES;
@@ -63,17 +69,27 @@ module ADCRAMcapture #(parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 65536)
   // number of triggers if everything is working).
   reg [7:0] rollover_counter_r=0;
   assign rollover_counter = rollover_counter_r;
+  // Count the number of rising edges on "CAP_AXIS_tvalid"
+  reg [7:0] tvalid_counter_r=0;
+  assign tvalid_counter = tvalid_counter_r;
+  reg [1:0] tvalid_r=0;
+  wire tvalid_re = tvalid_r[0] & ~tvalid_r[1];
   reg rollover_strobe=1'b0;
   always @(posedge axis_clk) begin
+    tvalid_r <= {tvalid_r[0], CAP_AXIS_tvalid};
     if (~axis_aresetn) begin
       trigger_counter_r <= 0;
       rollover_counter_r <= 0;
+      tvalid_counter_r <= 0;
     end else begin
       if (trig_cap_posedge) begin
         trigger_counter_r <= trigger_counter_r + 1;
       end
       if (rollover_strobe) begin
         rollover_counter_r <= rollover_counter_r + 1;
+      end
+      if (tvalid_re) begin
+        tvalid_counter_r <= tvalid_counter_r + 1;
       end
     end
   end
