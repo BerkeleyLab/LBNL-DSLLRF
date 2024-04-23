@@ -26,6 +26,7 @@
   input DAC_stream_tready,
   output [16*STREAM_SAMPLES-1:0] DAC_stream_tdata,
   output DAC_stream_tvalid,
+  output pulse_en,
 
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -1129,6 +1130,7 @@ pulser_xdomain #(
   ,.DAC_stream_tvalid(DAC_stream_tvalid)
   ,.trigger_count(trigger_count)
   ,.sw_trig_stream_clk(sw_trig_stream_clk)
+  ,.pulse_en(pulse_en)
 );
 
 	// User logic ends

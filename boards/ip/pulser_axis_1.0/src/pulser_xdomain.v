@@ -24,6 +24,7 @@ module pulser_xdomain #(
   // Diagnostics
   ,output reg [31:0] trigger_count
   ,output reg sw_trig_stream_clk
+  ,output pulse_en
 );
 
 reg [19:0] phase_step_h_stream_clk=0, phase_step_h_ms=0;
@@ -99,6 +100,8 @@ pulser_sq_axis #(
   // AXI Stream Output
   ,.DAC_stream_tready(DAC_stream_tready)
   ,.DAC_stream_tdata(DAC_stream_tdata) // output [16*STREAM_SAMPLES-1:0] 
+  // Diagnostics
+  ,.pulse_en(pulse_en)
 );
 
 end else begin : mode_modulated
@@ -120,6 +123,8 @@ pulser_am_axis #(
   // AXI Stream Output
   ,.DAC_stream_tready(DAC_stream_tready)
   ,.DAC_stream_tdata(DAC_stream_tdata) // output [16*STREAM_SAMPLES-1:0] 
+  // Diagnostics
+  ,.pulse_en(pulse_en)
 );
 
 end endgenerate

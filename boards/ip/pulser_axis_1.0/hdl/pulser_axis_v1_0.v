@@ -26,7 +26,8 @@
   // AXI Stream Output
   input DAC_stream_tready,
   output [16*STREAM_SAMPLES-1:0] DAC_stream_tdata,
-	output DAC_stream_tvalid,
+  output DAC_stream_tvalid,
+  output pulse_en,
 
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -70,6 +71,7 @@
 		.sw_trig_out_stream_clk(sw_trig_out_stream_clk),
 		.DAC_stream_tready(DAC_stream_tready),
 		.DAC_stream_tvalid(DAC_stream_tvalid),
+		.pulse_en(pulse_en),
 		.S_AXI_ACLK(s_axi_aclk),
 		.S_AXI_ARESETN(s_axi_aresetn),
 		.S_AXI_AWADDR(s_axi_awaddr),

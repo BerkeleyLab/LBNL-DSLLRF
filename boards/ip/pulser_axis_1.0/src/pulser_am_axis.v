@@ -21,6 +21,8 @@ module pulser_am_axis #(
   ,input DAC_stream_tready
   ,output [16*STREAM_SAMPLES-1:0] DAC_stream_tdata
   // According to datasheet: The RF-DAC does not use the sXY_axis_tvalid input to gate the data.
+  // Diagnostics
+  ,output pulse_en
 );
 
 reg [16*STREAM_SAMPLES-1:0] DAC_stream_tdata_d=0;
@@ -68,7 +70,7 @@ pulser_am #(
   ,.count_max(count_max) // input [7:0]
   ,.amplitude(amplitude) // input [15:0]
   // Pulse Outputs
-  ,.pulse_en() // output
+  ,.pulse_en(pulse_en) // output
   ,.envelope() // output [15:0]
   ,.iout(iout) // output [15:0]
   ,.qout(qout) // output [15:0]
