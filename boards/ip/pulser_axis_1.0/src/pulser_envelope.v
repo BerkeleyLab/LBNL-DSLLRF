@@ -27,7 +27,7 @@ assign envelope = enabled ? amplitude_d : 0;
 
 always @(posedge clk) begin
   trig_strobe_d <= trig_strobe;
-  trig_strobe_re <= trig_strobe ? ~trig_strobe_re : 1'b0;
+  trig_strobe_re <= trig_strobe & ~trig_strobe_d;
   if (en) begin
     amplitude_d <= amplitude;
     if (enabled) begin
