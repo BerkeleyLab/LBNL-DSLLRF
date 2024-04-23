@@ -3487,33 +3487,33 @@ proc create_root_design { parentCell } {
    CONFIG.DAC_Data_Width22 {8} \
    CONFIG.DAC_Data_Width30 {8} \
    CONFIG.DAC_Data_Width32 {8} \
-   CONFIG.DAC_Interpolation_Mode00 {2} \
+   CONFIG.DAC_Interpolation_Mode00 {1} \
    CONFIG.DAC_Interpolation_Mode01 {0} \
-   CONFIG.DAC_Interpolation_Mode02 {2} \
-   CONFIG.DAC_Interpolation_Mode10 {2} \
-   CONFIG.DAC_Interpolation_Mode12 {2} \
-   CONFIG.DAC_Interpolation_Mode20 {2} \
-   CONFIG.DAC_Interpolation_Mode22 {2} \
-   CONFIG.DAC_Interpolation_Mode30 {2} \
-   CONFIG.DAC_Interpolation_Mode32 {2} \
-   CONFIG.DAC_Mixer_Mode00 {0} \
+   CONFIG.DAC_Interpolation_Mode02 {1} \
+   CONFIG.DAC_Interpolation_Mode10 {1} \
+   CONFIG.DAC_Interpolation_Mode12 {1} \
+   CONFIG.DAC_Interpolation_Mode20 {1} \
+   CONFIG.DAC_Interpolation_Mode22 {1} \
+   CONFIG.DAC_Interpolation_Mode30 {1} \
+   CONFIG.DAC_Interpolation_Mode32 {1} \
+   CONFIG.DAC_Mixer_Mode00 {2} \
    CONFIG.DAC_Mixer_Mode01 {2} \
-   CONFIG.DAC_Mixer_Mode02 {0} \
-   CONFIG.DAC_Mixer_Mode10 {0} \
-   CONFIG.DAC_Mixer_Mode12 {0} \
-   CONFIG.DAC_Mixer_Mode20 {0} \
-   CONFIG.DAC_Mixer_Mode22 {0} \
-   CONFIG.DAC_Mixer_Mode30 {0} \
-   CONFIG.DAC_Mixer_Mode32 {0} \
-   CONFIG.DAC_Mixer_Type00 {2} \
+   CONFIG.DAC_Mixer_Mode02 {2} \
+   CONFIG.DAC_Mixer_Mode10 {2} \
+   CONFIG.DAC_Mixer_Mode12 {2} \
+   CONFIG.DAC_Mixer_Mode20 {2} \
+   CONFIG.DAC_Mixer_Mode22 {2} \
+   CONFIG.DAC_Mixer_Mode30 {2} \
+   CONFIG.DAC_Mixer_Mode32 {2} \
+   CONFIG.DAC_Mixer_Type00 {1} \
    CONFIG.DAC_Mixer_Type01 {3} \
-   CONFIG.DAC_Mixer_Type02 {2} \
-   CONFIG.DAC_Mixer_Type10 {2} \
-   CONFIG.DAC_Mixer_Type12 {2} \
-   CONFIG.DAC_Mixer_Type20 {2} \
-   CONFIG.DAC_Mixer_Type22 {2} \
-   CONFIG.DAC_Mixer_Type30 {2} \
-   CONFIG.DAC_Mixer_Type32 {2} \
+   CONFIG.DAC_Mixer_Type02 {1} \
+   CONFIG.DAC_Mixer_Type10 {1} \
+   CONFIG.DAC_Mixer_Type12 {1} \
+   CONFIG.DAC_Mixer_Type20 {1} \
+   CONFIG.DAC_Mixer_Type22 {1} \
+   CONFIG.DAC_Mixer_Type30 {1} \
+   CONFIG.DAC_Mixer_Type32 {1} \
    CONFIG.DAC_NCO_Freq00 {0} \
    CONFIG.DAC_NCO_Freq02 {0} \
    CONFIG.DAC_NCO_Freq10 {0.5} \
