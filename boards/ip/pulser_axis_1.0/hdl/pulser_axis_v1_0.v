@@ -22,12 +22,16 @@
   input DAC_stream_clk,
   input evr_trig,  // EVR/Hardware Trigger
   output sw_trig_out,
-  output sw_trig_out_stream_clk,
+  output trig_out_stream_clk,
   // AXI Stream Output
   input DAC_stream_tready,
   output [16*STREAM_SAMPLES-1:0] DAC_stream_tdata,
   output DAC_stream_tvalid,
   output pulse_en,
+  // Debug outputs for ILA
+  output [13:0] debug_tdata,
+  output debug_tvalid,
+  output debug_tready,
 
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -68,10 +72,14 @@
 		.DAC_stream_clk(DAC_stream_clk),
 		.evr_trig(evr_trig),
 		.sw_trig_out(sw_trig_out),
-		.sw_trig_out_stream_clk(sw_trig_out_stream_clk),
+		.trig_out_stream_clk(trig_out_stream_clk),
 		.DAC_stream_tready(DAC_stream_tready),
+		.DAC_stream_tdata(DAC_stream_tdata),
 		.DAC_stream_tvalid(DAC_stream_tvalid),
 		.pulse_en(pulse_en),
+		.debug_tdata(debug_tdata),
+		.debug_tvalid(debug_tvalid),
+		.debug_tready(debug_tready),
 		.S_AXI_ACLK(s_axi_aclk),
 		.S_AXI_ARESETN(s_axi_aresetn),
 		.S_AXI_AWADDR(s_axi_awaddr),

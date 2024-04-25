@@ -15,6 +15,8 @@ set_property PACKAGE_PIN AU19     [get_ports "GPIO_LED3_LS"] ;# Bank  66 VCCO - 
 set_property IOSTANDARD  LVCMOS12 [get_ports "GPIO_LED3_LS"] ;# Bank  66 VCCO - VCC1V2   - IO_L6N_T0U_N11_AD6N_66
 set_property PACKAGE_PIN AV17     [get_ports "GPIO_LED7_LS"] ;# Bank  66 VCCO - VCC1V2   - IO_L3N_T0L_N5_AD15N_66
 set_property IOSTANDARD  LVCMOS12 [get_ports "GPIO_LED7_LS"] ;# Bank  66 VCCO - VCC1V2   - IO_L3N_T0L_N5_AD15N_66
+set_property PACKAGE_PIN AW21     [get_ports "GPIO_LED5_LS"] ;# Bank  66 VCCO - VCC1V2   - IO_L4N_T0U_N7_DBC_AD7N_66
+set_property IOSTANDARD  LVCMOS12 [get_ports "GPIO_LED5_LS"] ;# Bank  66 VCCO - VCC1V2   - IO_L4N_T0U_N7_DBC_AD7N_66
 
 
 set_property IOSTANDARD LVDS_25 [get_ports PL_CLK_clk_p]

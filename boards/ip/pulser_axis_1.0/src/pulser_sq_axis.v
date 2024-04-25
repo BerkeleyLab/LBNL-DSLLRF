@@ -11,7 +11,7 @@ module pulser_sq_axis #(
   // Pulse Controls
   ,input trig_strobe
   ,input [CW-1:0] count_max
-  ,input signed [DW-1:0] amplitude
+  ,input signed [13:0] amplitude
   // AXI Stream Output
   ,input DAC_stream_tready
   ,output [16*STREAM_SAMPLES-1:0] DAC_stream_tdata

@@ -38,7 +38,7 @@ initial begin
   end
 end
 
-wire sw_trig_stream_clk;
+wire trig_stream_clk;
 
 reg pulser_en=1'b0;
 pulser_xdomain #(
@@ -58,11 +58,11 @@ pulser_xdomain #(
   ,.sw_trig(sw_trig)    // Software Trigger
   ,.evr_trig(evr_trig)   // EVR/Hardware Trigger
   ,.count_max(count_max) // input [CW-1:0]
-  ,.amplitude(amplitude) // input signed [13:0] 
+  ,.amplitude(amplitude) // input signed [13:0]
   // AXI Stream Output
   ,.DAC_stream_tready(DAC_stream_tready)
-  ,.DAC_stream_tdata(DAC_stream_tdata) // output [16*STREAM_SAMPLES-1:0] 
-  ,.sw_trig_stream_clk(sw_trig_stream_clk)
+  ,.DAC_stream_tdata(DAC_stream_tdata) // output [16*STREAM_SAMPLES-1:0]
+  ,.trig_stream_clk(trig_stream_clk)
 );
 
 wire DAC_stream_tvalid = pulser_en;
@@ -112,14 +112,14 @@ ADCRAMcapture #(
   .CAP_AXIS_tdata(DAC_stream_tdata), // input [255:0]
   .CAP_AXIS_tready(DAC_stream_tready), // output
   .CAP_AXIS_tvalid(DAC_stream_tvalid), // input
-  .trig_cap(sw_trig_stream_clk) // input
+  .trig_cap(trig_stream_clk) // input
 );
 
 // Serialize for simulated DAC output at clk_rf
 reg [13:0] DAC_rf_output_i=0, DAC_rf_output_q=0;
-reg [SERIALIZER_CW-1:0] DAC_serializer_cnt=0;
 wire [SERIALIZER_CW-1:0] DAC_serializer_cnt_i, DAC_serializer_cnt_q;
 reg [SERIALIZER_CW-1:0] stream_clk_counter=0;
+wire [SERIALIZER_CW-1:0] DAC_serializer_cnt = synched ? stream_clk_counter : 0;
 reg stream_clk_rf_d=1'b0, stream_clk_rf_d2=1'b0;
 wire stream_clk_rf_re = stream_clk_rf_d & ~stream_clk_rf_d2;
 localparam [SERIALIZER_CW-1:0] SYNCH_COUNT = 1;
@@ -171,17 +171,18 @@ initial begin
   // Pulse #1
   @(posedge clk_io) amplitude='hab;
         count_max=100;
-  @(posedge clk_io) sw_trig=1'b1;
-  @(posedge clk_io) sw_trig=1'b0;
+  @(posedge clk_io) evr_trig=1'b1;
 
   // Pulse #2
   #500;
+  @(posedge clk_io) evr_trig=1'b0;
+  #10;
   @(posedge clk_io) amplitude='h50;
         count_max=200;
   @(posedge clk_io) sw_trig=1'b1;
-  @(posedge clk_io) sw_trig=1'b0;
 
   #1000 $display("DONE");
+  @(posedge clk_io) sw_trig=1'b0;
         $finish(0);
 end
 

@@ -67,13 +67,13 @@ pulser_am #(
   ,.modulo(modulo) // input [11:0]
   // Pulse Controls
   ,.trig_strobe(trig_strobe) // input
-  ,.count_max(count_max) // input [7:0]
-  ,.amplitude(amplitude) // input [15:0]
+  ,.count_max(count_max) // input [CW-1:0]
+  ,.amplitude(amplitude) // input signed [DW-1:0]
   // Pulse Outputs
   ,.pulse_en(pulse_en) // output
-  ,.envelope() // output [15:0]
-  ,.iout(iout) // output [15:0]
-  ,.qout(qout) // output [15:0]
+  ,.envelope() // output signed [DW-1:0]
+  ,.iout(iout) // output signed [DW-1:0]
+  ,.qout(qout) // output signed [DW-1:0]
 );
 
 endmodule

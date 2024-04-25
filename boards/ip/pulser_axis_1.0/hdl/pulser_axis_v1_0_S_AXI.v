@@ -21,13 +21,16 @@
   input DAC_stream_clk,
   input evr_trig,  // EVR/Hardware Trigger
   output sw_trig_out,
-  output sw_trig_out_stream_clk,
+  output trig_out_stream_clk,
   // AXI Stream Output
   input DAC_stream_tready,
   output [16*STREAM_SAMPLES-1:0] DAC_stream_tdata,
   output DAC_stream_tvalid,
   output pulse_en,
-
+  // Debug outputs for ILA
+  output [13:0] debug_tdata,
+  output debug_tvalid,
+  output debug_tready,
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -198,8 +201,8 @@
   wire enable;
   wire [31:0] trigger_count;
   assign sw_trig_out = sw_trig;
-  wire sw_trig_stream_clk;
-  assign sw_trig_out_stream_clk = sw_trig_stream_clk;
+  wire trig_stream_clk;
+  assign trig_out_stream_clk = trig_stream_clk;
   // ========================= Memory Map =================================
   // Addr     Slice     Usage
   // ------------------------
@@ -1129,9 +1132,13 @@ pulser_xdomain #(
   ,.DAC_stream_tdata(DAC_stream_tdata) // output [16*STREAM_SAMPLES-1:0] 
   ,.DAC_stream_tvalid(DAC_stream_tvalid)
   ,.trigger_count(trigger_count)
-  ,.sw_trig_stream_clk(sw_trig_stream_clk)
+  ,.trig_stream_clk(trig_stream_clk)
   ,.pulse_en(pulse_en)
 );
+
+assign debug_tdata = DAC_stream_tdata[13:0];
+assign debug_tvalid = DAC_stream_tvalid;
+assign debug_tready = DAC_stream_tready;
 
 	// User logic ends
 

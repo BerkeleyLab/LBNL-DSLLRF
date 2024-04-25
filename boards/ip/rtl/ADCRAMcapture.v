@@ -44,7 +44,12 @@ module ADCRAMcapture #(parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 65536)
   output wire [7:0] tvalid_counter,
   output reg  [DWIDTH-1:0] first_tdata,
   output reg  [DWIDTH-1:0] last_tdata,
-  output tvalid_out
+  output wire tvalid_out,
+  output wire trig_cap_posedge_out,
+  output wire [31:0] cap_wdata,
+  output wire cap_we,
+  output wire cap_en,
+  output wire [31:0] cap_addr
 );
 
   // The block diagram scheme requires such silliness to tap into one signal
@@ -60,6 +65,11 @@ module ADCRAMcapture #(parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 65536)
   assign bram_rst = ~axis_aresetn;
   assign CAP_AXIS_tready = 1'b1;
   assign trig_cap_posedge = ~trig_cap_p[TRIGCAP_HI] & trig_cap_p[TRIGCAP_HI-1];
+  assign trig_cap_posedge_out = trig_cap_posedge;
+  assign cap_wdata = bram_wdata[31:0];
+  assign cap_we = bram_we[0];
+  assign cap_en = bram_en;
+  assign cap_addr = bram_addr;
 
   // ============================ Diagnostics ================================
   // Count the number of triggers

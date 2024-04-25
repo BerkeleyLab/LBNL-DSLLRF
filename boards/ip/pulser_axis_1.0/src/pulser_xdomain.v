@@ -23,7 +23,7 @@ module pulser_xdomain #(
   // According to datasheet: The RF-DAC does not use the sXY_axis_tvalid input to gate the data.
   // Diagnostics
   ,output reg [31:0] trigger_count
-  ,output reg sw_trig_stream_clk
+  ,output trig_stream_clk
   ,output pulse_en
 );
 
@@ -32,9 +32,9 @@ reg [11:0] phase_step_l_stream_clk=0, phase_step_l_ms=0;
 reg [11:0] modulo_stream_clk=0, modulo_ms=0;
 reg [CW-1:0] count_max_stream_clk=0, count_max_ms=0;
 reg [13:0] amplitude_stream_clk=0, amplitude_ms=0;
-reg sw_trig_ms=0;
-reg enable_stream_clk=0, enable_ms=0;
-reg evr_trig_stream_clk=0, evr_trig_ms=0;
+reg sw_trig_stream_clk=1'b0, sw_trig_ms=1'b0;
+reg enable_stream_clk=1'b0, enable_ms=1'b0;
+reg evr_trig_stream_clk=1'b0, evr_trig_ms=1'b0;
 
 // Cross from clk_io to to clk_stream domains
 always @(posedge clk_stream) begin
@@ -70,7 +70,7 @@ end
 
 assign DAC_stream_tvalid = enable_stream_clk;
 
-wire trig_stream_clk = sw_trig_stream_clk | evr_trig_stream_clk;
+assign trig_stream_clk = sw_trig_stream_clk | evr_trig_stream_clk;
 reg trig_strobe_stream_clk=1'b0, trig_stream_clk_d=1'b0;
 
 reg [31:0] trigger_count_stream_clk=0, trigger_count_ms=0;
@@ -96,10 +96,10 @@ pulser_sq_axis #(
   // Pulse Controls
   ,.trig_strobe(trig_strobe_stream_clk)
   ,.count_max(count_max_stream_clk) // input [CW-1:0]
-  ,.amplitude(amplitude_stream_clk) // input signed [13:0] 
+  ,.amplitude(amplitude_stream_clk) // input signed [13:0]
   // AXI Stream Output
   ,.DAC_stream_tready(DAC_stream_tready)
-  ,.DAC_stream_tdata(DAC_stream_tdata) // output [16*STREAM_SAMPLES-1:0] 
+  ,.DAC_stream_tdata(DAC_stream_tdata) // output [16*STREAM_SAMPLES-1:0]
   // Diagnostics
   ,.pulse_en(pulse_en)
 );
@@ -119,10 +119,10 @@ pulser_am_axis #(
   // Pulse Controls
   ,.trig_strobe(trig_strobe_stream_clk)
   ,.count_max(count_max_stream_clk) // input [CW-1:0]
-  ,.amplitude(amplitude_stream_clk) // input signed [13:0] 
+  ,.amplitude(amplitude_stream_clk) // input signed [13:0]
   // AXI Stream Output
   ,.DAC_stream_tready(DAC_stream_tready)
-  ,.DAC_stream_tdata(DAC_stream_tdata) // output [16*STREAM_SAMPLES-1:0] 
+  ,.DAC_stream_tdata(DAC_stream_tdata) // output [16*STREAM_SAMPLES-1:0]
   // Diagnostics
   ,.pulse_en(pulse_en)
 );
