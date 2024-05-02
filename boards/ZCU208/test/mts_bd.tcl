@@ -3514,12 +3514,12 @@ proc create_root_design { parentCell } {
    CONFIG.DAC_Mixer_Type22 {1} \
    CONFIG.DAC_Mixer_Type30 {1} \
    CONFIG.DAC_Mixer_Type32 {1} \
-   CONFIG.DAC_NCO_Freq00 {0} \
-   CONFIG.DAC_NCO_Freq02 {0} \
-   CONFIG.DAC_NCO_Freq10 {0.5} \
-   CONFIG.DAC_NCO_Freq12 {0.5} \
-   CONFIG.DAC_NCO_Freq20 {0.5} \
-   CONFIG.DAC_NCO_Freq22 {0.5} \
+   CONFIG.DAC_NCO_Freq00 {0.0} \
+   CONFIG.DAC_NCO_Freq02 {0.0} \
+   CONFIG.DAC_NCO_Freq10 {0.0} \
+   CONFIG.DAC_NCO_Freq12 {0.0} \
+   CONFIG.DAC_NCO_Freq20 {0.0} \
+   CONFIG.DAC_NCO_Freq22 {0.0} \
    CONFIG.DAC_RESERVED_1_00 {false} \
    CONFIG.DAC_RESERVED_1_01 {false} \
    CONFIG.DAC_RESERVED_1_02 {false} \
@@ -5241,7 +5241,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   assign_bd_address -offset 0xA0030000 -range 0x00008000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/chan3_I/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0038000 -range 0x00008000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/chan3_Q/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0040000 -range 0x00008000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs transmitter/hier_dac_cap/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0048000 -range 0x00008000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs transmitter/hier_dac_play/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA00E0000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs transmitter/hier_dac_play/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0090000 -range 0x00008000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/chan4_I/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0098000 -range 0x00008000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/chan4_Q/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA00A0000 -range 0x00008000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/chan5_I/axi_bram_ctrl_0/S_AXI/Mem0] -force
