@@ -1,0 +1,4 @@
+capture_pulser
+*.bit
+*.hwh
+.*.swp

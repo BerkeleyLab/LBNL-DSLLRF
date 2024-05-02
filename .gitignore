@@ -1,0 +1,7 @@
+*.Xil/
+*vivado*.jou
+*vivado*.log
+*.bit
+*.hwh
+*.xsa
+boards/ZCU208/test/mts/
