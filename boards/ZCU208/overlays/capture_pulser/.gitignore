@@ -2,3 +2,5 @@ capture_pulser
 *.bit
 *.hwh
 .*.swp
+*.log
+*.str
