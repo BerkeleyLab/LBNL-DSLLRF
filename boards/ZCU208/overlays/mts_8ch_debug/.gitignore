@@ -1,0 +1,4 @@
+mts_8ch_debug
+*.bit
+*.hwh
+.*.swp

@@ -39,7 +39,15 @@ module DACRAMstreamer #( parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 1310
 
   // Control Input Parameters
   input  [$clog2(MEM_SIZE_BYTES/(DWIDTH/8))-1:0] numSampleVectors,
-  input                    enable );
+  input                    enable,
+
+  // Diagnostic Outputs
+  output [15:0] diag_bram_rdata,
+  output [31:0] diag_bram_addr
+);
+
+  assign diag_bram_rdata = portA_cpu_rdata[15:0];
+  assign diag_bram_addr = portAcpu_addr;
 
   reg [$clog2(MEM_SIZE_BYTES/(DWIDTH/8))-1:0] vcnt;
   wire [31:0] ramAddressLimit;
@@ -54,32 +62,32 @@ module DACRAMstreamer #( parameter DWIDTH = 256, parameter MEM_SIZE_BYTES = 1310
     axis_tdata <= portA_cpu_rdata;
 
     if (~axis_aresetn) begin
-  	  axis_tvalid <= 0;
-  	end else begin
-  	  if (enable) begin
-	    axis_tvalid <= 1'b1;
-  		portA_en    <= 1'b1;
+        axis_tvalid <= 0;
+    end else begin
+      if (enable) begin
+        axis_tvalid <= 1'b1;
+        portA_en    <= 1'b1;
         if (USE_VECTOR_COUNT) begin
-		  if (vcnt < numSampleVectors) begin
+          if (vcnt < numSampleVectors) begin
             portAcpu_addr <= portAcpu_addr + DWIDTH/8;
             vcnt          <= vcnt + 1;
           end else begin
             portAcpu_addr <= 0;
             vcnt          <= 0;
-  		  end
-		end else begin
-		  if (portAcpu_addr == ramAddressLimit) begin
-		    portAcpu_addr <= 0;
-		  end else begin 
+          end
+        end else begin
+          if (portAcpu_addr == ramAddressLimit) begin
+            portAcpu_addr <= 0;
+          end else begin 
             portAcpu_addr <= portAcpu_addr + DWIDTH/8;
-		  end
-		end
-  	  end else begin
-  	    axis_tvalid   <= 0;
-  	    portAcpu_addr <= 0;
-  	    portA_en      <= 0;
+          end
+        end
+      end else begin
+        axis_tvalid   <= 0;
+        portAcpu_addr <= 0;
+        portA_en      <= 0;
         vcnt          <= 0;
-  	  end
-  	end
+      end
+    end
   end
 endmodule
