@@ -1,9 +1,7 @@
 #set_property PACKAGE_PIN B10 [get_ports PL_SYSREF_clk_p]
 
 set_property PACKAGE_PIN B7       [get_ports "CLK104_PL_CLK_N"] ;# Bank  87 VCCO - VCC1V8   - IO_L7N_HDGC_87
-set_property IOSTANDARD  LVDS     [get_ports "CLK104_PL_CLK_N"] ;# Bank  87 VCCO - VCC1V8   - IO_L7N_HDGC_87
 set_property PACKAGE_PIN B8       [get_ports "CLK104_PL_CLK_P"] ;# Bank  87 VCCO - VCC1V8   - IO_L7P_HDGC_87
-set_property IOSTANDARD  LVDS     [get_ports "CLK104_PL_CLK_P"] ;# Bank  87 VCCO - VCC1V8   - IO_L7P_HDGC_87
 
 set_property IOSTANDARD LVDS_25 [get_ports "CLK104_PL_CLK_P"]
 set_property IOSTANDARD LVDS_25 [get_ports "CLK104_PL_CLK_N"]

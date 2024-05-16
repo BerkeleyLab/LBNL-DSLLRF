@@ -233,7 +233,7 @@ class mtsOverlay(Overlay):
         self.trig_cap.off()
 
     def internal_capture(self, membuffer):
-        """ Captures ADC samples from three channels and stores to internal memories """
+        """ Captures ADC samples from all channels and stores to internal memories """
         if not np.issubdtype(membuffer.dtype, np.int16):
             raise Exception("buffer not defined or np.int16!")
         if not membuffer.shape[0] == self.nadc_mem_total:

@@ -203,6 +203,7 @@
   assign sw_trig_out = sw_trig;
   wire trig_stream_clk;
   assign trig_out_stream_clk = trig_stream_clk;
+  wire force_on;
   // ========================= Memory Map =================================
   // Addr     Slice     Usage
   // ------------------------
@@ -221,6 +222,8 @@
   // 5        [0:0]     enable
   assign enable = slv_reg5[0];
   // 6        [31:0]    trigger_count (read-only)
+  // 7        [0:0]     force_on
+  assign force_on = slv_reg7[0];
 
 	// I/O Connections assignments
 
@@ -1125,6 +1128,7 @@ pulser_xdomain #(
   // Pulse Controls
   ,.sw_trig(sw_trig)    // Software Trigger
   ,.evr_trig(evr_trig)   // EVR/Hardware Trigger
+  ,.force_on(force_on)   // Constant-On Enable for diagnostics/debugging
   ,.count_max(count_max) // input [CW-1:0]
   ,.amplitude(amplitude) // input signed [13:0] 
   // AXI Stream Output

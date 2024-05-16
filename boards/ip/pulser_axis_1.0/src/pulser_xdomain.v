@@ -1,6 +1,8 @@
+/* Pulser with domain-crossing logic for configuration parameters and trigger
+ */
 module pulser_xdomain #(
    parameter CW = 8              // Pulse counter width
-  ,parameter [3:0] STREAM_SAMPLES = 1 // Stream data width = 16*STREAM_SAMPLES
+  ,parameter [4:0] STREAM_SAMPLES = 1 // Stream data width = 16*STREAM_SAMPLES
   ,parameter MODE_IQ = "false"
   ,parameter MODULATED = "false"
 )(
@@ -14,6 +16,7 @@ module pulser_xdomain #(
   // Pulse Controls
   ,input sw_trig    // Software Trigger
   ,input evr_trig   // EVR/Hardware Trigger
+  ,input force_on   // OR'd with pulse envelope for constant-on
   ,input [CW-1:0] count_max
   ,input signed [13:0] amplitude
   // AXI Stream Output
@@ -27,14 +30,15 @@ module pulser_xdomain #(
   ,output pulse_en
 );
 
-reg [19:0] phase_step_h_stream_clk=0, phase_step_h_ms=0;
-reg [11:0] phase_step_l_stream_clk=0, phase_step_l_ms=0;
-reg [11:0] modulo_stream_clk=0, modulo_ms=0;
-reg [CW-1:0] count_max_stream_clk=0, count_max_ms=0;
-reg [13:0] amplitude_stream_clk=0, amplitude_ms=0;
-reg sw_trig_stream_clk=1'b0, sw_trig_ms=1'b0;
-reg enable_stream_clk=1'b0, enable_ms=1'b0;
-reg evr_trig_stream_clk=1'b0, evr_trig_ms=1'b0;
+(* ASYNC_REG = "TRUE" *) reg [19:0] phase_step_h_stream_clk=0, phase_step_h_ms=0;
+(* ASYNC_REG = "TRUE" *) reg [11:0] phase_step_l_stream_clk=0, phase_step_l_ms=0;
+(* ASYNC_REG = "TRUE" *) reg [11:0] modulo_stream_clk=0, modulo_ms=0;
+(* ASYNC_REG = "TRUE" *) reg [CW-1:0] count_max_stream_clk=0, count_max_ms=0;
+(* ASYNC_REG = "TRUE" *) reg [13:0] amplitude_stream_clk=0, amplitude_ms=0;
+(* ASYNC_REG = "TRUE" *) reg sw_trig_stream_clk=1'b0, sw_trig_ms=1'b0;
+(* ASYNC_REG = "TRUE" *) reg enable_stream_clk=1'b0, enable_ms=1'b0;
+(* ASYNC_REG = "TRUE" *) reg evr_trig_stream_clk=1'b0, evr_trig_ms=1'b0;
+(* ASYNC_REG = "TRUE" *) reg force_on_ms=1'b0, force_on_stream_clk=1'b0;
 
 // Cross from clk_io to to clk_stream domains
 always @(posedge clk_stream) begin
@@ -63,6 +67,9 @@ always @(posedge clk_stream) begin
   evr_trig_ms <= evr_trig;
   evr_trig_stream_clk <= evr_trig_ms;
 
+  force_on_ms <= force_on;
+  force_on_stream_clk <= force_on_ms;
+
   // OUTPUTS: From clk_stream domain to clk_io domain
   trigger_count <= trigger_count_ms;
   trigger_count_ms <= trigger_count_stream_clk;
@@ -90,11 +97,13 @@ generate if (MODULATED == "false") begin : mode_square
 pulser_sq_axis #(
    .CW(CW)
    ,.STREAM_SAMPLES(STREAM_SAMPLES)
+   ,.MODE_IQ(MODE_IQ)
 ) pulser_axis_i (
    .clk(clk_stream)
   ,.en(enable_stream_clk)
   // Pulse Controls
   ,.trig_strobe(trig_strobe_stream_clk)
+  ,.force_on(force_on_stream_clk)
   ,.count_max(count_max_stream_clk) // input [CW-1:0]
   ,.amplitude(amplitude_stream_clk) // input signed [13:0]
   // AXI Stream Output
@@ -118,6 +127,7 @@ pulser_am_axis #(
   ,.modulo(modulo_stream_clk) // input [11:0]
   // Pulse Controls
   ,.trig_strobe(trig_strobe_stream_clk)
+  ,.force_on(force_on_stream_clk)
   ,.count_max(count_max_stream_clk) // input [CW-1:0]
   ,.amplitude(amplitude_stream_clk) // input signed [13:0]
   // AXI Stream Output

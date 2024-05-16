@@ -4,7 +4,7 @@
 
 module pulser_am_axis #(
    parameter CW = 8              // Pulse counter width
-  ,parameter [3:0] STREAM_SAMPLES = 1 // Stream data width = 16*STREAM_SAMPLES
+  ,parameter [4:0] STREAM_SAMPLES = 1 // Stream data width = 16*STREAM_SAMPLES
   ,parameter MODE_IQ = "false"
 )(
    input clk
@@ -15,6 +15,7 @@ module pulser_am_axis #(
   ,input [11:0] modulo
   // Pulse Controls
   ,input trig_strobe
+  ,input force_on   // OR'd with pulse envelope for constant-on
   ,input [CW-1:0] count_max
   ,input signed [13:0] amplitude
   // AXI Stream Output
@@ -37,7 +38,7 @@ generate if (MODE_IQ == "false") begin : mode_real
   always @(posedge clk) begin
     if (en) begin
       for (N = 0; N < STREAM_SAMPLES; N = N + 1) begin
-        DAC_stream_tdata_d[16*(N+1)-1-:16] <= {2'b00, iout};
+        DAC_stream_tdata_d[16*(N+1)-1-:16] <= {{2{iout[13]}}, iout}; // sign-extension
       end
     end
   end
@@ -47,8 +48,8 @@ end else begin : mode_iq
   always @(posedge clk) begin
     if (en) begin
       for (N = 0; N < (STREAM_SAMPLES/2); N = N + 1) begin
-        DAC_stream_tdata_d[16*(2*N+1)-1-:16] <= {2'b00, iout};
-        DAC_stream_tdata_d[16*2*(N+1)-1-:16] <= {2'b00, qout};
+        DAC_stream_tdata_d[16*(2*N+1)-1-:16] <= {{2{iout[13]}}, iout}; // sign-extension
+        DAC_stream_tdata_d[16*2*(N+1)-1-:16] <= {{2{qout[13]}}, qout}; // sign-extension
       end
     end
   end
@@ -67,6 +68,7 @@ pulser_am #(
   ,.modulo(modulo) // input [11:0]
   // Pulse Controls
   ,.trig_strobe(trig_strobe) // input
+  ,.force_on(force_on)
   ,.count_max(count_max) // input [CW-1:0]
   ,.amplitude(amplitude) // input signed [DW-1:0]
   // Pulse Outputs

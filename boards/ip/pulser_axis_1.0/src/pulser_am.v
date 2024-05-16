@@ -20,6 +20,7 @@ module pulser_am #(
   ,input [11:0] modulo  // Encoding of non-binary modulus; 0 means binary
   // Pulse Controls
   ,input trig_strobe
+  ,input force_on   // OR'd with pulse envelope for constant-on
   ,input [CW-1:0] count_max
   ,input signed [DW-1:0] amplitude
   // Pulse Outputs
@@ -36,6 +37,7 @@ pulser_envelope #(
    .clk(clk)  // input
   ,.en(en)  // input
   ,.trig_strobe(trig_strobe)  // input
+  ,.force_on(force_on)    // input
   ,.count_max(count_max)  // input [CW-1:0]
   ,.amplitude(amplitude)  // input [DW-1:0]
   ,.pulse_en(pulse_en)  // output
