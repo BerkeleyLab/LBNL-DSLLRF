@@ -1,0 +1,44 @@
+stages:
+  - prepare
+  - synthesis
+
+default:
+  tags:
+    - xilinx
+
+variables:
+  XILINX_VIVADO: /non-free/Xilinx/Vivado_and_Vitis/2022.1/Vivado/2022.1
+  XILINX_VITIS: /non-free/Xilinx/Vivado_and_Vitis/2022.1/Vitis/2022.1
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_DRIVER: overlay2
+  GIT_SUBMODULE_STRATEGY: normal
+
+evr_zcu208:
+  before_script:
+    - cd boards/ZCU208/overlays/config_evr && ls /non-free
+  stage: synthesis
+  script:
+    - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    expire_in: 4 weeks
+    paths:
+      - boards/ZCU208/overlays/config_evr/config_evr.bit
+      - boards/ZCU208/overlays/config_evr/config_evr.hwh
+      - boards/ZCU208/overlays/config_evr/config_evr.xsa
+      - boards/ZCU208/overlays/config_evr/config_evr.runs/config_evr_*/*.log
+
+mts_8ch_zcu208:
+  before_script:
+    - cd boards/ZCU208/overlays/mts_8ch && ls /non-free
+  stage: synthesis
+  timeout: 3h
+  script:
+    - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    expire_in: 4 weeks
+    paths:
+      - boards/ZCU208/overlays/mts_8ch/mts_8ch.bit
+      - boards/ZCU208/overlays/mts_8ch/mts_8ch.hwh
+      - boards/ZCU208/overlays/mts_8ch/mts_8ch.xsa
