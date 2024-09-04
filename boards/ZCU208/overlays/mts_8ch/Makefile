@@ -12,9 +12,7 @@ VIVADO=vivado -mode batch -nojou -nolog -notrace
 
 .PHONY: all
 all: $(OVERLAY).bit $(OVERLAY).hwh check_timing 
-	@echo
-	@tput setaf 2 ; echo "Built $(OVERLAY) successfully!"; tput sgr0;
-	@echo
+	echo "Built $(OVERLAY) successfully!";
 
 $(PROJECT_NAME)/$(PROJECT_NAME).xpr:
 	export XILINX_IP_REPO_PATH="$(IP_REPOS)" && $(VIVADO) -source $(SCRIPT_DIR)/proj.tcl -tclargs $(TOP_DIR)/$(OVERLAY).tcl $(PROJECT_NAME) $(SOURCES) $(XDC)
