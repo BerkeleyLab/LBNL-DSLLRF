@@ -1,61 +1,36 @@
-if { $argc <1 } {
+if { $argc <5 } {
     puts "Not enough arguments"
-    puts "Usage: vivado -mode batch -nojou -nolog -source proj.tcl -tclargs <overlay.tcl> <proj_name> <source_files>"
+    puts "Usage: vivado -mode batch -nojou -nolog -source proj.tcl -tclargs <board_id> <proj_name> <bd_script.tcl> <project_xdc> <source_files>"
     exit
 }
-set overlay_script [lindex $argv 0]
-set my_proj_name [lindex $argv 1]
-set my_proj_files [lrange $argv 2 end]
-set overlay_list [file split $overlay_script]
-set overlay_script_name [lrange $overlay_list [llength $overlay_list]-1 end]
-set overlay_name [lindex [split $overlay_script_name "."] 0]
-set bd_name $overlay_name.bd
-set wrapper_name ${overlay_name}_wrapper
+
+set board_id [lindex $argv 0]
+set proj_name [lindex $argv 1]
+set bd_script [lindex $argv 2]
+set proj_xdc [lindex $argv 3]
+set proj_src [lrange $argv 4 end]
+
+set bd_name $proj_name.bd
+set wrapper_name ${proj_name}_wrapper
 # Gets IP repos from the environment
-#set ip_repo_path=$::env(XILINX_IP_REPO_PATH)
 set ip_repo_path $::env(XILINX_IP_REPO_PATH)
 
-proc project_add_files {project_files} {
-    set obj [get_filesets sources_1]
-    add_files -norecurse -fileset $obj $project_files
-    set ip_tcl_src [get_files *.tcl]
-    foreach ip_tcl $ip_tcl_src {
-        source $ip_tcl
-    }
-    remove_files -fileset $obj -quiet $ip_tcl_src
-
-    # prevent tools from compiling verilog headers
-    set verilog_header_src [get_files *.vh]
-    foreach verilog_header $verilog_header_src {
-        set_property file_type {Verilog Header} [get_files $verilog_header]
-    }
-
-    # prevent tools from compiling memory initialization files
-    set mem_init_src [get_files *.mem]
-    set hex_init_src [get_files *.hex]
-    set ram_init_src [get_files *.ram]
-    set init_src [list {*}$mem_init_src {*}$hex_init_src {*}$ram_init_src]
-    foreach init $init_src {
-        set_property file_type {Memory Initialization Files} [get_files $init]
-    }
-
-    set imp_xdc_src [get_files *_imp.xdc]
-    foreach xdc $imp_xdc_src {
-        set_property USED_IN_SYNTHESIS 0 [get_files $xdc]
-        set_property -name "file_type" -value "XDC" -objects [get_files $xdc]
-    }
-    update_compile_order -fileset $obj
+################################################################
+# Check supported platforms
+################################################################
+# set platforms = {"zcu208" "zcu216"}
+set platforms {"zcu208"}
+if {[lsearch -exact $platforms $board_id] == -1} {
+  puts "The specified board_id '$board_id' is not supported."
+  return 1
 }
 
-namespace eval _tcl {
-proc get_script_folder {} {
-   set script_path [file normalize [info script]]
-   set script_folder [file dirname $script_path]
-   return $script_folder
+switch $board_id {
+  "zcu208" {
+    set board_part "xilinx.com:zcu208:part0:2.0"
+    set project_part "xczu48dr-fsvg1517-2-e"
+  }
 }
-}
-variable script_folder
-set script_folder [_tcl::get_script_folder]
 
 ################################################################
 # Check if script is running in correct Vivado version.
@@ -66,7 +41,6 @@ set current_vivado_version [version -short]
 if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
    puts ""
    catch {common::send_gid_msg -ssname BD::TCL -id 2041 -severity "ERROR" "This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado. Please run the script in Vivado <$scripts_vivado_version> then open the design in Vivado <$current_vivado_version>. Upgrade the design by running \"Tools => Report => Report IP Status...\", then run write_bd_tcl to create an updated script."}
-
    return 1
 }
 
@@ -74,38 +48,27 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 # START
 ################################################################
 
-set origin_dir "."
-
-# Set the project name
-set _xil_proj_name_ $my_proj_name
-
 # Create project
-create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xczu48dr-fsvg1517-2-e
+create_project ${proj_name} ./_xilinx/${proj_name} -part $project_part
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
 
 # Set project properties
 set obj [current_project]
-set_property -name "board_part" -value "xilinx.com:zcu208:part0:2.0" -objects $obj
+set_property -name "board_part" -value $board_part -objects $obj
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
 set_property -name "enable_resource_estimation" -value "0" -objects $obj
 set_property -name "enable_vhdl_2008" -value "1" -objects $obj
 set_property -name "ip_cache_permissions" -value "read write" -objects $obj
-set_property -name "ip_output_repo" -value "$proj_dir/${_xil_proj_name_}.cache/ip" -objects $obj
+set_property -name "ip_output_repo" -value "$proj_dir/${proj_name}.cache/ip" -objects $obj
 set_property -name "mem.enable_memory_map_generation" -value "1" -objects $obj
-set_property -name "platform.board_id" -value "zcu208" -objects $obj
+set_property -name "platform.board_id" -value $board_id -objects $obj
 set_property -name "revised_directory_structure" -value "1" -objects $obj
-set_property -name "sim.central_dir" -value "$proj_dir/${_xil_proj_name_}.ip_user_files" -objects $obj
+set_property -name "sim.central_dir" -value "$proj_dir/${proj_name}.ip_user_files" -objects $obj
 set_property -name "sim.ip.auto_export_scripts" -value "1" -objects $obj
 set_property -name "simulator_language" -value "Mixed" -objects $obj
 set_property -name "target_language" -value "VHDL" -objects $obj
-#set_property -name "webtalk.activehdl_export_sim" -value "2" -objects $obj
-#set_property -name "webtalk.modelsim_export_sim" -value "2" -objects $obj
-#set_property -name "webtalk.questa_export_sim" -value "2" -objects $obj
-#set_property -name "webtalk.riviera_export_sim" -value "2" -objects $obj
-#set_property -name "webtalk.vcs_export_sim" -value "2" -objects $obj
-#set_property -name "webtalk.xsim_export_sim" -value "2" -objects $obj
 set_property -name "xpm_libraries" -value "XPM_CDC XPM_FIFO XPM_MEMORY" -objects $obj
 
 # Create 'sources_1' fileset (if not found)
@@ -114,27 +77,19 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 }
 
 # Set IP repository paths
-if { ! [string equal $ip_repo_path ""] } {
-  set obj [get_filesets sources_1]
-  if { $obj != {} } {
-    foreach repo_path [split $ip_repo_path] {
-      set_property "ip_repo_paths" "[file normalize "$repo_path"]" $obj
-    }
-
-    # Rebuild user ip_repo's index before adding any source files
-    update_ip_catalog -rebuild
-  }
+set obj [get_filesets sources_1]
+if { $obj != {} } {
+   set_property "ip_repo_paths" "[file normalize "$ip_repo_path"]" $obj
+   # Rebuild user ip_repo's index before adding any source files
+   update_ip_catalog -rebuild
 }
 
-project_add_files $my_proj_files
-
-# Set 'sources_1' fileset object
-#set obj [get_filesets sources_1]
-#set files [list \
-# [file normalize "${origin_dir}/../../ip/rtl/ADCRAMcapture.v"] \
-# [file normalize "${origin_dir}/../../ip/rtl/DACRAMstreamer.v"] \
-#]
-#add_files -norecurse -fileset $obj $my_proj_files
+set files [list]
+foreach src $proj_src {
+  lappend files [file normalize $src]
+}
+set obj [get_filesets sources_1]
+import_files -norecurse -fileset $obj $files
 
 # Set 'sources_1' fileset file properties for remote files
 # None
@@ -143,6 +98,11 @@ project_add_files $my_proj_files
 # None
 
 # Set 'sources_1' fileset properties
+# Set 'top' module without auto_set in fileset properties
+set obj [get_filesets sources_1]
+set_property -name "top" -value "$wrapper_name" -objects $obj
+set_property -name "top_auto_set" -value "0" -objects $obj
+
 #set obj [get_filesets sources_1]
 # Create 'constrs_1' fileset (if not found)
 if {[string equal [get_filesets -quiet constrs_1] ""]} {
@@ -153,33 +113,19 @@ if {[string equal [get_filesets -quiet constrs_1] ""]} {
 set obj [get_filesets constrs_1]
 
 # Add/Import constrs file and set constrs file properties
-#set file "[file normalize "$origin_dir/mts.xdc"]"
-#set file_added [add_files -norecurse -fileset $obj [list $file]]
-#set file "$origin_dir/mts.xdc"
-#set file [file normalize $file]
-#set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
-#set_property -name "file_type" -value "XDC" -objects $file_obj
-
-# Set 'constrs_1' fileset properties
-set obj [get_filesets constrs_1]
+set file "[file normalize "$proj_xdc"]"
+add_files -norecurse -fileset $obj [list $file]
+set_property -name "file_type" -value "XDC" -objects [get_files $file]
 
 # Create 'sim_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sim_1] ""]} {
   create_fileset -simset sim_1
 }
 
-# Adding sources referenced in BDs, if not already added
-#if { [get_files ADCRAMcapture.v] == "" } {
-#  import_files -quiet -fileset sources_1 ADCRAMcapture.v
-#}
-#if { [get_files DACRAMstreamer.v] == "" } {
-#  import_files -quiet -fileset sources_1 DACRAMstreamer.v
-#}
-
 ################################################################
 # START
 ################################################################
-source $overlay_script
+source $bd_script
 
 ################################################################
 # END
@@ -191,15 +137,11 @@ set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files $bd_name]
 #call make_wrapper to create wrapper files
 if { [get_property IS_LOCKED [ get_files -norecurse $bd_name ] ] == 1  } {
   # I think this line is horribly broken, but might never be called
-  import_files -fileset sources_1 [file normalize "${origin_dir}/${my_proj_name}/${my_proj_name}.gen/sources_1/bd/${my_proj_name}/hdl/${my_proj_name}.vhd" ]
+  import_files -fileset sources_1 [file normalize "${proj_dir}/${proj_name}.gen/sources_1/bd/${proj_name}/hdl/${proj_name}_wrapper.vhd" ]
 } else {
   set wrapper_path [make_wrapper -fileset sources_1 -files [ get_files -norecurse $bd_name] -top]
   add_files -norecurse -fileset sources_1 $wrapper_path
 }
-
-set obj [get_filesets sources_1]
-set_property -name "top" -value "$wrapper_name" -objects $obj
-set_property -name "top_auto_set" -value "1" -objects $obj
 
 set idrFlowPropertiesConstraints ""
 catch {
@@ -459,7 +401,7 @@ catch {
  }
 }
 
-puts "INFO: Project created:${_xil_proj_name_}"
+puts "INFO: Project created:${proj_name}"
 # Create 'drc_1' gadget (if not found)
 if {[string equal [get_dashboard_gadgets  [ list "drc_1" ] ] ""]} {
 create_dashboard_gadget -name {drc_1} -type drc
