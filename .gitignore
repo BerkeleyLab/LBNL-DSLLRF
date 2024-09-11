@@ -1,4 +1,5 @@
 *.Xil/
+*_xilinx/
 *vivado*.jou
 *vivado*.log
 *.bit

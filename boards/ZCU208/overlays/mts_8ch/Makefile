@@ -1,21 +1,19 @@
-OVERLAY?=mts_8ch
+include ../../../../dir_list.mk
 
-TOP_DIR=.
-SCRIPT_DIR=..
-IP_DIR=../../../ip
-IP_REPOS=$(IP_DIR)
-SOURCES=$(IP_DIR)/rtl/ADCRAMcapture.v $(IP_DIR)/rtl/DACRAMstreamer.v 
-XDC=$(TOP_DIR)/mts_8ch.xdc
-PROJECT_NAME=$(OVERLAY)
-JOBS?=8
-VIVADO=vivado -mode batch -nojou -nolog -notrace
+OVERLAY     = mts_8ch
+PROJECT_NAME= $(OVERLAY)
+JOBS        = 4
+VIVADO      = vivado -mode batch -verbose -nolog -nojou
+
+SOURCES     = $(IP_DIR)/rtl/ADCRAMcapture.v $(IP_DIR)/rtl/DACRAMstreamer.v
+XDC			= mts_8ch.xdc
 
 .PHONY: all
-all: $(OVERLAY).bit $(OVERLAY).hwh check_timing 
+all: $(OVERLAY).bit $(OVERLAY).hwh check_timing
 	echo "Built $(OVERLAY) successfully!";
 
 $(PROJECT_NAME)/$(PROJECT_NAME).xpr:
-	export XILINX_IP_REPO_PATH="$(IP_REPOS)" && $(VIVADO) -source $(SCRIPT_DIR)/proj.tcl -tclargs $(TOP_DIR)/$(OVERLAY).tcl $(PROJECT_NAME) $(SOURCES) $(XDC)
+	XILINX_IP_REPO_PATH="$(IP_DIR)" $(VIVADO) -source $(SCRIPT_DIR)/proj.tcl -tclargs zcu208 $(PROJECT_NAME) $(OVERLAY).tcl $(XDC) $(SOURCES)
 
 $(OVERLAY).bit: $(PROJECT_NAME)/$(PROJECT_NAME).xpr
 	$(VIVADO) -source $(SCRIPT_DIR)/build_bitstream.tcl -tclargs $(OVERLAY) $(PROJECT_NAME) $(JOBS)
@@ -38,4 +36,5 @@ handoff: $(OVERLAY).hwh
 
 .PHONY: clean
 clean:
-	rm -rf $(PROJECT_NAME) *.jou *.log .Xil *.xsa *.hwh *.bit
+	rm -rf _xilinx
+	rm -f *.jou *.log .Xil *.xsa *.hwh *.bit
