@@ -1,18 +1,36 @@
-if { $argc <5 } {
+if { $argc < 5 } {
     puts "Not enough arguments"
-    puts "Usage: vivado -mode batch -nojou -nolog -source proj.tcl -tclargs <board_id> <proj_name> <bd_script.tcl> <project_xdc> <source_files>"
+    puts "Usage: vivado -mode batch -nojou -nolog -source proj.tcl -tclargs <board_id> <proj_name> <bd_script.tcl> [opt.tcl] <project_xdc> <source_files...>"
     exit
 }
 
+# Set the required arguments
 set board_id [lindex $argv 0]
 set proj_name [lindex $argv 1]
 set bd_script [lindex $argv 2]
-set proj_xdc [lindex $argv 3]
-set proj_src [lrange $argv 4 end]
+
+# Initialize optional arguments
+set opt_tcl ""
+# Determine if the optional TCL script is provided
+if { [string match "*.tcl" [lindex $argv 3]] } {
+    set opt_tcl [lindex $argv 3]
+    set proj_xdc [lindex $argv 4]
+    set proj_src [lrange $argv 5 end]
+} else {
+    set proj_xdc [lindex $argv 3]
+    set proj_src [lrange $argv 4 end]
+}
+
+puts "Board ID: $board_id"
+puts "Project Name: $proj_name"
+puts "Block Design Script: $bd_script"
+puts "Optional TCL Script: $opt_tcl"
+puts "Project XDC: $proj_xdc"
+puts "Source Files: $proj_src"
 
 set bd_name $proj_name.bd
 set wrapper_name ${proj_name}_wrapper
-# Gets IP repos from the environment
+# Get IP repos from the environment
 set ip_repo_path $::env(XILINX_IP_REPO_PATH)
 
 ################################################################
@@ -103,7 +121,6 @@ set obj [get_filesets sources_1]
 set_property -name "top" -value "$wrapper_name" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 
-#set obj [get_filesets sources_1]
 # Create 'constrs_1' fileset (if not found)
 if {[string equal [get_filesets -quiet constrs_1] ""]} {
   create_fileset -constrset constrs_1
@@ -125,12 +142,19 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 ################################################################
 # START
 ################################################################
-source $bd_script
+# Source optional TCL if provided
+if { $opt_tcl != "" } {
+    puts "Sourcing optional TCL script: $opt_tcl"
+    source $opt_tcl
+} else {
+    puts "No optional TCL script provided."
+}
 
+puts "Sourcing block design script: $bd_script"
+source $bd_script
 ################################################################
 # END
 ################################################################
-
 set_property REGISTERED_WITH_MANAGER "1" [get_files $bd_name]
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files $bd_name]
 

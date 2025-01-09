@@ -1,0 +1,15 @@
+// Override default values to provide 156.25MHz instead of 148.50MHz
+// https://github.com/Xilinx/device-tree-xlnx/blob/master/device_tree/data/kernel_dtsi/2022.1/BOARD/zcu208-reva.dtsi#L417
+
+/dts-v1/;
+/plugin/;
+
+&i2c1 {
+    i2c-mux@74 {
+        i2c@3 {
+            si570_2: clock-generator@5d { /* USER MGT SI570 - u48 */
+                clock-frequency = <156250000>;
+            };
+        };
+    };
+};
