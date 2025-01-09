@@ -140,6 +140,14 @@ class MimoMtsOverlay(Overlay):
             self.xrfdc.mts_dac_config.Tiles = self.ACTIVE_DAC_TILES
             self.xrfdc.mts_dac_config.SysRef_Enable = 1
             self.xrfdc.mts_dac_config.Target_Latency = dacTarget
+            # deterministic latency adjustment
+            # reference:
+            # https://adaptivesupport.amd.com/s/article/1071111?language=en_US
+            for n in range(MAX_DAC_TILES):
+                if self.xrfdc.mts_dac_config.Latency[n] > dacTarget:
+                    dacTarget = self.xrfdc.mts_dac_config.Latency[n]
+            # add a margin of suggested 16
+            self.xrfdc.mts_dac_config.Target_Latency = dacTarget + 16
             self.xrfdc.mts_dac()
         else:
             self.xrfdc.mts_dac_config.Tiles = 0x0
@@ -148,6 +156,12 @@ class MimoMtsOverlay(Overlay):
             self.xrfdc.mts_adc_config.Tiles = self.ACTIVE_ADC_TILES
             self.xrfdc.mts_adc_config.SysRef_Enable = 1
             self.xrfdc.mts_adc_config.Target_Latency = adcTarget
+            for n in range(MAX_ADC_TILES):
+                if self.xrfdc.mts_adc_config.Latency[n] > adcTarget:
+                    adcTarget = self.xrfdc.mts_adc_config.Latency[n]
+            # 8 is the number of sample clocks
+            # number of FIFO read-words X the decimation factor
+            self.xrfdc.mts_adc_config.Target_Latency = adcTarget + 8
             self.xrfdc.mts_adc()
         else:
             self.xrfdc.mts_adc_config.Tiles = 0x0
