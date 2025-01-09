@@ -2,11 +2,10 @@
 # Heavily-modified version of the Multi-Tile Synch (mts) example from Xilinx
 # Copyright (C) 2023 Advanced Micro Devices, Inc
 # SPDX-License-Identifier: MIT
-# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- --
-import pynq
+# -------------------------------------------------------------------------------------------------
 from pynq import Overlay, MMIO
+from fractions import Fraction
 import xrfclk
-import xrfdc
 import numpy as np
 import time
 import os
@@ -16,32 +15,39 @@ MODULE_PATH = os.path.dirname(os.path.realpath(__file__))
 CLOCKWIZARD_LOCK_ADDRESS = 0x0004
 CLOCKWIZARD_RESET_ADDRESS = 0x0000
 CLOCKWIZARD_RESET_TOKEN = 0x000A
+ZCU208_LMK_FREQ = 500.0
+ZCU208_LMX_FREQ = 4000.0
+
 
 class CapturePulserOverlay(Overlay):
-    def __init__(self, bitfile_name='pulser_mts.bit', **kwargs):
-        board = os.getenv('BOARD') 
+    def __init__(self, bitfile_name="pulser_mts.bit", **kwargs):
+        board = os.getenv("BOARD")
         # Run lsmod command to get the loaded modules list
-        output = subprocess.check_output(['lsmod'])
+        output = subprocess.check_output(["lsmod"])
         # Check if "zocl" is present in the output
-        if b'zocl' in output:
+        if b"zocl" in output:
             # If present, remove the module using rmmod command
-            rmmod_output = subprocess.run(['rmmod', 'zocl'])
+            rmmod_output = subprocess.run(["rmmod", "zocl"])
             # Check return code
-            assert rmmod_output.returncode == 0, "Could not restart zocl. Please Shutdown All Kernels and then restart"
+            assert (rmmod_output.returncode == 0), "Could not restart zocl."
+            "Please Shutdown All Kernels and then restart"
             # If successful, load the module using modprobe command
-            modprobe_output = subprocess.run(['modprobe', 'zocl'])
-            assert modprobe_output.returncode == 0, "Could not restart zocl. It did not restart as expected"
+            modprobe_output = subprocess.run(["modprobe", "zocl"])
+            assert (
+                modprobe_output.returncode == 0
+            ), "Could not restart zocl. It did not restart as expected"
         else:
-            modprobe_output = subprocess.run(['modprobe', 'zocl'])
+            modprobe_output = subprocess.run(["modprobe", "zocl"])
             # Check return code
             assert modprobe_output.returncode == 0, "Could not restart ZOCL!"
 
-        # must configure clock synthesizers 
+        # must configure clock synthesizers
         # the LMK04828 PL_CLK and PL_SYSREF clocks
-        if board == 'ZCU208':
-            xrfclk.set_ref_clks(lmk_freq = ZCU208_LMK_FREQ, lmx_freq = ZCU208_LMX_FREQ)
+        if board == "ZCU208":
+            xrfclk.set_ref_clks(lmk_freq=ZCU208_LMK_FREQ,
+                                lmx_freq=ZCU208_LMX_FREQ)
         else:
-            assert false, "Board Not Supported"
+            assert False, "Board Not Supported"
         time.sleep(0.5)
         super().__init__(resolve_binary_path(bitfile_name), **kwargs)
 
@@ -57,30 +63,38 @@ class CapturePulserOverlay(Overlay):
         # Reset GPIOs and bring to known state
         self.trig_cap.off()
 
-    def memdict_to_view(self, ip, dtype='int16'):
-        """ Configures access to internal memory via MMIO"""
+    def memdict_to_view(self, ip, dtype="int16"):
+        """Configures access to internal memory via MMIO"""
         baseAddress = self.mem_dict[ip]["phys_addr"]
         mem_range = self.mem_dict[ip]["addr_range"]
         ipmmio = MMIO(baseAddress, mem_range)
         return ipmmio.array[0:ipmmio.length].view(dtype)
 
     def verify_clock_tree(self):
-        """ Verify the PL and PL_SYSREF clocks are active by verifying an MMCM is in the LOCKED state"""
-        Xstatus = self.clocktreeMTS.MTSclkwiz.read(CLOCKWIZARD_LOCK_ADDRESS) # reads the LOCK register
-        # the ClockWizard AXILite registers are NOT fully mapped: refer to PG065
-        if (Xstatus != 1):
-            raise Exception("The MTS ClockTree has failed to LOCK. Please verify board clocking configuration")
+        """Verify the PL and PL_SYSREF clocks are active by
+        verifying an MMCM is in the LOCKED state"""
+        Xstatus = self.clocktreeMTS.MTSclkwiz.read(
+            CLOCKWIZARD_LOCK_ADDRESS
+        )  # reads the LOCK register
+        # the ClockWizard AXILite registers are NOT fully mapped
+        # refer to PG065
+        if Xstatus != 1:
+            raise Exception(
+                "The MTS ClockTree has failed to LOCK."
+                "Please verify board clocking configuration")
 
     def trigger_capture(self):
-        """ Internal loopback of DAC waveform to internal capture mirror"""
+        """Internal loopback of DAC waveform
+        to internal capture mirror"""
         self.trig_cap.off()
-        self.trig_cap.on() # triggers ADCs to capture and pulser to begin
-        #self.pulser.trigger()
+        self.trig_cap.on()  # triggers ADCs to capture and pulser to begin
+        # self.pulser.trigger()
         time.sleep(0.5)
         self.trig_cap.off()
 
     def internal_capture(self, doublebuffer):
-        """ Captures ADC samples from two channels and stores to internal memories """
+        """Captures ADC samples from two channels
+        and stores to internal memories"""
         if not np.issubdtype(doublebuffer.dtype, np.int16):
             raise Exception("buffer not defined or np.int16!")
         if not doublebuffer.shape[0] == 2:
@@ -89,28 +103,34 @@ class CapturePulserOverlay(Overlay):
         doublebuffer[0] = np.copy(self.adc_capture_ch1[0:len(doublebuffer[0])])
         doublebuffer[1] = np.copy(self.adc_capture_ch2[0:len(doublebuffer[1])])
 
+
 def resolve_binary_path(bitfile_name):
-    """ this helper function is necessary to locate the bit file during overlay loading"""
+    """this helper function is necessary to locate
+    the bit file during overlay loading"""
     if os.path.isfile(bitfile_name):
         return bitfile_name
     elif os.path.isfile(os.path.join(MODULE_PATH, bitfile_name)):
         return os.path.join(MODULE_PATH, bitfile_name)
     else:
-        raise FileNotFoundError(f'Cannot find {bitfile_name}.')
+        raise FileNotFoundError(f"Cannot find {bitfile_name}.")
+
+
 # -------------------------------------------------------------------------------------------------
 
-class PulseGen():
+
+class PulseGen:
     # ========================= Memory Map =================================
     # Addr     Slice     Usage
     # ------------------------
     # 0        [11:0]    phase_step_l
-    ADDR_PHASE_STEP_L = (0, 0, 11) # (reg_num, bitlow, bithigh)
+    ADDR_PHASE_STEP_L = (0, 0, 11)  # (reg_num, bitlow, bithigh)
     # 0        [31:12]   phase_step_h
     ADDR_PHASE_STEP_H = (0, 12, 31)
     # 1        [11:0]    modulo
     ADDR_MODULO = (1, 0, 11)
     # 2        [CW-1:0]  count_max
-    ADDR_COUNT_MAX = (2, 0, 7) # Default max can be clobbered at initialization
+    # Default max can be clobbered at initialization
+    ADDR_COUNT_MAX = (2, 0, 7)
     # 3        [13:0]    amplitude
     ADDR_AMPLITUDE = (3, 0, 13)
     # 4        [0:0]     sw_trig
@@ -129,21 +149,27 @@ class PulseGen():
         "enable": ADDR_ENABLE,
         "trig_counts": ADDR_TRIG_COUNTS,
     }
+
     def __init__(self, ip_dict_item, count_width=8):
         base = ip_dict_item["phys_addr"]
         # Clobber count_max memory map to map to the correct count_width
         addr_count_max = self._map["count_max"]
-        self._map["count_max"] = (addr_count_max[0], addr_count_max[1], addr_count_max[1] + count_width-1)
+        self._map["count_max"] = (
+            addr_count_max[0],
+            addr_count_max[1],
+            addr_count_max[1] + count_width - 1,
+        )
         self._mem = {}
-        # Only create a single MMIO instance if two values are mapped to the same register
+        # Only create a single MMIO instance if
+        # two values are mapped to the same register
         addr_l = self._map["phase_step_l"]
         addr_h = self._map["phase_step_h"]
         merged_ph = addr_l[0] == addr_h[0]
         if merged_ph:
-            phase_mmio = MMIO(base + 4*addr_l[0]) # 32-bit access
+            phase_mmio = MMIO(base + 4 * addr_l[0])  # 32-bit access
 
         for reg, addr in self._map.items():
-            base_addr = base + 4*addr[0] # 32-bit access
+            base_addr = base + 4 * addr[0]  # 32-bit access
             if merged_ph and reg in ("phase_step_l", "phase_step_h"):
                 # Two references to the same MMIO instance
                 self._mem[reg] = phase_mmio
@@ -202,13 +228,15 @@ class PulseGen():
     def read(self, regname):
         return self._mem[regname].read()
 
-class Inverter():
+
+class Inverter:
     def __init__(self, ip_dict_entry):
         base = ip_dict_entry["phys_addr"]
         self._inv = []
-        # The toy "inverter" IP has four channels which invert a different mask of bits
+        # The toy "inverter" IP has four channels
+        # which invert a different mask of bits
         for n in range(4):
-            self._inv.append(MMIO(base+4*n))
+            self._inv.append(MMIO(base + 4 * n))
 
     def write(self, ch, val):
         return self._inv[int(ch) & 3].write(0, val)
@@ -219,17 +247,18 @@ class Inverter():
     def test_ch(self, ch):
         ch = int(ch) & 3
         val = 0x12345678
-        if ch == 0: # all 32 bits inverted
-            inv_val = (~val) & 0xffffffff
+        if ch == 0:  # all 32 bits inverted
+            inv_val = (~val) & 0xFFFFFFFF
         elif ch == 1:
-            inv_val = (val & 0xff000000) | ((~val) & 0xffffff)
+            inv_val = (val & 0xFF000000) | ((~val) & 0xFFFFFF)
         elif ch == 2:
-            inv_val = (val & 0xffff0000) | ((~val) & 0xffff)
+            inv_val = (val & 0xFFFF0000) | ((~val) & 0xFFFF)
         elif ch == 3:
-            inv_val = (val & 0xffffff00) | ((~val) & 0xff)
+            inv_val = (val & 0xFFFFFF00) | ((~val) & 0xFF)
         self.write(ch, val)
         inv_val_rdbk = self.read(ch)
-        print(f"Wrote 0x{val:x}; expected 0x{inv_val:x}; read 0x{inv_val_rdbk:x} ", end="")
+        print(f"Wrote 0x{val:x};")
+        print(f"expected 0x{inv_val:x}; read 0x{inv_val_rdbk:x} ", end="")
         if inv_val_rdbk == inv_val:
             print("PASS")
             return True
@@ -237,21 +266,24 @@ class Inverter():
             print("FAIL")
         return False
 
+
 def calc_num_den(f_ref, freq):
     lo_ratio = Fraction(str(f_ref)).limit_denominator(10e9)
-    ref2out_ratio = float(freq)/float(lo_ratio)
+    ref2out_ratio = float(freq) / float(lo_ratio)
     ref2out = Fraction(str(ref2out_ratio)).limit_denominator(1000000000)
     num = ref2out.numerator
     den = ref2out.denominator
     return num, den
 
+
 # calculate registers by given fractional frequency
 def calc_dds(num_dds, den_dds, dwh=32, dwl=12):
     m, modulo = divmod((1 << dwl), den_dds)
     r = (1 << dwh) * num_dds
-    phase_step_h = int(r/den_dds)
+    phase_step_h = int(r / den_dds)
     phase_step_l = int(r % den_dds * m)
     return phase_step_h, phase_step_l, modulo
+
 
 def get_dds_config(fclk, fdds, dwh=20, dwl=12):
     num, den = calc_num_den(fclk, fdds)

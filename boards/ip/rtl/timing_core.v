@@ -1,6 +1,7 @@
 module timing_core #(
-    parameter DSP_EV1 = 1, // Configurable event code to route to dsp_clk.
-    parameter DSP_EV2 = 2  // N.B: 0 is not a valid event code
+    parameter EVR_EVSTROBE_CNT = 254,  // Max of tinyEVR
+    parameter DSP_EV1 = 1,  // Configurable event code to route to dsp_clk.
+    parameter DSP_EV2 = 2
 ) (
     input             lb_clk,
     // Fiber interface
@@ -9,24 +10,26 @@ module timing_core #(
     input [1:0]       evr_rxk,
 
     // EVR Control interface (@lb_clk)
-    output [15:0]     evr_evcnt,
+    output [15:0]     evr_evcnt,  // DSP_EV1
     output            evr_timestamp_valid,
+    output [63:0]     evr_live_ts,
 
     input             dsp_clk,
     output [63:0]     dsp_live_ts,
-    // needs to be stretched????
+
+    // single-cycle in evr_clk domain
+    output            evr_event1,  // DSP_EV1
+
+    // single-cycle in dsp_clk domain
     output            dsp_pps_marker,
     output            dsp_hb_marker,
-
-    output            evr_event1,
-    output            dsp_event1, // DSP_EV1
-    output            dsp_event2  // DSP_EV2
+    output            dsp_event1,  // DSP_EV1
+    output            dsp_event2   // DSP_EV2
 );
 
     // ---------------------
     // Timing Event Receiver (EVR)
     // ---------------------
-    localparam EVR_EVSTROBE_CNT = 126; // As large as the highest event code of interest
     localparam EVR_TSTAMP_WI = 64;
     wire evr_pps_marker, evr_ts_valid_x;
     wire [EVR_TSTAMP_WI-1:0] evr_timestamp_x;
@@ -43,7 +46,7 @@ module timing_core #(
     );
 
     reg evr_ts_valid=0;
-    always @(posedge lb_clk) evr_ts_valid <= evr_ts_valid_x; // Quasi-static
+    always @(posedge lb_clk) evr_ts_valid <= evr_ts_valid_x;  // Quasi-static single-bit
     assign evr_timestamp_valid = evr_ts_valid;
 
     // Event masking and counting in evr_clk domain
@@ -83,13 +86,20 @@ module timing_core #(
                         .clk2(dsp_clk), .flagout_clk2(dsp_event2));
 
     // timestamp (seconds and ticks) CDC to dsp_clk
-    wire [63:0] dsp_evr_timestamp;
     evr_ts_cdc dut(
         .evr_clk(evr_clk),
         .ts_secs(evr_timestamp_x[63:32]), .ts_tcks(evr_timestamp_x[31:0]),
         .evr_pps(evr_pps_marker),
         .usr_clk(dsp_clk),
         .usr_secs(dsp_live_ts[63:32]), .usr_tcks(dsp_live_ts[31:0])
+    );
+
+    evr_ts_cdc dut_lb(
+        .evr_clk(evr_clk),
+        .ts_secs(evr_timestamp_x[63:32]), .ts_tcks(evr_timestamp_x[31:0]),
+        .evr_pps(evr_pps_marker),
+        .usr_clk(lb_clk),
+        .usr_secs(evr_live_ts[63:32]), .usr_tcks(evr_live_ts[31:0])
     );
 
     flag_xdomain i_pps (.clk1(evr_clk), .flagin_clk1(evr_pps_marker),

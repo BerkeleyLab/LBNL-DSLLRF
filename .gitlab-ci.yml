@@ -1,5 +1,6 @@
 stages:
   - prepare
+  - test
   - synthesis
 
 default:
@@ -13,24 +14,14 @@ variables:
   DOCKER_DRIVER: overlay2
   GIT_SUBMODULE_STRATEGY: normal
 
-evr_zcu208:
-  before_script:
-    - cd boards/ZCU208/overlays/config_evr && ls /non-free
-  stage: synthesis
+flake8:
+  stage: test
   script:
-    - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    expire_in: 4 weeks
-    paths:
-      - boards/ZCU208/overlays/config_evr/config_evr.bit
-      - boards/ZCU208/overlays/config_evr/config_evr.hwh
-      - boards/ZCU208/overlays/config_evr/config_evr.xsa
-      - boards/ZCU208/overlays/config_evr/config_evr.runs/config_evr_*/*.log
+    - flake8 mimo_mts/*.py
 
-mts_8ch_zcu208:
+bitfile_synthesis:
   before_script:
-    - cd boards/ZCU208/overlays/mts_8ch && ls /non-free
+    - cd boards/ZCU208/overlays/${OVERLAY} && ls /non-free
   stage: synthesis
   timeout: 3h
   script:
@@ -39,6 +30,11 @@ mts_8ch_zcu208:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     expire_in: 4 weeks
     paths:
-      - boards/ZCU208/overlays/mts_8ch/mts_8ch.bit
-      - boards/ZCU208/overlays/mts_8ch/mts_8ch.hwh
-      - boards/ZCU208/overlays/mts_8ch/mts_8ch.xsa
+      - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.bit
+      - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.hwh
+      - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.xsa
+      - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.runs/${OVERLAY}_*/*.log
+  parallel:
+    matrix:
+      - OVERLAY: [config_evr, mts_8ch, mts_8ch_evr]
+
