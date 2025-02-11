@@ -43,12 +43,14 @@ class MimoMtsOverlay(Overlay):
         self._configure_clocks(lmk_freq, lmx_freq)
 
         super().__init__(resolve_binary_path(bitfile_name), **kwargs)
-        self._initialize_dev()
-        self._initialize_memories()
-        self._initialize_dma()
-        self._initialize_rf_data()
-        self._initialize_mts()
-        self._initialize_mixers()
+        """ Check if RFDC IP core is used in the design"""
+        if "rfdc" in self.ip_dict:
+            self._initialize_dev()
+            self._initialize_memories()
+            self._initialize_dma()
+            self._initialize_rf_data()
+            self._initialize_mts()
+            self._initialize_mixers()
 
     def _restart_zocl(self):
         """Restart the ZOCL module if necessary."""

@@ -81,7 +81,7 @@ class GTY_EVR(DefaultIP):
                 'size': 32,
                 'description': 'EVR timestamp high 32 bits'
             },
-            'si570_freq': {
+            'gty_ref_freq': {
                 'address_offset': 0x18,
                 'access': 'read-only',
                 'size': 32,
@@ -107,15 +107,16 @@ class GTY_EVR(DefaultIP):
         super().__init__(description=description)
 
     def check_alignment(self,
-                        si570_freq_expect=156.1375e6,
+                        gty_ref_freq_expect=156.1375e6,
                         rx_freq_expect=124.91e6):
-        print(f"si570_freq : {self.si570_freq * 1e-6:8.5f} MHz")
+        print(f"gty_ref__freq : {self.gty_ref_freq * 1e-6:8.5f} MHz")
+        time.sleep(1)
         print(f"gty_rx_freq: {self.gty_rx_freq * 1e-6:8.5f} MHz")
         gty_status = int(self.register_map.gty_evr_status)
         evr_aligned = self.register_map.gty_evr_status.rx_aligned
         assert evr_aligned, f"GTY is not aligned, got 0x{gty_status:x}"
         print(f"GTY status: 0x{gty_status:x}, GTY is aligned.")
-        self.check_freq(self.si570_freq, si570_freq_expect)
+        self.check_freq(self.gty_ref_freq, gty_ref_freq_expect)
         self.check_freq(self.gty_rx_freq, rx_freq_expect)
         self.check_reset_cnt()
 
@@ -124,8 +125,8 @@ class GTY_EVR(DefaultIP):
         return (f_cnt / 2**24) * f_ref
 
     @property
-    def si570_freq(self):
-        return self.convert_freq_to_hz(int(self.register_map.si570_freq))
+    def gty_ref_freq(self):
+        return self.convert_freq_to_hz(int(self.register_map.gty_ref_freq))
 
     @property
     def gty_rx_freq(self):

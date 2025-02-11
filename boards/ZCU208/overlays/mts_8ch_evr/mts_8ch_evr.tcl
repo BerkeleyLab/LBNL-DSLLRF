@@ -3179,7 +3179,6 @@ proc create_root_design { parentCell } {
 
   # Create ports
   set EVR_EVENT1 [ create_bd_port -dir O -type data EVR_EVENT1 ]
-  set EVR_RX_CLK [ create_bd_port -dir O -type clk EVR_RX_CLK ]
   set GTY_RX_ALIGNED [ create_bd_port -dir O -type data GTY_RX_ALIGNED ]
   set SFP2_RX_N [ create_bd_port -dir I SFP2_RX_N ]
   set SFP2_RX_P [ create_bd_port -dir I SFP2_RX_P ]
@@ -3187,8 +3186,8 @@ proc create_root_design { parentCell } {
   set SFP2_TX_P [ create_bd_port -dir O SFP2_TX_P ]
   set SFP_REC_CLK_N [ create_bd_port -dir O -type clk SFP_REC_CLK_N ]
   set SFP_REC_CLK_P [ create_bd_port -dir O -type clk SFP_REC_CLK_P ]
-  set USER_MGT_SI570_CLK_N [ create_bd_port -dir I -type clk -freq_hz 156137500 USER_MGT_SI570_CLK_N ]
-  set USER_MGT_SI570_CLK_P [ create_bd_port -dir I -type clk -freq_hz 156137500 USER_MGT_SI570_CLK_P ]
+  set gty_refclk_n [ create_bd_port -dir I -type clk -freq_hz 156137500 gty_refclk_n ]
+  set gty_refclk_p [ create_bd_port -dir I -type clk -freq_hz 156137500 gty_refclk_p ]
   set reset [ create_bd_port -dir I -type rst reset ]
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_HIGH} \
@@ -3258,26 +3257,6 @@ proc create_root_design { parentCell } {
    CONFIG.DSP_EV1 {36} \
    CONFIG.DSP_EV2 {37} \
  ] $evr_gty_wrapper_axi_0
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {124910000} \
- ] [get_bd_pins /evr_gty_wrapper_axi_0/EVR_RX_CLK]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {124910000} \
- ] [get_bd_pins /evr_gty_wrapper_axi_0/SFP_REC_CLK_N]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {124910000} \
- ] [get_bd_pins /evr_gty_wrapper_axi_0/SFP_REC_CLK_P]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {156137500} \
- ] [get_bd_pins /evr_gty_wrapper_axi_0/USER_MGT_SI570_CLK_N]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {156137500} \
- ] [get_bd_pins /evr_gty_wrapper_axi_0/USER_MGT_SI570_CLK_P]
 
   # Create instance: gpio_control
   create_hier_cell_gpio_control [current_bd_instance .] gpio_control
@@ -5249,8 +5228,8 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_net -net RFingressReset_peripheral_aresetn [get_bd_pins clocktreeMTS/ingress_aresetn] [get_bd_pins rfdc/m0_axis_aresetn] [get_bd_pins rfdc/m1_axis_aresetn] [get_bd_pins rfdc/m2_axis_aresetn] [get_bd_pins rfdc/m3_axis_aresetn] [get_bd_pins rfdc/s0_axis_aresetn] [get_bd_pins rfdc/s1_axis_aresetn] [get_bd_pins rfdc/s2_axis_aresetn] [get_bd_pins rfdc/s3_axis_aresetn]
   connect_bd_net -net SFP2_RX_N_1 [get_bd_ports SFP2_RX_N] [get_bd_pins evr_gty_wrapper_axi_0/RX_N]
   connect_bd_net -net SFP2_RX_P_1 [get_bd_ports SFP2_RX_P] [get_bd_pins evr_gty_wrapper_axi_0/RX_P]
-  connect_bd_net -net USER_MGT_SI570_CLK_N_1 [get_bd_ports USER_MGT_SI570_CLK_N] [get_bd_pins evr_gty_wrapper_axi_0/USER_MGT_SI570_CLK_N]
-  connect_bd_net -net USER_MGT_SI570_CLK_P_1 [get_bd_ports USER_MGT_SI570_CLK_P] [get_bd_pins evr_gty_wrapper_axi_0/USER_MGT_SI570_CLK_P]
+  connect_bd_net -net gty_refclk_n_1 [get_bd_ports gty_refclk_n] [get_bd_pins evr_gty_wrapper_axi_0/gty_refclk_n]
+  connect_bd_net -net gty_refclk_p_1 [get_bd_ports gty_refclk_p] [get_bd_pins evr_gty_wrapper_axi_0/gty_refclk_p]
   connect_bd_net -net axi_dma_0_s2mm_introut [get_bd_pins deepCapture/s2mm_introut] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net axi_gpio_0_gpio_io_o [get_bd_pins deepCapture/fifo_flush_n] [get_bd_pins gpio_control/fifoflush]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins clocktreeMTS/clkRF] [get_bd_pins deepCapture/s_axis_aclk] [get_bd_pins evr_gty_wrapper_axi_0/dsp_clk] [get_bd_pins receiver/aclk] [get_bd_pins rfdc/m0_axis_aclk] [get_bd_pins rfdc/m1_axis_aclk] [get_bd_pins rfdc/m2_axis_aclk] [get_bd_pins rfdc/m3_axis_aclk] [get_bd_pins rfdc/s0_axis_aclk] [get_bd_pins rfdc/s1_axis_aclk] [get_bd_pins rfdc/s2_axis_aclk] [get_bd_pins rfdc/s3_axis_aclk] [get_bd_pins transmitter/aclk]
@@ -5260,12 +5239,11 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins deepCapture/ext_reset_in]
   connect_bd_net -net ddr4_0_c0_init_calib_complete [get_bd_pins ddr4_0/c0_init_calib_complete] [get_bd_pins deepCapture/dcm_locked]
   connect_bd_net -net deepCapture_peripheral_aresetn [get_bd_pins ddr4_0/c0_ddr4_aresetn] [get_bd_pins deepCapture/peripheral_aresetn] [get_bd_pins smartconnect_0/aresetn]
-  connect_bd_net -net evr_gty_wrapper_axi_0_EVR_RX_CLK [get_bd_ports EVR_RX_CLK] [get_bd_pins evr_gty_wrapper_axi_0/EVR_RX_CLK]
+  connect_bd_net -net evr_gty_wrapper_axi_0_EVR_EVENT1 [get_bd_ports EVR_EVENT1] [get_bd_pins evr_gty_wrapper_axi_0/EVR_EVENT1]
   connect_bd_net -net evr_gty_wrapper_axi_0_SFP_REC_CLK_N [get_bd_ports SFP_REC_CLK_N] [get_bd_pins evr_gty_wrapper_axi_0/SFP_REC_CLK_N]
   connect_bd_net -net evr_gty_wrapper_axi_0_SFP_REC_CLK_P [get_bd_ports SFP_REC_CLK_P] [get_bd_pins evr_gty_wrapper_axi_0/SFP_REC_CLK_P]
   connect_bd_net -net evr_gty_wrapper_axi_0_TX_N [get_bd_ports SFP2_TX_N] [get_bd_pins evr_gty_wrapper_axi_0/TX_N]
   connect_bd_net -net evr_gty_wrapper_axi_0_TX_P [get_bd_ports SFP2_TX_P] [get_bd_pins evr_gty_wrapper_axi_0/TX_P]
-  connect_bd_net -net evr_gty_wrapper_axi_0_evr_event1_led [get_bd_ports EVR_EVENT1] [get_bd_pins evr_gty_wrapper_axi_0/evr_event1_led]
   connect_bd_net -net evr_gty_wrapper_axi_0_gty_rx_aligned [get_bd_ports GTY_RX_ALIGNED] [get_bd_pins evr_gty_wrapper_axi_0/gty_rx_aligned_led]
   connect_bd_net -net gpio_control_dac_enable [get_bd_pins gpio_control/dac_enable] [get_bd_pins transmitter/enable]
   connect_bd_net -net gpio_control_dest_out [get_bd_pins gpio_control/dest_out] [get_bd_pins receiver/trig_cap] [get_bd_pins transmitter/trig_cap]

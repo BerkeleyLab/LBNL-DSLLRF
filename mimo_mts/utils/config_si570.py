@@ -106,5 +106,5 @@ class SI570:
         self.bus.write_byte_data(self.i2c_addr, 0x89, 0x0)
         # assert NewFreq bit
         self.bus.write_byte_data(self.i2c_addr, 0x87, 0x40)
-        # needs atleast 10 ms
+        # needs at least 10 ms
         sleep(0.01)

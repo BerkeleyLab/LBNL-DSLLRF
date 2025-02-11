@@ -223,24 +223,15 @@ proc create_root_design { parentCell } {
   # Create interface ports
 
   # Create ports
-  set EVR_RX_CLK [ create_bd_port -dir O -type clk EVR_RX_CLK ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {124910000} \
- ] $EVR_RX_CLK
+  set EVR_EVENT1 [ create_bd_port -dir O -type clk EVR_EVENT1 ]
   set SFP2_RX_N [ create_bd_port -dir I -type data SFP2_RX_N ]
   set SFP2_RX_P [ create_bd_port -dir I -type data SFP2_RX_P ]
   set SFP2_TX_N [ create_bd_port -dir O -type data SFP2_TX_N ]
   set SFP2_TX_P [ create_bd_port -dir O -type data SFP2_TX_P ]
   set SFP_REC_CLK_N [ create_bd_port -dir O -type clk SFP_REC_CLK_N ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {124910000} \
- ] $SFP_REC_CLK_N
   set SFP_REC_CLK_P [ create_bd_port -dir O -type clk SFP_REC_CLK_P ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {124910000} \
- ] $SFP_REC_CLK_P
-  set USER_MGT_SI570_CLK_N [ create_bd_port -dir I -type clk -freq_hz 156137500 USER_MGT_SI570_CLK_N ]
-  set USER_MGT_SI570_CLK_P [ create_bd_port -dir I -type clk -freq_hz 156137500 USER_MGT_SI570_CLK_P ]
+  set gty_refclk_n [ create_bd_port -dir I -type clk -freq_hz 156137500 gty_refclk_n ]
+  set gty_refclk_p [ create_bd_port -dir I -type clk -freq_hz 156137500 gty_refclk_p ]
 
   # Create instance: evr_gty_wrapper_axi_0, and set properties
   set block_name evr_gty_wrapper_axi
@@ -256,18 +247,6 @@ proc create_root_design { parentCell } {
    CONFIG.DSP_EV1 {36} \
    CONFIG.DSP_EV2 {37} \
  ] $evr_gty_wrapper_axi_0
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {124910000} \
- ] [get_bd_pins /evr_gty_wrapper_axi_0/EVR_RX_CLK]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {124910000} \
- ] [get_bd_pins /evr_gty_wrapper_axi_0/SFP_REC_CLK_N]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {124910000} \
- ] [get_bd_pins /evr_gty_wrapper_axi_0/SFP_REC_CLK_P]
 
   # Create instance: ps8_0_axi_periph, and set properties
   set ps8_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 ps8_0_axi_periph ]
@@ -940,7 +919,7 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
    CONFIG.PSU__USB__RESET__POLARITY {Active Low} \
    CONFIG.PSU__USE__IRQ0 {1} \
    CONFIG.PSU__USE__M_AXI_GP0 {1} \
-   CONFIG.PSU__USE__M_AXI_GP1 {1} \
+   CONFIG.PSU__USE__M_AXI_GP1 {0} \
    CONFIG.PSU__USE__M_AXI_GP2 {0} \
  ] $zynq_ultra_ps_e_0
 
@@ -951,15 +930,15 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
   # Create port connections
   connect_bd_net -net SFP2_RX_N_1 [get_bd_ports SFP2_RX_N] [get_bd_pins evr_gty_wrapper_axi_0/RX_N]
   connect_bd_net -net SFP2_RX_P_1 [get_bd_ports SFP2_RX_P] [get_bd_pins evr_gty_wrapper_axi_0/RX_P]
-  connect_bd_net -net USER_MGT_SI570_CLK_N_1 [get_bd_ports USER_MGT_SI570_CLK_N] [get_bd_pins evr_gty_wrapper_axi_0/USER_MGT_SI570_CLK_N]
-  connect_bd_net -net USER_MGT_SI570_CLK_P_1 [get_bd_ports USER_MGT_SI570_CLK_P] [get_bd_pins evr_gty_wrapper_axi_0/USER_MGT_SI570_CLK_P]
-  connect_bd_net -net evr_gty_wrapper_axi_0_EVR_RX_CLK [get_bd_ports EVR_RX_CLK] [get_bd_pins evr_gty_wrapper_axi_0/EVR_RX_CLK]
+  connect_bd_net -net gty_refclk_n_1 [get_bd_ports gty_refclk_n] [get_bd_pins evr_gty_wrapper_axi_0/gty_refclk_n]
+  connect_bd_net -net gty_refclk_p_1 [get_bd_ports gty_refclk_p] [get_bd_pins evr_gty_wrapper_axi_0/gty_refclk_p]
   connect_bd_net -net evr_gty_wrapper_axi_0_SFP_REC_CLK_N [get_bd_ports SFP_REC_CLK_N] [get_bd_pins evr_gty_wrapper_axi_0/SFP_REC_CLK_N]
   connect_bd_net -net evr_gty_wrapper_axi_0_SFP_REC_CLK_P [get_bd_ports SFP_REC_CLK_P] [get_bd_pins evr_gty_wrapper_axi_0/SFP_REC_CLK_P]
   connect_bd_net -net evr_gty_wrapper_axi_0_TX_N [get_bd_ports SFP2_TX_N] [get_bd_pins evr_gty_wrapper_axi_0/TX_N]
   connect_bd_net -net evr_gty_wrapper_axi_0_TX_P [get_bd_ports SFP2_TX_P] [get_bd_pins evr_gty_wrapper_axi_0/TX_P]
+  connect_bd_net -net evr_gty_wrapper_axi_0_evr_event1 [get_bd_ports EVR_EVENT1] [get_bd_pins evr_gty_wrapper_axi_0/evr_event1]
   connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins evr_gty_wrapper_axi_0/s_axi_aresetn] [get_bd_pins ps8_0_axi_periph/ARESETN] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps8_0_99M/peripheral_aresetn]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins evr_gty_wrapper_axi_0/dsp_clk] [get_bd_pins evr_gty_wrapper_axi_0/s_axi_aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins evr_gty_wrapper_axi_0/dsp_clk] [get_bd_pins evr_gty_wrapper_axi_0/s_axi_aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins rst_ps8_0_99M/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments
