@@ -40,3 +40,17 @@ def plot_adc_psd(wfm, fs=4e9, onsided=True, width=8, height=2):
         ax.legend()
         ax.set_xlabel('Freq [MHz]')
         ax.set_ylabel('Power [dBFS]')
+
+
+def plot_complex_wfm_stack(cdata, fs=4e9, width=8, height=5):
+    fs /= 1e9
+    n_ch, n_samples = cdata.shape
+    t = np.arange(0, n_samples/fs, 1/fs)
+    fig, axes = plt.subplots(
+        2, 1, sharex=True, figsize=(width, height))
+    for ch, wfm in enumerate(cdata):
+        axes[0].plot(t, wfm.real, label=f'ADC{ch} I')
+        axes[1].plot(t, wfm.imag, label=f'ADC{ch} Q')
+        axes[0].legend()
+        axes[1].legend()
+    axes[-1].set_xlabel('Time [ns]')

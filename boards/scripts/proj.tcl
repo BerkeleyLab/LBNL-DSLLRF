@@ -36,8 +36,7 @@ set ip_repo_path $::env(XILINX_IP_REPO_PATH)
 ################################################################
 # Check supported platforms
 ################################################################
-# set platforms = {"zcu208" "zcu216"}
-set platforms {"zcu208"}
+set platforms [list "zcu208" "zcu216" "lbl208"]
 if {[lsearch -exact $platforms $board_id] == -1} {
   puts "The specified board_id '$board_id' is not supported."
   return 1
@@ -47,6 +46,16 @@ switch $board_id {
   "zcu208" {
     set board_part "xilinx.com:zcu208:part0:2.0"
     set project_part "xczu48dr-fsvg1517-2-e"
+    # set project_part [get_property PART_NAME [current_board_part]]
+  }
+  "zcu216" {
+    set board_part "xilinx.com:zcu216:part0:2.0"
+    set project_part "xczu29dr-ffvf1760-2-e"
+    # set project_part [get_property PART_NAME [current_board_part]]
+  }
+  "lbl208" {
+    set board_part "xilinx.com:zcu208:part0:2.0"
+    set project_part "xczu47dr-ffvg1517-1-e"
   }
 }
 
@@ -134,6 +143,9 @@ set file "[file normalize "$proj_xdc"]"
 add_files -norecurse -fileset $obj [list $file]
 set_property -name "file_type" -value "XDC" -objects [get_files $file]
 
+## UG903: allow IP cores which create clocks to be used in user xdc
+# set_property PROCESSING_ORDER LATE [get_files $file]
+
 # Create 'sim_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sim_1] ""]} {
   create_fileset -simset sim_1
@@ -159,13 +171,10 @@ set_property REGISTERED_WITH_MANAGER "1" [get_files $bd_name]
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files $bd_name]
 
 #call make_wrapper to create wrapper files
-if { [get_property IS_LOCKED [ get_files -norecurse $bd_name ] ] == 1  } {
-  # I think this line is horribly broken, but might never be called
-  import_files -fileset sources_1 [file normalize "${proj_dir}/${proj_name}.gen/sources_1/bd/${proj_name}/hdl/${proj_name}_wrapper.vhd" ]
-} else {
-  set wrapper_path [make_wrapper -fileset sources_1 -files [ get_files -norecurse $bd_name] -top]
-  add_files -norecurse -fileset sources_1 $wrapper_path
-}
+set wrapper_path [make_wrapper -fileset sources_1 -files [ get_files -norecurse $bd_name] -top]
+add_files -norecurse -fileset sources_1 $wrapper_path
+
+update_compile_order -fileset sources_1
 
 set idrFlowPropertiesConstraints ""
 catch {
@@ -175,7 +184,7 @@ catch {
 
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {
-    create_run -name synth_1 -part xczu48dr-fsvg1517-2-e -flow {Vivado Synthesis 2022} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
+    create_run -name synth_1 -part $project_part -flow {Vivado Synthesis 2022} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
 } else {
   set_property strategy "Vivado Synthesis Defaults" [get_runs synth_1]
   set_property flow "Vivado Synthesis 2022" [get_runs synth_1]
@@ -198,7 +207,7 @@ current_run -synthesis [get_runs synth_1]
 
 # Create 'impl_1' run (if not found)
 if {[string equal [get_runs -quiet impl_1] ""]} {
-    create_run -name impl_1 -part xczu48dr-fsvg1517-2-e -flow {Vivado Implementation 2022} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_1
+    create_run -name impl_1 -part $project_part -flow {Vivado Implementation 2022} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_1
 } else {
   set_property strategy "Vivado Implementation Defaults" [get_runs impl_1]
   set_property flow "Vivado Implementation 2022" [get_runs impl_1]

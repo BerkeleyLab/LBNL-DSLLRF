@@ -15,7 +15,7 @@ module evr_gty_wrapper #(
     input              reset_all,
     input              rx_slide_req,
 
-    input              USER_MGT_SI570_CLK,
+    input              gty_refclk,
     input              RX_P, RX_N,
     output             TX_P, TX_N,
     output             gty_tx_clk,
@@ -160,7 +160,7 @@ assign gty_evr_status = {rx_aligned_sys, reset_tx_done_sys, reset_rx_done_sys, c
     .cplllocken_in(1'b1),                        // input wire [0 : 0] cplllocken_in
     .cpllreset_in(1'b0),                         // input wire [0 : 0] cpllreset_in
     .drpclk_in(sys_clk),                         // input wire [0 : 0] drpclk_in
-    .gtrefclk0_in(USER_MGT_SI570_CLK),           // input wire [0 : 0] gtrefclk0_in
+    .gtrefclk0_in(gty_refclk),                   // input wire [0 : 0] gtrefclk0_in
     .gtyrxn_in(RX_N),                            // input wire [0 : 0] gtyrxn_in
     .gtyrxp_in(RX_P),                            // input wire [0 : 0] gtyrxp_in
     .loopback_in(LOOPBACK),                      // input wire [2 : 0] loopback_in
@@ -234,7 +234,6 @@ timing_core #(
 
 endmodule
 
-// copied from USPAS_LLRF
 module evr_reset_fsm #(
     parameter DEBUG = "false",
     parameter integer COMMAS_NEEDED = 60,

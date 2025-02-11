@@ -19,13 +19,22 @@ flake8:
   script:
     - flake8 mimo_mts/*.py
 
+rtl_test:
+  before_script:
+    - apt-get install verilator
+    - pip install -r requirements.txt
+    - cd boards/ip/tb
+  stage: test
+  script:
+    - make SIM=icarus
+
 bitfile_synthesis:
   before_script:
     - cd boards/ZCU208/overlays/${OVERLAY} && ls /non-free
   stage: synthesis
   timeout: 3h
   script:
-    - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make
+    - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make all
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     expire_in: 4 weeks
@@ -33,7 +42,8 @@ bitfile_synthesis:
       - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.bit
       - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.hwh
       - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.xsa
-      - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.runs/${OVERLAY}_*/*.log
+      - boards/ZCU208/overlays/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
+      - boards/ZCU208/overlays/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
     matrix:
       - OVERLAY: [config_evr, mts_8ch, mts_8ch_evr]

@@ -12,14 +12,21 @@ module evr_gty_wrapper_axi #(
     parameter integer C_S_AXI_ADDR_WIDTH  = 8
     ) (
     // user ports
+    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 dsp_clk CLK" *)
     input              dsp_clk,
-    input              USER_MGT_SI570_CLK_P,
-    input              USER_MGT_SI570_CLK_N,
+    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 gty_refclk_p CLK" *)
+    input              gty_refclk_p,
+    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 gty_refclk_n CLK" *)
+    input              gty_refclk_n,
     input              RX_P, RX_N,
     output             TX_P, TX_N,
+    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 SFP_REC_CLK_P CLK" *)
+    (* X_INTERFACE_PARAMETER = "FREQ_HZ 124910000, FREQ_TOLERANCE_HZ 0" *)
     output wire        SFP_REC_CLK_P,
+    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 SFP_REC_CLK_N CLK" *)
+    (* X_INTERFACE_PARAMETER = "FREQ_HZ 124910000, FREQ_TOLERANCE_HZ 0" *)
     output wire        SFP_REC_CLK_N,
-    output wire        EVR_RX_CLK,
+    output wire        evr_event1,
     // user LEDs
     output wire        gty_rx_aligned_led,
     output wire        evr_event1_led,
@@ -51,16 +58,16 @@ module evr_gty_wrapper_axi #(
     input wire                            s_axi_rready
     );
 
-wire USER_MGT_SI570_CLK, USER_MGT_SI570_CLK_O2;
+wire gty_refclk, gty_refclk_o2;
 IBUFDS_GTE4 #(.REFCLK_HROW_CK_SEL(2'b00))
-EVR_GTY_refclkBuf(.I(USER_MGT_SI570_CLK_P),
-                  .IB(USER_MGT_SI570_CLK_N),
+evr_gty_refclkBuf(.I(gty_refclk_p),
+                  .IB(gty_refclk_n),
                   .CEB(1'b0),
-                  .O(USER_MGT_SI570_CLK),
-                  .ODIV2(USER_MGT_SI570_CLK_O2));
-wire USER_MGT_SI570_CLK_buf;
-BUFG_GT debug_buf (.I(USER_MGT_SI570_CLK_O2),
-                   .O(USER_MGT_SI570_CLK_buf));
+                  .O(gty_refclk),
+                  .ODIV2(gty_refclk_o2));
+wire gty_refclk_buf;
+BUFG_GT debug_buf (.I(gty_refclk_o2),
+                   .O(gty_refclk_buf));
 
 wire  gty_tx_clk, evr_clk;
 wire [31:0] gty_evr_status;
@@ -70,7 +77,7 @@ wire [15:0] evr_evcnt;
 wire [0:0]  evr_timestamp_valid;
 wire [0:0]  evr_live_pps_marker;
 wire [0:0]  evr_live_hb_marker;
-wire [0:0]  dsp_event1, dsp_event2, evr_event1;
+wire [0:0]  dsp_event1, dsp_event2;
 wire [63:0] evr_live_ts;
 evr_gty_wrapper #(
   .DEBUG("false"),
@@ -87,7 +94,7 @@ evr_gty_wrapper #(
     // XXX in evr_clk (unused for now)
     .rx_slide_req        (rx_slide_req),
     //
-    .USER_MGT_SI570_CLK  (USER_MGT_SI570_CLK),
+    .gty_refclk          (gty_refclk),
     .RX_N                (RX_N),
     .RX_P                (RX_P),
     .TX_N                (TX_N),
@@ -116,18 +123,16 @@ evr_gty_wrapper #(
 OBUF #(
    .SLEW("FAST")
 ) OBUF_EVR_FB_CLK (
-   .O(EVR_RX_CLK),
+   .O(evr_event1),
    .I(evr_clk)
 );
 */
-// SYNC_IN on CLK 104 board
-assign EVR_RX_CLK = evr_event1;
 
 // User LEDs
 assign evr_event1_led = evr_event1;
 assign gty_rx_aligned_led = gty_evr_status[5];
 
-wire [31:0] si570_freq;
+wire [31:0] gty_ref_freq;
 freq_count #(
   .glitch_thresh(2),
   .refcnt_width(24),
@@ -135,8 +140,8 @@ freq_count #(
   .initv(0)
 ) freq_count_si570 (
   .sysclk(s_axi_aclk),  // input (known reference clock)
-  .f_in(USER_MGT_SI570_CLK_buf),  // input (unknown clock)
-  .frequency(si570_freq) // output [freq_width-1:0]
+  .f_in(gty_refclk_buf),  // input (unknown clock)
+  .frequency(gty_ref_freq) // output [freq_width-1:0]
 );
 
 wire [31:0] gty_rx_freq;
@@ -163,7 +168,7 @@ wire [31:0] evr_live_ts_hi = evr_live_ts[63:32];
 // 3        [15:0]    RO      evr_evcnt
 // 4        [31:0]    RO      evr_live_ts_lo
 // 5        [31:0]    RO      evr_live_ts_hi
-// 6        [31:0]    RO      si570_freq
+// 6        [31:0]    RO      gty_ref_freq
 // 7        [31:0]    RO      gty_rx_freq
 // 8        [0:0]     WO      reset_all
 // 9        [0:0]     WO      rx_slide_req
@@ -240,7 +245,7 @@ always @(*) begin
     3: reg_data_out = evr_evcnt;
     4: reg_data_out = evr_live_ts_lo;
     5: reg_data_out = evr_live_ts_hi;
-    6: reg_data_out = si570_freq;
+    6: reg_data_out = gty_ref_freq;
     7: reg_data_out = gty_rx_freq;
     default : reg_data_out = ha_ram[r_reg_sel];
   endcase
