@@ -27,3 +27,4 @@
 - [x] MTS tested
 - [ ] Determinisitc Latency (#1)
 - [ ] Trigger source multiplex
+- [ ] DDR4 memory waveform deep capture

@@ -17,6 +17,7 @@
 * 64k samples buffer for:
   * Arbitrary waveform generator, broadcasted to all DACs
   * I and Q waveforms for each ADC
+* 8GB DDR4 Programmable Logic (PL) memory for deep capturing samples
 * Trigger
   * Internally generated
   * Synchronous trigger to all DACs / ADCs
@@ -27,3 +28,4 @@
 - [x] MTS tested
 - [ ] Determinisitc Latency (#1)
 - [ ] Trigger source multiplex
+- [ ] DDR4 memory waveform deep capture
