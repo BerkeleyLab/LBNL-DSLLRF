@@ -1,9 +1,9 @@
 __pychache__/
 .ipynb_checkpoints/
 .vscode/
+PYNQ/
 sim_build/
 results.xml
-iverilog_dump.v
 *.Xil/
 *_xilinx*/
 *vivado*.jou

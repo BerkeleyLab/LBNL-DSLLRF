@@ -1,6 +1,3 @@
-[submodule "pynq"]
-	path = pynq
-	url = https://github.com/Xilinx/PYNQ
 [submodule "bedrock"]
 	path = bedrock
 	url = https://github.com/BerkeleyLab/Bedrock

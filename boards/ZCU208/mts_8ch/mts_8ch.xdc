@@ -20,8 +20,8 @@ set_property LOC MMCM_X0Y2 [get_cells -hier -filter {NAME =~ */u_ddr4_infrastruc
 
 set_property BLOCK_SYNTH.RETIMING 1 [get_cells mts_8ch_i/rfdc/*]
 set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells mts_8ch_i/rfdc/*]
-set_property BLOCK_SYNTH.RETIMING 1 [get_cells mts_8ch_i/receiver*/chan*/axis_dwidth_converter_0/*]
-set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells mts_8ch_i/receiver*/chan*/axis_dwidth_converter_0/*]
+set_property BLOCK_SYNTH.RETIMING 1 [get_cells mts_8ch_i/receiver*/m*/axis_dwidth_converter_0/*]
+set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells mts_8ch_i/receiver*/m*/axis_dwidth_converter_0/*]
 
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
 # Timing Constraints
