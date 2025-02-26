@@ -28,9 +28,9 @@ rtl_test:
   script:
     - make SIM=icarus
 
-bitfile_synthesis:
+bitfile_synthesis_zcu208:
   before_script:
-    - cd boards/ZCU208/overlays/${OVERLAY} && ls /non-free
+    - cd boards/ZCU208/${OVERLAY} && ls /non-free
   stage: synthesis
   timeout: 3h
   script:
@@ -39,12 +39,31 @@ bitfile_synthesis:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     expire_in: 4 weeks
     paths:
-      - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.bit
-      - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.hwh
-      - boards/ZCU208/overlays/${OVERLAY}/${OVERLAY}.xsa
-      - boards/ZCU208/overlays/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
-      - boards/ZCU208/overlays/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
+      - boards/ZCU208/${OVERLAY}/${OVERLAY}.bit
+      - boards/ZCU208/${OVERLAY}/${OVERLAY}.hwh
+      - boards/ZCU208/${OVERLAY}/${OVERLAY}.xsa
+      - boards/ZCU208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
+      - boards/ZCU208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
     matrix:
-      - OVERLAY: [config_evr, mts_8ch, mts_8ch_evr]
+      - OVERLAY: [mimo_mts]
 
+bitfile_synthesis_zcu216:
+  before_script:
+    - cd boards/ZCU216/${OVERLAY} && ls /non-free
+  stage: synthesis
+  timeout: 3h
+  script:
+    - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make all
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    expire_in: 4 weeks
+    paths:
+      - boards/ZCU216/${OVERLAY}/${OVERLAY}.bit
+      - boards/ZCU216/${OVERLAY}/${OVERLAY}.hwh
+      - boards/ZCU216/${OVERLAY}/${OVERLAY}.xsa
+      - boards/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
+      - boards/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
+  parallel:
+    matrix:
+      - OVERLAY: [mimo_mts]

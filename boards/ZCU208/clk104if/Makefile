@@ -2,7 +2,7 @@ OVERLAY?=clk104if
 
 TOP_DIR=.
 SCRIPT_DIR=..
-IP_DIR=../../../ip
+IP_DIR=../../ip
 IP_REPOS=$(IP_DIR)
 SOURCES=$(IP_DIR)/rtl/freq_count_axi.v $(IP_DIR)/rtl/freq_count.v
 XDC=$(TOP_DIR)/clk104if.xdc
@@ -11,7 +11,7 @@ JOBS?=4
 VIVADO=vivado -mode batch -nojou -nolog -notrace
 
 .PHONY: all
-all: $(OVERLAY).bit $(OVERLAY).hwh check_timing 
+all: $(OVERLAY).bit $(OVERLAY).hwh check_timing
 	@echo
 	@tput setaf 2 ; echo "Built $(OVERLAY) successfully!"; tput sgr0;
 	@echo

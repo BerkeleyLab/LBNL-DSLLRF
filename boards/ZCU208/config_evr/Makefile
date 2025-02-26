@@ -1,4 +1,4 @@
-include ../../../../dir_list.mk
+include ../../../dir_list.mk
 
 OVERLAY     = config_evr
 BOARD	    = zcu208

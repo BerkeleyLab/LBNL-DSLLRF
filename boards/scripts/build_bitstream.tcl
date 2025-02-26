@@ -19,7 +19,7 @@ open_bd_design $proj_dir/$project_name.srcs/sources_1/bd/$overlay_name/$overlay_
 
 # Add top wrapper and xdc files
 make_wrapper -files [get_files $proj_dir/$project_name.srcs/sources_1/bd/$overlay_name/$overlay_name.bd] -top
-add_files -norecurse $proj_dir/$project_name.gen/sources_1/bd/$overlay_name/hdl/${overlay_name}_wrapper.vhd
+add_files -norecurse $proj_dir/$project_name.gen/sources_1/bd/$overlay_name/hdl/${overlay_name}_wrapper.v
 set_property top ${overlay_name}_wrapper [current_fileset]
 update_compile_order -fileset sources_1
 

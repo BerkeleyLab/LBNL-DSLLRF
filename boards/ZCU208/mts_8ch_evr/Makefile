@@ -1,4 +1,4 @@
-include ../../../../dir_list.mk
+include ../../../dir_list.mk
 
 OVERLAY     = mts_8ch_evr
 BOARD	    = zcu208
