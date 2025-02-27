@@ -191,7 +191,7 @@ class MimoMtsOverlay(Overlay):
             bitvector = bitvector >> 1
         # Reset ADC FIFO of only user selected tiles - restarts MTS engine
         for toggleValue in range(0, 1):
-            bitvector = self.board.active_dac_tiles
+            bitvector = self.board.active_adc_tiles
             for n in range(4):
                 if bitvector & 0x1:
                     self.xrfdc.adc_tiles[n].SetupFIFOBoth(toggleValue)
@@ -249,12 +249,7 @@ class MimoMtsOverlay(Overlay):
         return i_buffer, q_buffer
 
     def set_dac_mixer_dco(self, freq_mhz=0, nyquist=1, phase=0):
-        # Set up the MTS for DAC tiles
-        self.xrfdc.mts_dac()
-
-        # Set up the mixer settings for DAC tiles
         self.xrfdc.mts_dac_config.SysRef_Enable = False
-        self.xrfdc.mts_dac_config.Tiles = self.board.active_dac_tiles
 
         # Set up mixer settings for each DAC tile
         mixer_settings_dac = {
@@ -276,12 +271,7 @@ class MimoMtsOverlay(Overlay):
         self.xrfdc.mts_dac_config.SysRef_Enable = True
 
     def set_adc_mixer_dco(self, freq_mhz=0, nyquist=1, phase=0):
-        # Set up the MTS for ADC tiles
-        self.xrfdc.mts_adc()
-
-        # Set up the mixer settings for ADC tiles
         self.xrfdc.mts_adc_config.SysRef_Enable = False
-        self.xrfdc.mts_adc_config.Tiles = self.board.active_adc_tiles
 
         # Set up mixer settings for each ADC tile
         mixer_settings_adc = {
@@ -301,7 +291,6 @@ class MimoMtsOverlay(Overlay):
 
         # Configure the MTS to use the SYSREF event source
         self.xrfdc.mts_adc_config.SysRef_Enable = True
-
 
 def resolve_binary_path(bitfile_name):
     """this helper function is necessary to locate
