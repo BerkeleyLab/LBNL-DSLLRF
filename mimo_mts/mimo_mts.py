@@ -292,6 +292,7 @@ class MimoMtsOverlay(Overlay):
         # Configure the MTS to use the SYSREF event source
         self.xrfdc.mts_adc_config.SysRef_Enable = True
 
+
 def resolve_binary_path(bitfile_name):
     """this helper function is necessary to locate
     the bit file during overlay loading"""
