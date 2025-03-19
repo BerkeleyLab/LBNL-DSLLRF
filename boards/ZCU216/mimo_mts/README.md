@@ -25,5 +25,5 @@
 
 - [x] ADC / DAC waveforms
 - [x] MTS tested
-- [ ] Determinisitc Latency (#1)
-- [ ] Trigger source multiplex
+- [x] Determinisitc Latency
+- [x] Trigger source multiplex

@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# evr_gty_wrapper_axi
+# axil_evr_gty_wrapper
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -158,7 +158,7 @@ xilinx.com:ip:zynq_ultra_ps_e:3.4\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
-evr_gty_wrapper_axi\
+axil_evr_gty_wrapper\
 "
 
    set list_mods_missing ""
@@ -234,7 +234,7 @@ proc create_root_design { parentCell } {
   set gty_refclk_p [ create_bd_port -dir I -type clk -freq_hz 156137500 gty_refclk_p ]
 
   # Create instance: evr_gty_wrapper_axi_0, and set properties
-  set block_name evr_gty_wrapper_axi
+  set block_name axil_evr_gty_wrapper
   set block_cell_name evr_gty_wrapper_axi_0
   if { [catch {set evr_gty_wrapper_axi_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}

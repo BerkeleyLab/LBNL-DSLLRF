@@ -3,7 +3,7 @@
 // evr_gty_wrapper.v wrapped as axi peripheral
 // along with some frequency counters
 
-module evr_gty_wrapper_axi #(
+module axil_evr_gty_wrapper #(
     parameter DEBUG = "false",
     parameter DSP_EV1 = 5,
     parameter DSP_EV2 = 6,

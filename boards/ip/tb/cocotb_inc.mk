@@ -9,8 +9,10 @@ COCOTB_HDL_TIMEPRECISION = 1ns
 
 ifeq ($(SIM), icarus)
 	COMPILE_ARGS += -Wall -Wno-timescale
+	COMPILE_ARGS += $(foreach v,$(filter PARAM_%,$(.VARIABLES)),-P $(TOPLEVEL).$(subst PARAM_,,$(v))=$($(v)))
 else ifeq ($(SIM), verilator)
 	COMPILE_ARGS += --timing
+	COMPILE_ARGS += $(foreach v,$(filter PARAM_%,$(.VARIABLES)),-G$(subst PARAM_,,$(v))=$($(v)))
 # to avoid warning on 1-bit signal in counter
 	EXTRA_ARGS += -Wno-width
 # to avoid warning on unconnected output pins

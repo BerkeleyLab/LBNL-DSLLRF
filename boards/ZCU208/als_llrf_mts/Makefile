@@ -1,10 +1,13 @@
 include ../../../dir_list.mk
 
-OVERLAY     = mts_8ch_evr
-BOARD	    = zcu208
+OVERLAY     = als_llrf_mts
+BOARD       = zcu208
+RTL_SRC     = $(IP_DIR)/rtl/adc_capture.v
+RTL_SRC	   += $(IP_DIR)/rtl/dac_streamer.v
+RTL_SRC	   += $(IP_DIR)/rtl/freq_count.v
+RTL_SRC	   += $(IP_DIR)/rtl/axil_rf_control.v
+RTL_SRC	   += $(IP_DIR)/rtl/axil_csr.v
 
-RTL_SRC     = $(IP_DIR)/rtl/ADCRAMcapture.v $(IP_DIR)/rtl/DACRAMstreamer.v
-RTL_SRC    += $(IP_DIR)/rtl/freq_count.v
 RTL_SRC    += $(IP_DIR)/rtl/axil_evr_gty_wrapper.v
 RTL_SRC    += $(IP_DIR)/rtl/evr_gty_wrapper.v
 RTL_SRC    += $(IP_DIR)/rtl/timing_core.v

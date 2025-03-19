@@ -1,4 +1,4 @@
-# ZCU208 MIMO MTS overlay
+# ALS LLRF MTS Overlay
 
 ## Features
 
@@ -16,6 +16,12 @@
 * 64k samples buffer for:
   * Arbitrary waveform generator, broadcasted to all DACs
   * I and Q waveforms for each ADC
+* MRF Timing Event Receiver (EVR)
+  * Through zSFP 2
+  * Self-recovery from timing link interruptions
+  * Deterministic latency
+  * Generate event flags by subscribing an event code
+  * Arbitrary GTY reference frequency generation via Silicon Lab SI570 (124.91MHz)
 * Trigger
   * Multiplex trigger source between software, internal and EVR
   * Synchronous trigger to all DACs / ADCs
