@@ -157,13 +157,13 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 # Source optional TCL if provided
 if { $opt_tcl != "" } {
     puts "Sourcing optional TCL script: $opt_tcl"
-    source $opt_tcl
+    source -quiet $opt_tcl
 } else {
     puts "No optional TCL script provided."
 }
 
 puts "Sourcing block design script: $bd_script"
-source $bd_script
+source -quiet $bd_script
 ################################################################
 # END
 ################################################################

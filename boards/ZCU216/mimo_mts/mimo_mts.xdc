@@ -3,8 +3,6 @@
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
 set_property -dict {PACKAGE_PIN E11 IOSTANDARD LVDS_25}     [get_ports PL_SYSREF_clk_p];
 set_property -dict {PACKAGE_PIN E10 IOSTANDARD LVDS_25}     [get_ports PL_CLK_clk_p];
-set_property -dict {PACKAGE_PIN G10 IOSTANDARD LVCMOS12}    [get_ports {clk104_clk_spi_mux_sel_tri_o[0]}];
-set_property -dict {PACKAGE_PIN H11 IOSTANDARD LVCMOS12}    [get_ports {clk104_clk_spi_mux_sel_tri_o[1]}];
 
 set_property IOSTANDARD LVDS_25     [get_ports PL_CLK_clk_n];
 set_property IOSTANDARD LVDS_25     [get_ports PL_SYSREF_clk_n];
@@ -19,7 +17,6 @@ set_property BLOCK_SYNTH.STRATEGY PERFORMANCE_OPTIMIZED [get_cells mimo_mts_i/re
 set_property BLOCK_SYNTH.RETIMING 1 [get_cells mimo_mts_i/receiver/m*/axi_bram_ctrl_0/*]
 set_property BLOCK_SYNTH.STRATEGY PERFORMANCE_OPTIMIZED [get_cells mimo_mts_i/receiver/m*/axi_bram_ctrl_0/*]
 
-
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
 # Timing Constraints
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
@@ -30,9 +27,6 @@ set_input_delay -clock [get_clocks PL_CLK_clk] -min -add_delay 1.315 [get_ports 
 set_input_delay -clock [get_clocks PL_CLK_clk] -max -add_delay 1.345 [get_ports PL_SYSREF_clk_p]
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {mimo_mts_i/clocktreeMTS/IBUFDS_PL_CLK/U0/USE_IBUFDS.GEN_IBUFDS[0].IBUFDS_I/O}]
 set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets {mimo_mts_i/clocktreeMTS/BUFG_PL_CLK/U0/BUFG_O[0]}]
-set_false_path -from [get_ports reset]
-set_false_path -from [get_pins {mimo_mts_i/gpio_control/axi_gpio_dac/U0/gpio_core_1/Not_Dual.gpio_Data_Out_reg[*]/C}]
-set_false_path -from [get_pins {mimo_mts_i/clocktreeMTS/RFegressReset/U0/ACTIVE_LOW_PR_OUT_DFF[*].*/C}]
 
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
 # Bitstream Generation

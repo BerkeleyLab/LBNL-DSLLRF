@@ -10,6 +10,24 @@ class TB:
     def __init__(self, dut):
         dut._log.setLevel(logging.INFO)
         self.dut = dut
+        self.registers = {
+            'gpio_out0': {
+                'address_offset': 0x0,
+                'access': 'read-write',
+                'size': 32
+            },
+            'gpio_out1': {
+                'address_offset': 0x4,
+                'access': 'read-write',
+                'size': 32
+            },
+            'gpio_inp': {
+                'address_offset': 0x8,
+                'access': 'read-only',
+                'size': 32
+            }
+        }
+
         cocotb.start_soon(Clock(dut.s_axi_aclk, 4, units="ns").start())
 
         self.axil_master = AxiLiteMaster(
@@ -34,22 +52,28 @@ class TB:
 async def test_write(dut):
     tb = TB(dut)
     await tb.cycle_reset()
-    addr = tb.dut.ADDR_GPIO_OUT.value
-    test_data = b'\x00\x11\x22\x33'
-    await tb.axil_master.write(addr, test_data)
-    assert dut.gpio_out.value == int.from_bytes(test_data, 'little'), \
-        "write gpio_out mismatch"
-    data = await tb.axil_master.read(addr, 4)
-    assert data.data == test_data, "read back gpio_out mismatch"
+    regs = [tb.registers['gpio_out0'], tb.registers['gpio_out1']]
+    ports = [tb.dut.gpio_out0, tb.dut.gpio_out1]
+    for i, reg in enumerate(regs):
+        addr = reg['address_offset']
+        data = random.randint(0, 0xFFFFFFFF)
+        await tb.axil_master.write(addr, data.to_bytes(4, 'little'))
+        assert ports[i].value == data, "write gpio_out mismatch"
+        read_data = await tb.axil_master.read(addr, 4)
+        assert read_data.data == data.to_bytes(4, 'little'), \
+            "read back gpio_out mismatch"
 
 
 @cocotb.test(timeout_time=1, timeout_unit='us')
 async def test_read(dut):
     tb = TB(dut)
     await tb.cycle_reset()
-    addr = tb.dut.ADDR_GPIO_IN.value
-    gpio_in = random.randint(0, 0xFFFFFFFF)
-    await tb.drive_gpio(gpio_in)
-    data = await tb.axil_master.read(addr, 4)
-    assert gpio_in == int.from_bytes(data, 'little'), \
-        "read gpio_in mismatch"
+    regs = [tb.registers['gpio_inp']]
+    ports = [tb.dut.gpio_inp]
+    for i, reg in enumerate(regs):
+        addr = reg['address_offset']
+        data = random.randint(0, 0xFFFFFFFF)
+        ports[i].value = data
+        read_data = await tb.axil_master.read(addr, 4)
+        assert read_data.data == data.to_bytes(4, 'little'), \
+            "read gpio_in mismatch"

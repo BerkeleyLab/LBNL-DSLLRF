@@ -4,7 +4,7 @@ OVERLAY     = config_evr
 BOARD	    = zcu208
 
 RTL_SRC     = $(IP_DIR)/rtl/freq_count.v
-RTL_SRC    += $(IP_DIR)/rtl/evr_gty_wrapper_axi.v
+RTL_SRC    += $(IP_DIR)/rtl/axil_evr_gty_wrapper.v
 RTL_SRC    += $(IP_DIR)/rtl/evr_gty_wrapper.v
 RTL_SRC    += $(IP_DIR)/rtl/timing_core.v
 RTL_SRC    += $(BEDROCK_DIR)/serial_io/EVG_EVR/tinyEVR.v $(BEDROCK_DIR)/serial_io/EVG_EVR/evr_ts_cdc.v

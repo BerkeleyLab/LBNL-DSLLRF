@@ -46,9 +46,9 @@ bitfile_synthesis_zcu208:
       - boards/ZCU208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
     matrix:
-      - OVERLAY: [mimo_mts]
+      - OVERLAY: [als_llrf_mts]
 
-bitfile_synthesis_zcu216:
+.bitfile_synthesis_zcu216:
   before_script:
     - cd boards/ZCU216/${OVERLAY} && ls /non-free
   stage: synthesis

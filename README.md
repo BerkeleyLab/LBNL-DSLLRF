@@ -35,7 +35,7 @@ The intented application projects include:
 
 ## Overlays
 
-See example designs and building instructions in [boards/ZCU208/overlays/README.md](boards/ZCU208/overlays/README.md).
+See example designs and building instructions in [boards/README.md](boards/README.md).
 
 ## PYNQ drivers and notebooks
 

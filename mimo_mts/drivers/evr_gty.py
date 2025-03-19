@@ -1,154 +1,92 @@
 from pynq import DefaultIP
 import time
+from pathlib import Path
+import json
 
 
 class GTY_EVR(DefaultIP):
-    bindto = ['xilinx.com:module_ref:evr_gty_wrapper_axi:1.0']
+    bindto = ['xilinx.com:module_ref:axil_evr_gty_wrapper:1.0']
 
     def __init__(self, description):
-        description['registers'] = {
-            'gty_evr_status': {
-                'address_offset': 0x0,
-                'access': 'read-only',
-                'description': 'GTY EVR status register',
-                'size': 32,
-                'fields': {
-                    'gty_reset_all': {
-                        'bit_offset': 0,
-                        'bit_width': 1,
-                        'access': 'read-only',
-                        'description': 'GTY transceiver reset_all_in signal',
-                    },
-                    'reset_all': {
-                        'bit_offset': 1,
-                        'bit_width': 1,
-                        'access': 'read-only',
-                        'description': 'reset_all from axi bus',
-                    },
-                    'cplllocked': {
-                        'bit_offset': 2,
-                        'bit_width': 1,
-                        'access': 'read-only',
-                        'description': 'CPLL locked',
-                    },
-                    'reset_rx_done': {
-                        'bit_offset': 3,
-                        'bit_width': 1,
-                        'access': 'read-only',
-                        'description': 'GTY RX reset done',
-                    },
-                    'reset_tx_done': {
-                        'bit_offset': 4,
-                        'bit_width': 1,
-                        'access': 'read-only',
-                        'description': 'GTY TX reset done',
-                    },
-                    'rx_aligned': {
-                        'bit_offset': 5,
-                        'bit_width': 1,
-                        'access': 'read-only',
-                        'description': 'EVR RX aligned',
-                    }
-                }
-            },
-            'gty_reset_count': {
-                'address_offset': 0x4,
-                'access': 'read-only',
-                'size': 32,
-                'description': 'Number of resets issued to GTY to align EVR'
-            },
-            'evr_timestamp_valid': {
-                'address_offset': 0x8,
-                'access': 'read-only',
-                'size': 32,
-                'description': 'EVR timestamp valid'
-            },
-            'evr_event_count': {
-                'address_offset': 0xC,
-                'access': 'read-only',
-                'size': 32,
-                'description': 'EVR event1 count'
-            },
-            'evr_timestamp_lo': {
-                'address_offset': 0x10,
-                'access': 'read-only',
-                'size': 32,
-                'description': 'EVR timestamp low 32 bits'
-            },
-            'evr_timestamp_hi': {
-                'address_offset': 0x14,
-                'access': 'read-only',
-                'size': 32,
-                'description': 'EVR timestamp high 32 bits'
-            },
-            'gty_ref_freq': {
-                'address_offset': 0x18,
-                'access': 'read-only',
-                'size': 32,
-                'description': 'GTY referece clock, SI570 frequency counter'
-            },
-            'gty_rx_freq': {
-                'address_offset': 0x1C,
-                'access': 'read-only',
-                'size': 32,
-                'description': 'GTY RX CDR frequency counter'
-            },
-            'reset_all': {
-                'address_offset': 0x20,
-                'access': 'write-only',
-                'size': 32
-            },
-            'rx_slide': {
-                'address_offset': 0x24,
-                'access': 'write-only',
-                'size': 32
-            }
-        }
+        ip_path = Path(__file__).resolve().parent.parent.parent / \
+            'boards' / 'ip'
+        json_path = ip_path / 'rtl' / 'axil_evr_gty_wrapper.json'
+        with open(json_path, 'r') as f:
+            description['registers'] = json.load(f)
         super().__init__(description=description)
 
-    def check_alignment(self,
-                        gty_ref_freq_expect=156.1375e6,
-                        rx_freq_expect=124.91e6):
-        print(f"gty_ref__freq : {self.gty_ref_freq * 1e-6:8.5f} MHz")
-        time.sleep(1)
-        print(f"gty_rx_freq: {self.gty_rx_freq * 1e-6:8.5f} MHz")
-        gty_status = int(self.register_map.gty_evr_status)
-        evr_aligned = self.register_map.gty_evr_status.rx_aligned
-        assert evr_aligned, f"GTY is not aligned, got 0x{gty_status:x}"
-        print(f"GTY status: 0x{gty_status:x}, GTY is aligned.")
-        self.check_freq(self.gty_ref_freq, gty_ref_freq_expect)
-        self.check_freq(self.gty_rx_freq, rx_freq_expect)
-        self.check_reset_cnt()
+    def check_frequencies(self,
+                          ref_freq_expect=156.1375,
+                          rx_freq_expect=499.64/4):
+        """Diagnostic function to check the GTY frequencies"""
+        self._check_freq(self.gty_ref_freq_mhz, ref_freq_expect)
+        self._check_freq(self.gty_rx_freq_mhz, rx_freq_expect)
+        assert self.rx_aligned, "GTY RX is not aligned"
+        self._check_reset_cnt()
 
-    def convert_freq_to_hz(self, f_cnt, f_ref=100.0e6):
+    def _convert_freq_to_hz(self, f_cnt, f_ref=100.0e6):
         """Convert the frequency counter value to Hz"""
         return (f_cnt / 2**24) * f_ref
 
     @property
-    def gty_ref_freq(self):
-        return self.convert_freq_to_hz(int(self.register_map.gty_ref_freq))
+    def evr_status(self):
+        return self.register_map.gty_evr_status
 
     @property
-    def gty_rx_freq(self):
-        return self.convert_freq_to_hz(int(self.register_map.gty_rx_freq))
+    def gty_ref_freq_cnt(self):
+        return int(self.register_map.gty_ref_freq)
 
-    def check_freq(self, freq, freq_expect, tolerance_ppm=50.0):
+    @property
+    def gty_rx_freq_cnt(self):
+        return int(self.register_map.gty_rx_freq)
+
+    @property
+    def gty_ref_freq_mhz(self):
+        return self._convert_freq_to_hz(self.gty_ref_freq_cnt) / 1e6
+
+    @property
+    def gty_rx_freq_mhz(self):
+        return self._convert_freq_to_hz(self.gty_rx_freq_cnt) / 1e6
+
+    @property
+    def event_count(self):
+        return int(self.register_map.evr_event_count)
+
+    @property
+    def timestamp_valid(self):
+        return bool(self.register_map.evr_timestamp_valid)
+
+    @property
+    def rx_aligned(self):
+        return bool(self.evr_status.rx_aligned)
+
+    @property
+    def timestamp(self):
+        ts_lo = int(self.register_map.evr_timestamp_lo)
+        ts_hi = int(self.register_map.evr_timestamp_hi)
+        return (ts_hi << 32) | ts_lo
+
+    def _check_freq(self, freq, freq_expect, tolerance_ppm=50.0):
         ppm = ((freq / freq_expect) - 1.0) * 1e6
         assert abs(ppm) < tolerance_ppm, \
             f"Freq is out of spec by {ppm:3.0f} ppm"
 
-    def check_reset_cnt(self):
+    def _check_reset_cnt(self):
         """ Check if the GTY has been reset during 1 second """
         init_val = self.register_map.gty_reset_count
         time.sleep(1)
         new_val = self.register_map.gty_reset_count
         assert init_val == new_val, "GTY has been reset during 1 second"
 
-    def read_evr_regs(self):
-        tvalid = self.register_map.evr_timestamp_valid
-        assert tvalid != 1, "EVR timestamps are not valid"
-        evcnt = self.register_map.evr_event_count
-        tslo = self.register_map.evr_timestamp_lo
-        tshi = self.register_map.evr_timestamp_hi
-        print(f"EVR special event count: {evcnt}")
-        print(f"EVR timestamp higher 32-bits: {tshi}, lower 32-bits: {tslo}")
+    def __repr__(self):
+        str = (
+            f"GT EVR GTY:      {self.bindto}\n"
+            f"Event count:     {self.event_count}\n"
+            f"GTY ref freq:    {self.gty_ref_freq_mhz:8.4f} MHz\n"
+            f"GTY RX freq:     {self.gty_rx_freq_mhz:8.4f} MHz\n"
+            f"Timestamp valid: {self.timestamp_valid}\n"
+            f"Timestamp:       {self.timestamp}\n"
+            f"GTY status:      {self.evr_status}\n"
+            f"RX aligned:      {self.rx_aligned}\n"
+        )
+        return str

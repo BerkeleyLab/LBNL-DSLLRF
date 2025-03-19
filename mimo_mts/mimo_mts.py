@@ -1,14 +1,15 @@
 import pynq
 from pynq import Overlay, MMIO
-from .drivers import GTY_EVR
 from .utils.boards import board_info
 from .utils.config_clk104 import CLK104Config
+from .drivers.evr_gty import GTY_EVR
+from .drivers.rf_control import RfControl
 import xrfdc
 import numpy as np
 import time
 from pathlib import Path
 import subprocess
-__all__ = ('GTY_EVR',)
+__all__ = ('GTY_EVR', 'RfControl')
 
 
 class MimoMtsOverlay(Overlay):
@@ -37,7 +38,7 @@ class MimoMtsOverlay(Overlay):
         """
         self.board = board_info[board]
 
-        self._restart_zocl()
+        # self._restart_zocl()
         self.clk104 = CLK104Config(lmk_tcs, lmxadc_tcs, lmxdac_tcs)
         self.clk104.write_regs()
 
@@ -47,7 +48,6 @@ class MimoMtsOverlay(Overlay):
             self._initialize_dev()
             self._initialize_memories()
             self._initialize_dma()
-            self._initialize_rf_data()
             self._initialize_mts()
             self._initialize_mixers()
 
@@ -67,8 +67,12 @@ class MimoMtsOverlay(Overlay):
             assert modprobe_output.returncode == 0, "Could not restart ZOCL!"
 
     def _initialize_dev(self):
-        """Initialize XRFDC and GPIO registers."""
+        """Alias xrfdc, rf_control and evr, enumurate rfdc blocks."""
         self.xrfdc = self.rfdc
+        self.rf_control = self.axil_rf_control_0
+        if 'axil_evr_gty_wrapper_0' in self.ip_dict:
+            self.evr = self.axil_evr_gty_wrapper_0
+
         if self.board.converters_per_tile == 2:
             self.dac_blocks = np.array([
                 [self.xrfdc.dac_tiles[i].blocks[j] for j in [0, 2]]
@@ -84,11 +88,8 @@ class MimoMtsOverlay(Overlay):
                 [self.xrfdc.adc_tiles[i].blocks[j] for j in range(4)]
                 for i in range(4)])
 
-        self.dac_enable = self.gpio_control.axi_gpio_dac.channel1[0]
-        self.trig_cap = self.gpio_control.axi_gpio_bram_adc.channel1[0]
-        self.fifo_flush = self.gpio_control.axi_gpio_fifoflush.channel1[0]
-        self.sysref_freqcnt = self.freqcnt_gpio.channel1
-        self.dspclk_freqcnt = self.freqcnt_gpio.channel2
+        self.sysref_freqcnt = self.clocktreeMTS.freqcnt_gpio.channel1
+        self.dspclk_freqcnt = self.clocktreeMTS.freqcnt_gpio.channel2
 
     def convert_freq_to_hz(self, f_cnt, f_ref=100.0e6):
         """Convert the frequency counter value to Hz"""
@@ -124,12 +125,6 @@ class MimoMtsOverlay(Overlay):
             dts = pynq.DeviceTreeSegment(resolve_binary_path("ddr4.dtbo"))
             if not dts.is_dtbo_applied():
                 dts.insert()
-
-    def _initialize_rf_data(self):
-        # Reset GPIOs and bring to known state
-        self.dac_enable.on()
-        self.trig_cap.off()
-        self.fifo_flush.off()  # active low flush of the DMA fifo
 
     def _initialize_mts(self):
         """Initialize the MTS engine."""
@@ -206,11 +201,6 @@ class MimoMtsOverlay(Overlay):
         # refer to PG065
         assert status == 1, "The MTS ClockTree has failed to LOCK."
 
-    def trigger_capture(self):
-        """Internal loopback of DAC waveform to internal capture mirror"""
-        self.trig_cap.on()  # actually triggers all dac and adc channels
-        self.trig_cap.off()
-
     def capture_adc_iq_buf(self, i_buffer=None, q_buffer=None):
         """Captures ADC samples from all channels
         Follow PG269, ADC Real input to I/Q output:
@@ -238,7 +228,6 @@ class MimoMtsOverlay(Overlay):
         assert np.issubdtype(q_buffer.dtype, np.int16), \
             "q_buffer dtype of np.int16 required."
 
-        self.trigger_capture()
         for i in range(self.board.n_adcs):
             if self.board.adc_iq_interleave:
                 np.copyto(i_buffer[i], self.adc_bufs[i][0::2])

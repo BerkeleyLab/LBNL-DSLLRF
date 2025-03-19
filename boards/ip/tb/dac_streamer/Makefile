@@ -1,7 +1,8 @@
+include ../../../../dir_list.mk
+
 # Compiler and flags
 IVERILOG = iverilog
 IVERILOG_FLAGS = -g2012 -I. -Wall
-RTL_DIR = ../../rtl
 # VVP runtime
 VVP = vvp
 
