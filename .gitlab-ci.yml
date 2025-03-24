@@ -13,6 +13,8 @@ variables:
   DOCKER_DRIVER: overlay2
   GIT_SUBMODULE_STRATEGY: normal
 
+image: mohs.dhcp.lbl.gov/xilinx_env_bookworm
+
 flake8:
   stage: test
   script:
