@@ -5,11 +5,10 @@ stages:
 
 default:
   tags:
-    - xilinx
+    - xilinx-bookworm
 
 variables:
   XILINX_VIVADO: /non-free/Xilinx/Vivado_and_Vitis/2022.1/Vivado/2022.1
-  XILINX_VITIS: /non-free/Xilinx/Vivado_and_Vitis/2022.1/Vitis/2022.1
   DOCKER_HOST: tcp://docker:2375/
   DOCKER_DRIVER: overlay2
   GIT_SUBMODULE_STRATEGY: normal
@@ -17,7 +16,7 @@ variables:
 flake8:
   stage: test
   script:
-    - flake8 mimo_mts/*.py
+    - flake8 mimo_mts/
 
 rtl_test:
   before_script:
