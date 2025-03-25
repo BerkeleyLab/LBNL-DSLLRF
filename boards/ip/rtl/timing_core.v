@@ -55,7 +55,8 @@ module timing_core #(
 
     // Start latching events only after timestamp has been recovered successfully to avoid registering
     // partially-decoded events
-    wire count_event = |evr_evstb_masked && evr_ts_valid_x;
+    // wire count_event = |evr_evstb_masked && evr_ts_valid_x;
+    wire count_event = |evr_evstb_masked; // XXX bypass evr_ts_valid_x temporarily
     reg count_event_r=0;
     always @(posedge evr_clk) begin
         if (count_event) evr_evcnt_x <= evr_evcnt_x + 1;

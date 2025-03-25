@@ -233,20 +233,20 @@ proc create_root_design { parentCell } {
   set gty_refclk_n [ create_bd_port -dir I -type clk -freq_hz 156137500 gty_refclk_n ]
   set gty_refclk_p [ create_bd_port -dir I -type clk -freq_hz 156137500 gty_refclk_p ]
 
-  # Create instance: evr_gty_wrapper_axi_0, and set properties
+  # Create instance: axil_evr_gty_wrapper_0, and set properties
   set block_name axil_evr_gty_wrapper
-  set block_cell_name evr_gty_wrapper_axi_0
-  if { [catch {set evr_gty_wrapper_axi_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+  set block_cell_name axil_evr_gty_wrapper_0
+  if { [catch {set axil_evr_gty_wrapper_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
-   } elseif { $evr_gty_wrapper_axi_0 eq "" } {
+   } elseif { $axil_evr_gty_wrapper_0 eq "" } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
     set_property -dict [ list \
    CONFIG.DSP_EV1 {36} \
    CONFIG.DSP_EV2 {37} \
- ] $evr_gty_wrapper_axi_0
+ ] $axil_evr_gty_wrapper_0
 
   # Create instance: ps8_0_axi_periph, and set properties
   set ps8_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 ps8_0_axi_periph ]
@@ -924,25 +924,25 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
  ] $zynq_ultra_ps_e_0
 
   # Create interface connections
-  connect_bd_intf_net -intf_net ps8_0_axi_periph_M00_AXI [get_bd_intf_pins evr_gty_wrapper_axi_0/s_axi] [get_bd_intf_pins ps8_0_axi_periph/M00_AXI]
+  connect_bd_intf_net -intf_net ps8_0_axi_periph_M00_AXI [get_bd_intf_pins axil_evr_gty_wrapper_0/s_axi] [get_bd_intf_pins ps8_0_axi_periph/M00_AXI]
   connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_FPD [get_bd_intf_pins ps8_0_axi_periph/S00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_FPD]
 
   # Create port connections
-  connect_bd_net -net SFP2_RX_N_1 [get_bd_ports SFP2_RX_N] [get_bd_pins evr_gty_wrapper_axi_0/RX_N]
-  connect_bd_net -net SFP2_RX_P_1 [get_bd_ports SFP2_RX_P] [get_bd_pins evr_gty_wrapper_axi_0/RX_P]
-  connect_bd_net -net gty_refclk_n_1 [get_bd_ports gty_refclk_n] [get_bd_pins evr_gty_wrapper_axi_0/gty_refclk_n]
-  connect_bd_net -net gty_refclk_p_1 [get_bd_ports gty_refclk_p] [get_bd_pins evr_gty_wrapper_axi_0/gty_refclk_p]
-  connect_bd_net -net evr_gty_wrapper_axi_0_SFP_REC_CLK_N [get_bd_ports SFP_REC_CLK_N] [get_bd_pins evr_gty_wrapper_axi_0/SFP_REC_CLK_N]
-  connect_bd_net -net evr_gty_wrapper_axi_0_SFP_REC_CLK_P [get_bd_ports SFP_REC_CLK_P] [get_bd_pins evr_gty_wrapper_axi_0/SFP_REC_CLK_P]
-  connect_bd_net -net evr_gty_wrapper_axi_0_TX_N [get_bd_ports SFP2_TX_N] [get_bd_pins evr_gty_wrapper_axi_0/TX_N]
-  connect_bd_net -net evr_gty_wrapper_axi_0_TX_P [get_bd_ports SFP2_TX_P] [get_bd_pins evr_gty_wrapper_axi_0/TX_P]
-  connect_bd_net -net evr_gty_wrapper_axi_0_evr_event1 [get_bd_ports EVR_EVENT1] [get_bd_pins evr_gty_wrapper_axi_0/evr_event1]
-  connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins evr_gty_wrapper_axi_0/s_axi_aresetn] [get_bd_pins ps8_0_axi_periph/ARESETN] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps8_0_99M/peripheral_aresetn]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins evr_gty_wrapper_axi_0/dsp_clk] [get_bd_pins evr_gty_wrapper_axi_0/s_axi_aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
+  connect_bd_net -net SFP2_RX_N_1 [get_bd_ports SFP2_RX_N] [get_bd_pins axil_evr_gty_wrapper_0/RX_N]
+  connect_bd_net -net SFP2_RX_P_1 [get_bd_ports SFP2_RX_P] [get_bd_pins axil_evr_gty_wrapper_0/RX_P]
+  connect_bd_net -net gty_refclk_n_1 [get_bd_ports gty_refclk_n] [get_bd_pins axil_evr_gty_wrapper_0/gty_refclk_n]
+  connect_bd_net -net gty_refclk_p_1 [get_bd_ports gty_refclk_p] [get_bd_pins axil_evr_gty_wrapper_0/gty_refclk_p]
+  connect_bd_net -net axil_evr_gty_wrapper_0_SFP_REC_CLK_N [get_bd_ports SFP_REC_CLK_N] [get_bd_pins axil_evr_gty_wrapper_0/SFP_REC_CLK_N]
+  connect_bd_net -net axil_evr_gty_wrapper_0_SFP_REC_CLK_P [get_bd_ports SFP_REC_CLK_P] [get_bd_pins axil_evr_gty_wrapper_0/SFP_REC_CLK_P]
+  connect_bd_net -net axil_evr_gty_wrapper_0_TX_N [get_bd_ports SFP2_TX_N] [get_bd_pins axil_evr_gty_wrapper_0/TX_N]
+  connect_bd_net -net axil_evr_gty_wrapper_0_TX_P [get_bd_ports SFP2_TX_P] [get_bd_pins axil_evr_gty_wrapper_0/TX_P]
+  connect_bd_net -net axil_evr_gty_wrapper_0_evr_event1 [get_bd_ports EVR_EVENT1] [get_bd_pins axil_evr_gty_wrapper_0/evr_event1]
+  connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins axil_evr_gty_wrapper_0/s_axi_aresetn] [get_bd_pins ps8_0_axi_periph/ARESETN] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps8_0_99M/peripheral_aresetn]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axil_evr_gty_wrapper_0/dsp_clk] [get_bd_pins axil_evr_gty_wrapper_0/s_axi_aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins rst_ps8_0_99M/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments
-  assign_bd_address -offset 0xA0000000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs evr_gty_wrapper_axi_0/s_axi/reg0] -force
+  assign_bd_address -offset 0xA0000000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axil_evr_gty_wrapper_0/s_axi/reg0] -force
 
 
   # Restore current instance
