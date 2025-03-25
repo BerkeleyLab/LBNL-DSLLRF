@@ -35,7 +35,8 @@ def plot_adc_psd(wfm, fs=4e9, onsided=True, width=8, height=2):
         n_ch, sharex=True, figsize=(width, n_ch*height))
     for i, (pxx, ax) in enumerate(zip(pxxs, axes)):
         f_peak = f[np.argmax(pxx)]
-        ax.plot(f, 10*np.log10(pxx), label=f'ADC {i}, peak: {f_peak/1e6:.3f} MHz')
+        ax.plot(f, 10*np.log10(pxx),
+                label=f'ADC {i}, peak: {f_peak/1e6:.3f} MHz')
         # ax.set_title(f'ADC {i}, peak: {f_peak/1e6:.3f} MHz ')
         ax.legend()
         ax.set_xlabel('Freq [MHz]')
