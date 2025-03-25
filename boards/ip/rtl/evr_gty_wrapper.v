@@ -9,19 +9,26 @@ module evr_gty_wrapper #(
     ) (
     // GTY ports
     input              sys_clk,
-    output wire [31:0] gty_evr_status,
-    output wire [31:0] gty_rx_reset_cnt,  // in sys_clk
-    // user settable
-    input              reset_all,
-    input              rx_slide_req,
-
     input              gty_refclk,
+
     input              RX_P, RX_N,
     output             TX_P, TX_N,
-    output             gty_tx_clk,
     output wire        SFP_REC_CLK_P,
     output wire        SFP_REC_CLK_N,
 
+    // sys_clk domain
+    input              reset_all,
+    input              rx_slide_req,
+    output wire [31:0] gty_evr_status,
+    output wire [31:0] gty_rx_reset_cnt,
+    output             rx_aligned_sys,
+    output             cplllocked_sys,
+    output             reset_rx_done_sys,
+    output             reset_tx_done_sys,
+
+    output             gty_tx_clk,
+
+    // evr_clk domain (rxusrclk2)
     output wire        evr_clk,
     // EVR ports
     output wire [15:0] evr_evcnt,
@@ -39,7 +46,6 @@ module evr_gty_wrapper #(
     output wire        dsp_event2  // DSP_EV2
 );
 
-localparam LOOPBACK = 3'd4; // 4 == Far end PMA loopback
 localparam COMMAS_NEEDED = 60;
 
 // Extract status bits of interest
@@ -62,37 +68,43 @@ assign comma_seen[1] = rx_charisk[1] & (rx_data[8+:8] == 8'hBC);
 wire data_err_comb = (rx_notintable != 0) || rx_charisk[1] || (rx_disparity_error != 0);
 reg data_err=0; always @(posedge evr_clk) data_err <= data_err_comb;
 
+(*mark_debug=DEBUG*) wire error_seen_sys, comma_seen_sys;
+reg_tech_cdc error_seen_x (.I(data_err), .C(sys_clk), .O(error_seen_sys));
+reg_tech_cdc comma_seen_x (.I(comma_seen[0]), .C(sys_clk), .O(comma_seen_sys));
+
+// Status register
+wire rx_aligned;     // in evr_clk
+wire reset_rx_done;  // in evr_clk
+wire reset_tx_done;  // in gty_tx_clk
+wire cplllocked;  // async
+
+reg_tech_cdc reset_rx_done_x (.I(reset_rx_done), .C(sys_clk), .O(reset_rx_done_sys));
+reg_tech_cdc reset_tx_done_x (.I(reset_tx_done), .C(sys_clk), .O(reset_tx_done_sys));
+reg_tech_cdc cplllocked_x    (.I(cplllocked), .C(sys_clk), .O(cplllocked_sys));
+
 // since RX elastic buffer bypassed, IP core's helper block is only used to adjust the phase difference between the PMA parallel clock (XCLK) and the RXUSRCLK
 // a separate FSM module (evr_reset_fsm) outside of IP core is used to check for data alignment
-// keep everything in evr_clk
-(*mark_debug=DEBUG*) wire gty_reset_all, gty_reset_fsm, rx_aligned, rx_aligned_sys;
-wire [31:0] gty_rx_reset_cnt_x;
+// PG182 Table 2-3: gtwiz_reset_all_in: active-High, at least one gtwiz_reset_clk_freerun_in (sys_clk) period in duration
+// therefore keep evr_reset_fsm in sys_clk
+(*mark_debug=DEBUG*) wire gty_reset_all, gty_reset_fsm;
 evr_reset_fsm #(
     .COMMAS_NEEDED  (COMMAS_NEEDED),
     .CHECK_TIMEOUT  (CHECK_TIMEOUT)
 ) evr_reset_fsm_i (
-    .clk            (evr_clk),
+    .clk            (sys_clk),
     .rst            (1'b0),
-    .error_seen     (data_err),
-    .comma_seen     (comma_seen[0]),
-    .reset_done     (reset_rx_done),
+    .error_seen     (error_seen_sys),
+    .comma_seen     (comma_seen_sys),
+    .reset_done     (reset_rx_done_sys),
     .reset_out      (gty_reset_fsm),
-    .ready_out      (rx_aligned),
+    .ready_out      (rx_aligned_sys),
     .reset_out_cnt  (gty_rx_reset_cnt_x)
 );
 
-data_xdomain #(.size(32)) i_rx_reset_cnt (
-    .clk_in   (evr_clk), .gate_in  (1'b1),
-    .data_in  (gty_rx_reset_cnt_x),
-    .clk_out  (sys_clk), .gate_out (),
-    .data_out (gty_rx_reset_cnt)
-);
-
 // combine fsm reset output and reset_all from control bus
-// are all async
 assign gty_reset_all = gty_reset_fsm | reset_all;
 
-reg_tech_cdc rx_aligned_x (.I(rx_aligned), .C(sys_clk), .O(rx_aligned_sys));
+reg_tech_cdc rx_aligned_x (.I(rx_aligned_sys), .C(evr_clk), .O(rx_aligned));
 
 // Receiver alignment detection
 // only for the rx_slide (unused for now)
@@ -109,23 +121,14 @@ always @(posedge evr_clk) begin
 end
 
 reg [1:0] evr_charisk = 0;
-reg [15:0] evr_chars = 0;
+(*mark_debug=DEBUG*)reg [15:0] evr_chars = 0;
 // K character can only appear on word 0
 always @(posedge evr_clk) begin
     evr_chars <= rx_aligned ? rx_data : 16'd0;
     evr_charisk <= rx_charisk;
 end
 
-// Status register
-wire reset_rx_done;  // in evr_clk
-wire reset_tx_done;  // in gty_tx_clk
-wire cplllocked;  // async
-
-wire reset_rx_done_sys, reset_tx_done_sys;
-reg_tech_cdc reset_rx_done_x (.I(reset_rx_done), .C(sys_clk), .O(reset_rx_done_sys));
-reg_tech_cdc reset_tx_done_x (.I(reset_tx_done), .C(sys_clk), .O(reset_tx_done_sys));
-
-assign gty_evr_status = {rx_aligned_sys, reset_tx_done_sys, reset_rx_done_sys, cplllocked, reset_all, gty_reset_all};
+assign gty_evr_status = {rx_aligned_sys, reset_tx_done_sys, reset_rx_done_sys, cplllocked_sys, reset_all, gty_reset_all};
 
 //////////////////////////////////////////////////////////////////////////////
 // Instantiate the transceiver
@@ -163,7 +166,7 @@ assign gty_evr_status = {rx_aligned_sys, reset_tx_done_sys, reset_rx_done_sys, c
     .gtrefclk0_in(gty_refclk),                   // input wire [0 : 0] gtrefclk0_in
     .gtyrxn_in(RX_N),                            // input wire [0 : 0] gtyrxn_in
     .gtyrxp_in(RX_P),                            // input wire [0 : 0] gtyrxp_in
-    .loopback_in(LOOPBACK),                      // input wire [2 : 0] loopback_in
+    .loopback_in(3'd0),                          // input wire [2 : 0] loopback_in
     .rx8b10ben_in(1'b1),                         // input wire [0 : 0] rx8b10ben_in
     .rxcommadeten_in(1'b1),                      // input wire [0 : 0] rxcommadeten_in
     .rxmcommaalignen_in(1'b0),                   // input wire [0 : 0] rxmcommaalignen_in
@@ -188,6 +191,28 @@ assign gty_evr_status = {rx_aligned_sys, reset_tx_done_sys, reset_rx_done_sys, c
     .txpmaresetdone_out(),                       // output wire [0 : 0] txpmaresetdone_out
     .txprgdivresetdone_out()                     // output wire [0 : 0] txprgdivresetdone_out
   );
+
+`else   // `ifndef SIMULATE
+    assign gty_tx_clk = 1'b0;
+    assign evr_clk = gty_refclk;
+    // fake rx fsm reset mockup to simulate gty rx start up time
+    reg [7:0] fake_fsm_cnt=8'd32;
+    reg fake_fsm_active=0;
+    assign rx_fsm_reset_done = fake_fsm_cnt >= 8'd32;
+    always @(posedge sys_clk) begin
+        if (rx_fsm_reset_done) fake_fsm_active <= 1'b0;
+        if (gt_soft_reset) begin
+            fake_fsm_active <= 1'b1;
+            fake_fsm_cnt <= 0;
+        end
+        if (fake_fsm_active)
+            fake_fsm_cnt <= fake_fsm_cnt + 1'd1;
+    end
+    reg [1:0] rxnotintable_out_reg = 2'b0;
+    assign rxnotintable_out = rxnotintable_out_reg;
+    assign rxdisperr_out = 2'b0;
+    assign rxdata_out = (rxnotintable_out != 0) ? 16'hxxxx : rx_fsm_reset_done ? {8'h0, 8'hBC} : 0;
+    assign rxcharisk_out = 2'b01;
 
 `endif
 
