@@ -1,113 +1,91 @@
 module timing_core #(
-    parameter EVR_EVSTROBE_CNT = 254,  // Max of tinyEVR
-    parameter DSP_EV1 = 1,  // Configurable event code to route to dsp_clk.
-    parameter DSP_EV2 = 2
+    parameter EVSTROBE_COUNT = 255,  // Max of tinyEVR
+    parameter EVCODE1 = 1
 ) (
-    input             lb_clk,
-    // Fiber interface
+    // evr_clk domain
     input             evr_clk,
     input [15:0]      evr_rxd,
     input [1:0]       evr_rxk,
+    output            event1_evr,
 
-    // EVR Control interface (@lb_clk)
-    output [15:0]     evr_evcnt,  // DSP_EV1
-    output            evr_timestamp_valid,
-    output [63:0]     evr_live_ts,
+    // sys_clk domain
+    input             sys_clk,
+    output [31:0]     event1_cnt_sys,
+    output            ts_valid_sys,
+    output [63:0]     live_ts_sys,
 
+    // dsp_clk domain
     input             dsp_clk,
-    output [63:0]     dsp_live_ts,
-
-    // single-cycle in evr_clk domain
-    output            evr_event1,  // DSP_EV1
-
-    // single-cycle in dsp_clk domain
-    output            dsp_pps_marker,
-    output            dsp_hb_marker,
-    output            dsp_event1,  // DSP_EV1
-    output            dsp_event2   // DSP_EV2
+    output [63:0]     live_ts_dsp,
+    output            pps_marker_dsp,
+    output            hb_marker_dsp,
+    output            event1_dsp  // EVCODE1
 );
 
     // ---------------------
     // Timing Event Receiver (EVR)
     // ---------------------
-    localparam EVR_TSTAMP_WI = 64;
-    wire evr_pps_marker, evr_ts_valid_x;
-    wire [EVR_TSTAMP_WI-1:0] evr_timestamp_x;
-    wire [EVR_EVSTROBE_CNT-1:0] evr_evstrobe;
+    wire pps_marker_evr, ts_valid_evr;
+    wire [63:0] live_ts_evr;
+    wire [EVSTROBE_COUNT:1] evstrobe_evr;
 
-    tinyEVR #(.EVSTROBE_COUNT(EVR_EVSTROBE_CNT)) tinyEVR (
+    tinyEVR #(.EVSTROBE_COUNT(EVSTROBE_COUNT)) tinyEVR (
         .evrRxClk       (evr_clk),
         .evrRxWord      (evr_rxd),
         .evrCharIsK     (evr_rxk),
-        .ppsMarker      (evr_pps_marker),
-        .timestampValid (evr_ts_valid_x),
-        .timestamp      (evr_timestamp_x),
-        .evStrobe       (evr_evstrobe)
+        .ppsMarker      (pps_marker_evr),
+        .timestampValid (ts_valid_evr),
+        .timestamp      (live_ts_evr),
+        .evStrobe       (evstrobe_evr)
     );
+    assign event1_evr = evstrobe_evr[EVCODE1];
 
-    reg evr_ts_valid=0;
-    always @(posedge lb_clk) evr_ts_valid <= evr_ts_valid_x;  // Quasi-static single-bit
-    assign evr_timestamp_valid = evr_ts_valid;
-
-    // Event masking and counting in evr_clk domain
-    reg [15:0] evr_evcnt_x=0;
-    wire [EVR_EVSTROBE_CNT-1:0] evr_evstb_masked = evr_evstrobe[EVR_EVSTROBE_CNT-1:0] & (1 << (DSP_EV1-1));
+    reg_tech_cdc i_ts_valid_cdc (.I(ts_valid_evr), .C(sys_clk), .O(ts_valid_sys));
 
     // Start latching events only after timestamp has been recovered successfully to avoid registering
     // partially-decoded events
-    // wire count_event = |evr_evstb_masked && evr_ts_valid_x;
-    wire count_event = |evr_evstb_masked; // XXX bypass evr_ts_valid_x temporarily
+    reg [31:0] evcnt1_evr=0;
+    // wire count_event = event1_evr && ts_valid_evr;
+    wire count_event = event1_evr; // XXX bypass ts_valid_evr temporarily
     reg count_event_r=0;
     always @(posedge evr_clk) begin
-        if (count_event) evr_evcnt_x <= evr_evcnt_x + 1;
+        if (count_event) evcnt1_evr <= evcnt1_evr + 1;
         count_event_r <= count_event;
     end
 
-    // CDC to lb_clk
-    data_xdomain #(.size(16)) i_evcnt_sync (
+    // CDC to sys_clk
+    data_xdomain #(.size(32)) i_evcnt_sync (
         .clk_in   (evr_clk), .gate_in  (count_event_r),
-        .data_in  (evr_evcnt_x),
-        .clk_out  (lb_clk), .gate_out (),
-        .data_out (evr_evcnt)
+        .data_in  (evcnt1_evr),
+        .clk_out  (sys_clk), .gate_out (),
+        .data_out (event1_cnt_sys)
     );
 
-    // Make configurable events available to LLRF in dsp_clk domain
-    `ifdef SIMULATE
-        initial if ((DSP_EV1 == 0) || (DSP_EV2 == 0)) begin
-            $display("ERROR %m: Event code must be > 0");
-            $finish;
-        end
-    `endif
-
-    assign evr_event1 = evr_evstrobe[DSP_EV1-1];
-    // Note -1 to go from event code to array index
-    flag_xdomain i_ev1 (.clk1(evr_clk), .flagin_clk1(evr_evstrobe[DSP_EV1-1]),
-                        .clk2(dsp_clk), .flagout_clk2(dsp_event1));
-    flag_xdomain i_ev2 (.clk1(evr_clk), .flagin_clk1(evr_evstrobe[DSP_EV2-1]),
-                        .clk2(dsp_clk), .flagout_clk2(dsp_event2));
+    flag_xdomain i_ev1 (.clk1(evr_clk), .flagin_clk1(event1_evr),
+                        .clk2(dsp_clk), .flagout_clk2(event1_dsp));
 
     // timestamp (seconds and ticks) CDC to dsp_clk
-    evr_ts_cdc dut(
+    evr_ts_cdc i_evr_ts_cdc_dsp (
         .evr_clk(evr_clk),
-        .ts_secs(evr_timestamp_x[63:32]), .ts_tcks(evr_timestamp_x[31:0]),
-        .evr_pps(evr_pps_marker),
+        .ts_secs(live_ts_evr[63:32]), .ts_tcks(live_ts_evr[31:0]),
+        .evr_pps(pps_marker_evr),
         .usr_clk(dsp_clk),
-        .usr_secs(dsp_live_ts[63:32]), .usr_tcks(dsp_live_ts[31:0])
+        .usr_secs(live_ts_dsp[63:32]), .usr_tcks(live_ts_dsp[31:0])
     );
 
-    evr_ts_cdc dut_lb(
+    evr_ts_cdc i_evr_ts_cdc_sys (
         .evr_clk(evr_clk),
-        .ts_secs(evr_timestamp_x[63:32]), .ts_tcks(evr_timestamp_x[31:0]),
-        .evr_pps(evr_pps_marker),
-        .usr_clk(lb_clk),
-        .usr_secs(evr_live_ts[63:32]), .usr_tcks(evr_live_ts[31:0])
+        .ts_secs(live_ts_evr[63:32]), .ts_tcks(live_ts_evr[31:0]),
+        .evr_pps(pps_marker_evr),
+        .usr_clk(sys_clk),
+        .usr_secs(live_ts_sys[63:32]), .usr_tcks(live_ts_sys[31:0])
     );
 
-    flag_xdomain i_pps (.clk1(evr_clk), .flagin_clk1(evr_pps_marker),
-                        .clk2(dsp_clk), .flagout_clk2(dsp_pps_marker));
+    flag_xdomain i_pps (.clk1(evr_clk), .flagin_clk1(pps_marker_evr),
+                        .clk2(dsp_clk), .flagout_clk2(pps_marker_dsp));
 
     localparam EVCODE_HEARTBEAT_MARKER = 8'h7A;
-    flag_xdomain i_hb (.clk1(evr_clk), .flagin_clk1(evr_evstrobe[EVCODE_HEARTBEAT_MARKER]),
-                        .clk2(dsp_clk), .flagout_clk2(dsp_hb_marker));
+    flag_xdomain i_hb (.clk1(evr_clk), .flagin_clk1(evstrobe_evr[EVCODE_HEARTBEAT_MARKER]),
+                        .clk2(dsp_clk), .flagout_clk2(hb_marker_dsp));
 
 endmodule

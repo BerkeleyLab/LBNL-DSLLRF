@@ -2,14 +2,14 @@ import pynq
 from pynq import Overlay, MMIO
 from .utils.boards import board_info
 from .utils.config_clk104 import CLK104Config
-from .drivers.evr_gty import GTY_EVR
+from .drivers.evr import EVR
 from .drivers.rf_control import RfControl
 import xrfdc
 import numpy as np
 import time
 from pathlib import Path
 import subprocess
-__all__ = ('GTY_EVR', 'RfControl')
+__all__ = ('EVR', 'RfControl')
 
 
 class MimoMtsOverlay(Overlay):
@@ -70,8 +70,8 @@ class MimoMtsOverlay(Overlay):
         """Alias xrfdc, rf_control and evr, enumurate rfdc blocks."""
         self.xrfdc = self.rfdc
         self.rf_control = self.axil_rf_control_0
-        if 'axil_evr_gty_wrapper_0' in self.ip_dict:
-            self.evr = self.axil_evr_gty_wrapper_0
+        if 'axil_evr_0' in self.ip_dict:
+            self.evr = self.axil_evr_0
 
         if self.board.converters_per_tile == 2:
             self.dac_blocks = np.array([

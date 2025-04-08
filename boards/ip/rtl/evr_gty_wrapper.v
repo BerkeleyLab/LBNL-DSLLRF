@@ -98,7 +98,7 @@ evr_reset_fsm #(
     .reset_done     (reset_rx_done_sys),
     .reset_out      (gty_reset_fsm),
     .ready_out      (rx_aligned_sys),
-    .reset_out_cnt  (gty_rx_reset_cnt_x)
+    .reset_out_cnt  (gty_rx_reset_cnt)
 );
 
 // combine fsm reset output and reset_all from control bus
