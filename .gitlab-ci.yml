@@ -29,7 +29,7 @@ rtl_test:
   script:
     - make SIM=icarus
 
-bitfile_synthesis_zcu208:
+.bitfile_synthesis_zcu208:
   before_script:
     - cd boards/ZCU208/${OVERLAY} && ls /non-free
   stage: synthesis
@@ -39,6 +39,7 @@ bitfile_synthesis_zcu208:
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     expire_in: 4 weeks
+    when: always
     paths:
       - boards/ZCU208/${OVERLAY}/${OVERLAY}.bit
       - boards/ZCU208/${OVERLAY}/${OVERLAY}.hwh
@@ -59,6 +60,7 @@ bitfile_synthesis_zcu208:
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     expire_in: 4 weeks
+    when: always
     paths:
       - boards/ZCU216/${OVERLAY}/${OVERLAY}.bit
       - boards/ZCU216/${OVERLAY}/${OVERLAY}.hwh
@@ -68,3 +70,24 @@ bitfile_synthesis_zcu208:
   parallel:
     matrix:
       - OVERLAY: [mimo_mts]
+
+bitfile_synthesis_lbl208:
+  before_script:
+    - cd boards/LBL208/${OVERLAY} && ls /non-free
+  stage: synthesis
+  timeout: 3h
+  script:
+    - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make all
+  artifacts:
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    expire_in: 4 weeks
+    when: always
+    paths:
+      - boards/LBL208/${OVERLAY}/${OVERLAY}.bit
+      - boards/LBL208/${OVERLAY}/${OVERLAY}.hwh
+      - boards/LBL208/${OVERLAY}/${OVERLAY}.xsa
+      - boards/LBL208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
+      - boards/LBL208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
+  parallel:
+    matrix:
+      - OVERLAY: [config_evr, als_llrf_mts]

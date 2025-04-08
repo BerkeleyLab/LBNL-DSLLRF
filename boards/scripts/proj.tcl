@@ -33,6 +33,10 @@ set wrapper_name ${proj_name}_wrapper
 # Get IP repos from the environment
 set ip_repo_path $::env(XILINX_IP_REPO_PATH)
 
+# UG895
+set board_repo_path $::env(XILINX_BOARD_REPO_PATH)
+set_param board.repoPaths [list $board_repo_path]
+
 ################################################################
 # Check supported platforms
 ################################################################
@@ -54,7 +58,7 @@ switch $board_id {
     # set project_part [get_property PART_NAME [current_board_part]]
   }
   "lbl208" {
-    set board_part "xilinx.com:zcu208:part0:2.0"
+    set board_part "lbl.gov:lbl208:part0:2.0"
     set project_part "xczu47dr-ffvg1517-1-e"
   }
 }

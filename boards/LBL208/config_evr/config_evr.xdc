@@ -1,0 +1,1 @@
+../../ZCU208/config_evr/config_evr.xdc
