@@ -5,7 +5,7 @@ SIM ?= icarus
 WAVES ?= 0
 
 COCOTB_HDL_TIMEUNIT = 1ns
-COCOTB_HDL_TIMEPRECISION = 1ns
+COCOTB_HDL_TIMEPRECISION = 1ps
 
 ifeq ($(SIM), icarus)
 	COMPILE_ARGS += -Wall -Wno-timescale
@@ -27,7 +27,7 @@ endif
 .PHONY: check_results
 check_results: sim
 	$(call check_for_results_file)
-	$(PYTHON_BIN) $(CURR_DIR)/check_results.py -i results.xml
+	$(PYTHON_BIN) $(CURR_DIR)check_results.py -i results.xml
 
 include $(shell cocotb-config --makefiles)/Makefile.sim
 

@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following
 # module references:
-# axil_evr_gty_wrapper, axil_rf_control, freq_count, freq_count, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, dac_streamer
+# axil_evr, axil_rf_control, freq_count, freq_count, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, dac_streamer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -171,7 +171,7 @@ xilinx.com:ip:axis_register_slice:1.1\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\
-axil_evr_gty_wrapper\
+axil_evr\
 axil_rf_control\
 freq_count\
 freq_count\
@@ -2971,32 +2971,25 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
-  set DS60 [ create_bd_port -dir O DS60 ]
-  set DS61 [ create_bd_port -dir O DS61 ]
   set SFP2_RX_N [ create_bd_port -dir I SFP2_RX_N ]
   set SFP2_RX_P [ create_bd_port -dir I SFP2_RX_P ]
-  set SFP2_TX_N [ create_bd_port -dir O SFP2_TX_N ]
-  set SFP2_TX_P [ create_bd_port -dir O SFP2_TX_P ]
-  set SFP_REC_CLK_N [ create_bd_port -dir O -type clk SFP_REC_CLK_N ]
-  set SFP_REC_CLK_P [ create_bd_port -dir O -type clk SFP_REC_CLK_P ]
   set TRIG_OUT [ create_bd_port -dir O TRIG_OUT ]
   set gty_refclk_n [ create_bd_port -dir I -type clk -freq_hz 100000000 gty_refclk_n ]
   set gty_refclk_p [ create_bd_port -dir I -type clk -freq_hz 100000000 gty_refclk_p ]
 
-  # Create instance: axil_evr_gty_wrapper_0, and set properties
-  set block_name axil_evr_gty_wrapper
-  set block_cell_name axil_evr_gty_wrapper_0
-  if { [catch {set axil_evr_gty_wrapper_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+  # Create instance: axil_evr_0, and set properties
+  set block_name axil_evr
+  set block_cell_name axil_evr_0
+  if { [catch {set axil_evr_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
-   } elseif { $axil_evr_gty_wrapper_0 eq "" } {
+   } elseif { $axil_evr_0 eq "" } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
       set_property -dict [ list \
-   CONFIG.DSP_EV1 {36} \
-   CONFIG.DSP_EV2 {37} \
- ] $axil_evr_gty_wrapper_0
+   CONFIG.EVCODE1 {36} \
+ ] $axil_evr_0
 
   # Create instance: axil_rf_control_0, and set properties
   set block_name axil_rf_control
@@ -4936,7 +4929,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net S_AXI_1 [get_bd_intf_pins receiver/S_AXI] [get_bd_intf_pins rf_interconnect/M02_AXI]
   connect_bd_intf_net -intf_net S_AXI_2 [get_bd_intf_pins rf_interconnect/M01_AXI] [get_bd_intf_pins transmitter/S_AXI]
   connect_bd_intf_net -intf_net adc1_clk_1_1 [get_bd_intf_ports adc1_clk] [get_bd_intf_pins rfdc/adc1_clk]
-  connect_bd_intf_net -intf_net control_interconnect_M02_AXI [get_bd_intf_pins axil_evr_gty_wrapper_0/s_axi] [get_bd_intf_pins control_interconnect/M02_AXI]
+  connect_bd_intf_net -intf_net control_interconnect_M02_AXI [get_bd_intf_pins axil_evr_0/s_axi] [get_bd_intf_pins control_interconnect/M02_AXI]
   connect_bd_intf_net -intf_net dac2_clk_0_1 [get_bd_intf_ports dac2_clk] [get_bd_intf_pins rfdc/dac2_clk]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M00_AXI [get_bd_intf_pins control_interconnect/M00_AXI] [get_bd_intf_pins rfdc/s_axi]
   connect_bd_intf_net -intf_net rf_interconnect_M00_AXI [get_bd_intf_pins axil_rf_control_0/s_axi] [get_bd_intf_pins rf_interconnect/M00_AXI]
@@ -4986,30 +4979,24 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   # Create port connections
   connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins axil_rf_control_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/egress_aresetn] [get_bd_pins receiver/s_axi_aresetn] [get_bd_pins rf_interconnect/ARESETN] [get_bd_pins rf_interconnect/M00_ARESETN] [get_bd_pins rf_interconnect/M01_ARESETN] [get_bd_pins rf_interconnect/M02_ARESETN] [get_bd_pins rf_interconnect/S00_ARESETN] [get_bd_pins transmitter/S_AXI_RESETN]
   connect_bd_net -net RFingressReset_peripheral_aresetn [get_bd_pins clocktreeMTS/ingress_aresetn] [get_bd_pins rfdc/m0_axis_aresetn] [get_bd_pins rfdc/m1_axis_aresetn] [get_bd_pins rfdc/m2_axis_aresetn] [get_bd_pins rfdc/m3_axis_aresetn] [get_bd_pins rfdc/s0_axis_aresetn] [get_bd_pins rfdc/s1_axis_aresetn] [get_bd_pins rfdc/s2_axis_aresetn] [get_bd_pins rfdc/s3_axis_aresetn]
-  connect_bd_net -net SFP2_RX_N_1 [get_bd_ports SFP2_RX_N] [get_bd_pins axil_evr_gty_wrapper_0/RX_N]
-  connect_bd_net -net SFP2_RX_P_1 [get_bd_ports SFP2_RX_P] [get_bd_pins axil_evr_gty_wrapper_0/RX_P]
-  connect_bd_net -net axil_evr_gty_wrapper_0_SFP_REC_CLK_N [get_bd_ports SFP_REC_CLK_N] [get_bd_pins axil_evr_gty_wrapper_0/SFP_REC_CLK_N]
-  connect_bd_net -net axil_evr_gty_wrapper_0_SFP_REC_CLK_P [get_bd_ports SFP_REC_CLK_P] [get_bd_pins axil_evr_gty_wrapper_0/SFP_REC_CLK_P]
-  connect_bd_net -net axil_evr_gty_wrapper_0_TX_N [get_bd_ports SFP2_TX_N] [get_bd_pins axil_evr_gty_wrapper_0/TX_N]
-  connect_bd_net -net axil_evr_gty_wrapper_0_TX_P [get_bd_ports SFP2_TX_P] [get_bd_pins axil_evr_gty_wrapper_0/TX_P]
-  connect_bd_net -net axil_evr_gty_wrapper_0_dsp_event1 [get_bd_pins axil_evr_gty_wrapper_0/dsp_event1] [get_bd_pins axil_rf_control_0/evr_trigger_in]
-  connect_bd_net -net axil_evr_gty_wrapper_0_evr_event1_led [get_bd_ports DS60] [get_bd_pins axil_evr_gty_wrapper_0/evr_event1_led]
-  connect_bd_net -net axil_evr_gty_wrapper_0_gty_rx_aligned_led [get_bd_ports DS61] [get_bd_pins axil_evr_gty_wrapper_0/gty_rx_aligned_led]
+  connect_bd_net -net SFP2_RX_N_1 [get_bd_ports SFP2_RX_N] [get_bd_pins axil_evr_0/gt_rxn_in]
+  connect_bd_net -net SFP2_RX_P_1 [get_bd_ports SFP2_RX_P] [get_bd_pins axil_evr_0/gt_rxp_in]
+  connect_bd_net -net axil_evr_0_event1_dsp [get_bd_pins axil_evr_0/event1_dsp] [get_bd_pins axil_rf_control_0/evr_trigger_in]
   connect_bd_net -net axil_rf_control_0_dac_enable_out [get_bd_pins axil_rf_control_0/dac_enable_out] [get_bd_pins transmitter/enable]
   connect_bd_net -net axil_rf_control_0_pulse_length_out [get_bd_pins axil_rf_control_0/pulse_length_out] [get_bd_pins receiver/pulse_length] [get_bd_pins transmitter/pulse_length]
   connect_bd_net -net axil_rf_control_0_trigger_out [get_bd_ports TRIG_OUT] [get_bd_pins axil_rf_control_0/trigger_out] [get_bd_pins receiver/trig_cap] [get_bd_pins transmitter/trig_cap]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clocktreeMTS/clkRF] [get_bd_pins receiver/aclk] [get_bd_pins rfdc/m0_axis_aclk] [get_bd_pins rfdc/m1_axis_aclk] [get_bd_pins rfdc/m2_axis_aclk] [get_bd_pins rfdc/m3_axis_aclk] [get_bd_pins rfdc/s0_axis_aclk] [get_bd_pins rfdc/s1_axis_aclk] [get_bd_pins rfdc/s2_axis_aclk] [get_bd_pins rfdc/s3_axis_aclk] [get_bd_pins transmitter/aclk]
-  connect_bd_net -net clocktreeMTS_clkRFdiv2 [get_bd_pins axil_evr_gty_wrapper_0/dsp_clk] [get_bd_pins axil_rf_control_0/s_axi_aclk] [get_bd_pins clocktreeMTS/clkRFdiv2] [get_bd_pins receiver/S_AXI_CLK] [get_bd_pins rf_interconnect/ACLK] [get_bd_pins rf_interconnect/M00_ACLK] [get_bd_pins rf_interconnect/M01_ACLK] [get_bd_pins rf_interconnect/M02_ACLK] [get_bd_pins rf_interconnect/S00_ACLK] [get_bd_pins transmitter/S_AXI_CLK] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
+  connect_bd_net -net clocktreeMTS_clkRFdiv2 [get_bd_pins axil_evr_0/dsp_clk] [get_bd_pins axil_rf_control_0/s_axi_aclk] [get_bd_pins clocktreeMTS/clkRFdiv2] [get_bd_pins receiver/S_AXI_CLK] [get_bd_pins rf_interconnect/ACLK] [get_bd_pins rf_interconnect/M00_ACLK] [get_bd_pins rf_interconnect/M01_ACLK] [get_bd_pins rf_interconnect/M02_ACLK] [get_bd_pins rf_interconnect/S00_ACLK] [get_bd_pins transmitter/S_AXI_CLK] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
   connect_bd_net -net clocktreeMTS_interrupt [get_bd_pins clocktreeMTS/interrupt] [get_bd_pins xlconcat_0/In0]
-  connect_bd_net -net gty_refclk_n_1 [get_bd_ports gty_refclk_n] [get_bd_pins axil_evr_gty_wrapper_0/gty_refclk_n]
-  connect_bd_net -net gty_refclk_p_1 [get_bd_ports gty_refclk_p] [get_bd_pins axil_evr_gty_wrapper_0/gty_refclk_p]
-  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins axil_evr_gty_wrapper_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/s_axi_aresetn] [get_bd_pins control_interconnect/ARESETN] [get_bd_pins control_interconnect/M00_ARESETN] [get_bd_pins control_interconnect/M01_ARESETN] [get_bd_pins control_interconnect/M02_ARESETN] [get_bd_pins control_interconnect/S00_ARESETN] [get_bd_pins rfdc/s_axi_aresetn]
+  connect_bd_net -net gty_refclk_n_1 [get_bd_ports gty_refclk_n] [get_bd_pins axil_evr_0/gt_refclk_n]
+  connect_bd_net -net gty_refclk_p_1 [get_bd_ports gty_refclk_p] [get_bd_pins axil_evr_0/gt_refclk_p]
+  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins axil_evr_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/s_axi_aresetn] [get_bd_pins control_interconnect/ARESETN] [get_bd_pins control_interconnect/M00_ARESETN] [get_bd_pins control_interconnect/M01_ARESETN] [get_bd_pins control_interconnect/M02_ARESETN] [get_bd_pins control_interconnect/S00_ARESETN] [get_bd_pins rfdc/s_axi_aresetn]
   connect_bd_net -net synchronizeSYSREF_dest_out [get_bd_pins clocktreeMTS/UserSYSREF] [get_bd_pins rfdc/user_sysref_adc] [get_bd_pins rfdc/user_sysref_dac]
   connect_bd_net -net usp_rf_data_converter_1_irq [get_bd_pins rfdc/irq] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins xlconcat_0/dout] [get_bd_pins zynq_ultra_ps_e_0/pl_ps_irq0]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins axil_rf_control_0/ext_trigger_in] [get_bd_pins axil_rf_control_0/rf_permit_in] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlconstant_1_dout [get_bd_pins axil_rf_control_0/debug_in] [get_bd_pins xlconstant_1/dout]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axil_evr_gty_wrapper_0/s_axi_aclk] [get_bd_pins clocktreeMTS/s_axi_aclk] [get_bd_pins control_interconnect/ACLK] [get_bd_pins control_interconnect/M00_ACLK] [get_bd_pins control_interconnect/M01_ACLK] [get_bd_pins control_interconnect/M02_ACLK] [get_bd_pins control_interconnect/S00_ACLK] [get_bd_pins rfdc/s_axi_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_lpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axil_evr_0/s_axi_aclk] [get_bd_pins clocktreeMTS/s_axi_aclk] [get_bd_pins control_interconnect/ACLK] [get_bd_pins control_interconnect/M00_ACLK] [get_bd_pins control_interconnect/M01_ACLK] [get_bd_pins control_interconnect/M02_ACLK] [get_bd_pins control_interconnect/S00_ACLK] [get_bd_pins rfdc/s_axi_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_lpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins clocktreeMTS/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments
@@ -5032,7 +5019,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   assign_bd_address -offset 0xA01E0000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m33/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0200000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs transmitter/hier_dac_cap/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0220000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs transmitter/hier_dac_play/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0x80060000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axil_evr_gty_wrapper_0/s_axi/reg0] -force
+  assign_bd_address -offset 0x80060000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axil_evr_0/s_axi/reg0] -force
   assign_bd_address -offset 0xA0240000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axil_rf_control_0/s_axi/reg0] -force
   assign_bd_address -offset 0x80040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs clocktreeMTS/freqcnt_gpio/S_AXI/Reg] -force
   assign_bd_address -offset 0x80000000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs rfdc/s_axi/Reg] -force

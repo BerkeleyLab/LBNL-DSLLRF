@@ -2,7 +2,7 @@
     "trig_sel": {
         "address_offset": 0,
         "access": "read-write",
-        "description": "Trigger select",
+        "description": "Trigger select, 0: internal, 1: EVR, 2: external",
         "size": 32
     },
     "trig_period": {
