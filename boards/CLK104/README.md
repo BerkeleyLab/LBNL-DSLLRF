@@ -42,6 +42,56 @@ CLKout13_FREQ   :        4.996 MHz
 CLKin_SEL_MODE  :       CLKin2
 VCO_MUX         :         VCO0
 ********************************************************************************
+DIST_MTS_LMK04828_124.91.tcs
+********************************************************************************
+part            :    LMK04828B
+SYSREF_FREQ     :        4.996 MHz
+OSCout_FREQ     :      160.009 MHz
+CLKin0_FREQ     :      499.640 MHz
+CLKin1_FREQ     :      124.910 MHz
+CLKin2_FREQ     :       76.800 MHz
+CLKout0_FREQ    :      124.910 MHz
+CLKout1_FREQ    :        4.996 MHz
+CLKout2_FREQ    :      124.910 MHz
+CLKout3_FREQ    :        4.996 MHz
+CLKout4_FREQ    :      124.910 MHz
+CLKout5_FREQ    :        4.996 MHz
+CLKout6_FREQ    :      124.910 MHz
+CLKout7_FREQ    :        4.996 MHz
+CLKout8_FREQ    :      124.910 MHz
+CLKout9_FREQ    :        4.996 MHz
+CLKout10_FREQ   :      124.910 MHz
+CLKout11_FREQ   :      124.910 MHz
+CLKout12_FREQ   :      124.910 MHz
+CLKout13_FREQ   :        4.996 MHz
+CLKin_SEL_MODE  :       CLKin0
+VCO_MUX         : CLKin1 (ext)
+********************************************************************************
+DIST_MTS_LMK04828.tcs
+********************************************************************************
+part            :    LMK04828B
+SYSREF_FREQ     :        4.996 MHz
+OSCout_FREQ     :      160.009 MHz
+CLKin0_FREQ     :      499.640 MHz
+CLKin1_FREQ     :      499.640 MHz
+CLKin2_FREQ     :       76.800 MHz
+CLKout0_FREQ    :      499.640 MHz
+CLKout1_FREQ    :        4.996 MHz
+CLKout2_FREQ    :      499.640 MHz
+CLKout3_FREQ    :        4.996 MHz
+CLKout4_FREQ    :      499.640 MHz
+CLKout5_FREQ    :        4.996 MHz
+CLKout6_FREQ    :      499.640 MHz
+CLKout7_FREQ    :        4.996 MHz
+CLKout8_FREQ    :      499.640 MHz
+CLKout9_FREQ    :        4.996 MHz
+CLKout10_FREQ   :      499.640 MHz
+CLKout11_FREQ   :      499.640 MHz
+CLKout12_FREQ   :      499.640 MHz
+CLKout13_FREQ   :        4.996 MHz
+CLKin_SEL_MODE  :       CLKin0
+VCO_MUX         : CLKin1 (ext)
+********************************************************************************
 LMX2594_4000MHz.tcs
 ********************************************************************************
 part            :      LMX2594

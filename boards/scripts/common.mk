@@ -23,7 +23,7 @@ all: $(OVERLAY).bit $(OVERLAY).hwh check_timing
 	echo "Built $(OVERLAY) successfully!";
 
 $(PROJECT): $(OVERLAY).xdc
-	XILINX_IP_REPO_PATH="$(IP_DIR)" $(VIVADO) -source $(SCRIPT_DIR)/proj.tcl -tclargs \
+	XILINX_IP_REPO_PATH="$(IP_DIR)" XILINX_BOARD_REPO_PATH="$(BOARD_FILES_DIR)" $(VIVADO) -source $(SCRIPT_DIR)/proj.tcl -tclargs \
 	$(BOARD) $(OVERLAY) $(TCL_SRC) $(OVERLAY).xdc $(RTL_SRC)
 
 $(OVERLAY).bit: $(PROJECT)

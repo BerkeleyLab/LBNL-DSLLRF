@@ -41,3 +41,20 @@ See example designs and building instructions in [boards/README.md](boards/READM
 
 A modular PYNQ driver for the generic many-input-many-output, multi-tile synchronized overlay is available at `mimo_mts`.
 Jupyter notebooks using the driver to demonstrate features of the overlay designs are available at `doc/`.
+
+## SD card preparation
+
+1. Prepare SD card, following instructions [here](https://pynq.readthedocs.io/en/latest/appendix/sdcard.html), example:
+
+```
+sudo umount /dev/sdb1
+sudo dd bs=4M if=ZCU208-3.0.1.img of=/dev/sdb status=progress
+```
+
+2. Change hostname and IP address, following instructions [here](https://pynq.readthedocs.io/en/v2.4/getting_started.html#change-the-hostname). Example:
+
+```
+pynq_hostname.sh lbl208
+```
+
+3. Reboot. Clone this repo and run `install.sh`.

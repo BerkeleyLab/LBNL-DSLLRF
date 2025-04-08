@@ -26,12 +26,14 @@ sudo apt-get install -y device-tree-compiler
 make -C boards/dts ddr4.dtbo
 cp boards/dts/ddr4.dtbo mimo_mts/
 
-# Update pynqmetadata to allow custom overlay drivers
-# This might be included in the 3.0.1 sd card build process instead
-# see https://discuss.pynq.io/t/how-to-bind-driver-to-rtl-in-pynq3/4890/4
-python3 -m pip uninstall -y pynqmetadata
-python3 -m pip cache purge
-python3 -m pip install pynqmetadata
+pynq_version=`pynq -v | awk -F ": " 'NR==1 {print $2}'`
+if [ "$pynq_version" != "3.0.1" ]; then
+    # Update pynqmetadata to allow custom overlay drivers
+    # see https://discuss.pynq.io/t/how-to-bind-driver-to-rtl-in-pynq3/4890/4
+    sudo python3 -m pip uninstall -y pynqmetadata
+    sudo python3 -m pip cache purge
+    sudo python3 -m pip install pynqmetadata
+fi
 
 # Install python package and notebook
 # python3 -m pip install . --no-build-isolation
