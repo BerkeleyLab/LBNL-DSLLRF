@@ -23,8 +23,8 @@ cd ..
 # Create a device-tree overlay to access PL-DRAM
 sudo apt-get update -y
 sudo apt-get install -y device-tree-compiler
-make -C boards/dts ddr4.dtbo
-cp boards/dts/ddr4.dtbo mimo_mts/
+make -C designs/dts ddr4.dtbo
+cp designs/dts/ddr4.dtbo mimo_mts/
 
 pynq_version=`pynq -v | awk -F ": " 'NR==1 {print $2}'`
 if [ "$pynq_version" != "3.0.1" ]; then

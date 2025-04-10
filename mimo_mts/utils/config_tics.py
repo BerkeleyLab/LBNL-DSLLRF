@@ -107,7 +107,7 @@ class LMXConfig(TICSConfig):
 
 
 if __name__ == '__main__':
-    p = Path().cwd().parent.parent / 'boards' / 'CLK104'
+    p = Path().cwd().parent.parent / 'designs' / 'CLK104'
 
     for file in p.glob('*.tcs'):
         print('*' * 80)
