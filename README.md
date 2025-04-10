@@ -35,7 +35,7 @@ The intented application projects include:
 
 ## Overlays
 
-See example designs and building instructions in [boards/README.md](boards/README.md).
+See example designs and building instructions in [designs/README.md](designs/README.md).
 
 ## PYNQ drivers and notebooks
 

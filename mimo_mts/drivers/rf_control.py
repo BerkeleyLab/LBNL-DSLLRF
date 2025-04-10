@@ -8,7 +8,7 @@ class RfControl(DefaultIP):
 
     def __init__(self, description):
         ip_path = Path(__file__).resolve().parent.parent.parent / \
-            'boards' / 'ip'
+            'designs' / 'ip'
         json_path = ip_path / 'rtl' / 'axil_rf_control.json'
         with open(json_path, 'r') as f:
             description['registers'] = json.load(f)

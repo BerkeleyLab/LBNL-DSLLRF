@@ -24,14 +24,14 @@ rtl_test:
   before_script:
     - apt-get install verilator
     - pip install -r requirements.txt
-    - cd boards/ip/tb
+    - cd designs/ip/tb
   stage: test
   script:
     - make SIM=icarus
 
 .bitfile_synthesis_zcu208:
   before_script:
-    - cd boards/ZCU208/${OVERLAY} && ls /non-free
+    - cd designs/ZCU208/${OVERLAY} && ls /non-free
   stage: synthesis
   timeout: 3h
   script:
@@ -41,18 +41,18 @@ rtl_test:
     expire_in: 4 weeks
     when: always
     paths:
-      - boards/ZCU208/${OVERLAY}/${OVERLAY}.bit
-      - boards/ZCU208/${OVERLAY}/${OVERLAY}.hwh
-      - boards/ZCU208/${OVERLAY}/${OVERLAY}.xsa
-      - boards/ZCU208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
-      - boards/ZCU208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
+      - designs/ZCU208/${OVERLAY}/${OVERLAY}.bit
+      - designs/ZCU208/${OVERLAY}/${OVERLAY}.hwh
+      - designs/ZCU208/${OVERLAY}/${OVERLAY}.xsa
+      - designs/ZCU208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
+      - designs/ZCU208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
     matrix:
       - OVERLAY: [config_evr, als_llrf_mts]
 
 .bitfile_synthesis_zcu216:
   before_script:
-    - cd boards/ZCU216/${OVERLAY} && ls /non-free
+    - cd designs/ZCU216/${OVERLAY} && ls /non-free
   stage: synthesis
   timeout: 3h
   script:
@@ -62,18 +62,18 @@ rtl_test:
     expire_in: 4 weeks
     when: always
     paths:
-      - boards/ZCU216/${OVERLAY}/${OVERLAY}.bit
-      - boards/ZCU216/${OVERLAY}/${OVERLAY}.hwh
-      - boards/ZCU216/${OVERLAY}/${OVERLAY}.xsa
-      - boards/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
-      - boards/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
+      - designs/ZCU216/${OVERLAY}/${OVERLAY}.bit
+      - designs/ZCU216/${OVERLAY}/${OVERLAY}.hwh
+      - designs/ZCU216/${OVERLAY}/${OVERLAY}.xsa
+      - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
+      - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
     matrix:
       - OVERLAY: [mimo_mts]
 
 bitfile_synthesis_lbl208:
   before_script:
-    - cd boards/LBL208/${OVERLAY} && ls /non-free
+    - cd designs/LBL208/${OVERLAY} && ls /non-free
   stage: synthesis
   timeout: 3h
   script:
@@ -83,11 +83,11 @@ bitfile_synthesis_lbl208:
     expire_in: 4 weeks
     when: always
     paths:
-      - boards/LBL208/${OVERLAY}/${OVERLAY}.bit
-      - boards/LBL208/${OVERLAY}/${OVERLAY}.hwh
-      - boards/LBL208/${OVERLAY}/${OVERLAY}.xsa
-      - boards/LBL208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
-      - boards/LBL208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
+      - designs/LBL208/${OVERLAY}/${OVERLAY}.bit
+      - designs/LBL208/${OVERLAY}/${OVERLAY}.hwh
+      - designs/LBL208/${OVERLAY}/${OVERLAY}.xsa
+      - designs/LBL208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
+      - designs/LBL208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
     matrix:
       - OVERLAY: [config_evr, als_llrf_mts]
