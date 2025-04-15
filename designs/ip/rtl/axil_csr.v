@@ -50,7 +50,7 @@ module axil_csr #(
     localparam integer ADDR_LSB = $clog2(AXI_WSTRB);  // 2, 4-byte aligned
     localparam integer REG_AW = $clog2(N_REGS_INP + N_REGS_OUT);
     localparam integer ADDR_CTR_REG_END = N_REGS_OUT << ADDR_LSB;
-    localparam integer ADDR_STS_REG_END = N_REGS_INP << ADDR_LSB + ADDR_CTR_REG_END;
+    localparam integer ADDR_STS_REG_END = (N_REGS_INP << ADDR_LSB) + ADDR_CTR_REG_END;
 
     // Control Registers
     reg [DATA_WIDTH-1:0] csr_regs [0:N_REGS_OUT-1];
@@ -186,9 +186,9 @@ module axil_csr #(
                     axi_rdata <= csr_regs[r_reg_index];
                 else if (axi_araddr < ADDR_STS_REG_END) begin
                     axi_rdata <= csr_in[status_reg_index * DATA_WIDTH +: DATA_WIDTH];
-                    $display("Reading status register %d", status_reg_index);
-                end else
+                end else begin
                     axi_rdata <= 32'hDEADBEEF;
+                end
             end
         end
     end

@@ -35,8 +35,68 @@
         "description": "Pulse length",
         "size": 32
     },
-    "rf_status": {
+    "amp_loop_enable": {
         "address_offset": 24,
+        "access": "read-write",
+        "description": "Amplitude loop enable",
+        "size": 32
+    },
+    "amp_loop_setpoint": {
+        "address_offset": 28,
+        "access": "read-write",
+        "description": "Amplitude loop setpoint",
+        "size": 32
+    },
+    "amp_loop_reset": {
+        "address_offset": 32,
+        "access": "read-write",
+        "description": "Amplitude loop reset",
+        "size": 32
+    },
+    "amp_loop_kp": {
+        "address_offset": 36,
+        "access": "read-write",
+        "description": "Amplitude loop proportional gain",
+        "size": 32
+    },
+    "amp_loop_ki": {
+        "address_offset": 40,
+        "access": "read-write",
+        "description": "Amplitude loop integral gain",
+        "size": 32
+    },
+    "phs_loop_enable": {
+        "address_offset": 44,
+        "access": "read-write",
+        "description": "Phase loop enable",
+        "size": 32
+    },
+    "phs_loop_setpoint": {
+        "address_offset": 48,
+        "access": "read-write",
+        "description": "Phase loop setpoint",
+        "size": 32
+    },
+    "phs_loop_reset": {
+        "address_offset": 52,
+        "access": "read-write",
+        "description": "Phase loop reset",
+        "size": 32
+    },
+    "phs_loop_kp": {
+        "address_offset": 56,
+        "access": "read-write",
+        "description": "Phase loop proportional gain",
+        "size": 32
+    },
+    "phs_loop_ki": {
+        "address_offset": 60,
+        "access": "read-write",
+        "description": "Phase loop integral gain",
+        "size": 32
+    },
+    "rf_status": {
+        "address_offset": 64,
         "access": "read-only",
         "description": "Status register",
         "size": 32,
@@ -49,10 +109,28 @@
             }
         }
     },
-    "debug_status": {
-        "address_offset": 28,
+    "amp_measured": {
+        "address_offset": 68,
         "access": "read-only",
-        "description": "debug status",
+        "description": "amplitude monitor",
+        "size": 32
+    },
+    "amp_loop_err": {
+        "address_offset": 72,
+        "access": "read-only",
+        "description": "amplitude loop error",
+        "size": 32
+    },
+    "phs_measured": {
+        "address_offset": 76,
+        "access": "read-only",
+        "description": "phase monitor",
+        "size": 32
+    },
+    "phs_loop_err": {
+        "address_offset": 80,
+        "access": "read-only",
+        "description": "phase loop error",
         "size": 32
     }
 }

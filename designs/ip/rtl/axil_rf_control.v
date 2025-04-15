@@ -4,7 +4,10 @@ module axil_rf_control #(
     // Width of data bus in bits
     parameter integer DATA_WIDTH = 32,
     // Width of address bus in bits
-    parameter integer ADDR_WIDTH = 8
+    parameter integer ADDR_WIDTH = 8,
+    parameter integer KW = 18,      // Width of dsp signals
+    parameter integer EW = 12       // error width
+
 ) (
     (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 s_axi_aclk CLK" *)
     (* X_INTERFACE_PARAMETER = "ASSOCIATED_BUSIF s_axi, ASSOCIATED_RESET s_axi_aresetn" *)
@@ -30,18 +33,32 @@ module axil_rf_control #(
     output wire s_axi_rvalid,
     input wire s_axi_rready,
 
-    // IOs
+    output wire dsp_reset,
     output wire trigger_out,
-    output wire dac_enable_out,
-    output wire [11:0] pulse_length_out,
+    output wire rf_permit_out,
+    output wire dac_enable,
+    output wire [11:0] pulse_length,
+    output wire amp_loop_enable,
+    output wire amp_loop_reset,
+    output wire signed [KW-1:0] amp_loop_setpoint,
+    output wire signed [KW-1:0] amp_loop_kp,
+    output wire signed [KW-1:0] amp_loop_ki,
+    output wire phs_loop_enable,
+    output wire phs_loop_reset,
+    output wire signed [KW-1:0] phs_loop_setpoint,
+    output wire signed [KW-1:0] phs_loop_kp,
+    output wire signed [KW-1:0] phs_loop_ki,
+    input wire signed [KW-1:0] amp_measured,
+    input wire signed [KW-1:0] phs_measured,
+    input wire signed [EW-1:0] amp_loop_err,
+    input wire signed [EW-1:0] phs_loop_err,
     input wire  ext_trigger_in,
     input wire  evr_trigger_in,
-    input wire  rf_permit_in,
-    input wire [31:0] debug_in
+    input wire  rf_permit_in
 );
 
-    localparam integer N_REGS_OUT = 6;
-    localparam integer N_REGS_INP = 2;
+    localparam integer N_REGS_OUT = 16;
+    localparam integer N_REGS_INP = 6;
 
     // Internal signals
     wire [N_REGS_OUT*DATA_WIDTH-1:0] csr_out;
@@ -95,27 +112,39 @@ module axil_rf_control #(
     wire [31:0] trig_period;
     wire [15:0] trig_delay;
     wire [15:0] trig_divide;
-    wire dac_enable;
     wire rf_permit_in_dsp;
 
     assign trig_sel         = csr_out_regs[0][1:0];
     assign trig_period      = csr_out_regs[1];
     assign trig_delay       = csr_out_regs[2][15:0];
     assign trig_divide      = csr_out_regs[3][15:0];
-    assign pulse_length_out = csr_out_regs[4][11:0];
+    assign pulse_length     = csr_out_regs[4][11:0];
     assign dac_enable       = csr_out_regs[5][0];
+    assign amp_loop_enable  = csr_out_regs[6][0];
+    assign amp_loop_setpoint= csr_out_regs[7][KW-1:0];
+    assign amp_loop_reset   = csr_out_regs[8][0];
+    assign amp_loop_kp      = csr_out_regs[9][KW-1:0];
+    assign amp_loop_ki      = csr_out_regs[10][KW-1:0];
+    assign phs_loop_enable  = csr_out_regs[11][0];
+    assign phs_loop_setpoint = csr_out_regs[12][KW-1:0];
+    assign phs_loop_reset   = csr_out_regs[13][0];
+    assign phs_loop_kp      = csr_out_regs[14][KW-1:0];
+    assign phs_loop_ki      = csr_out_regs[15][KW-1:0];
+
     assign csr_inp_regs[0]  = {31'h0, rf_permit_in_dsp};
-    assign csr_inp_regs[1]  = debug_in;
+    assign csr_inp_regs[1]  = amp_measured;
+    assign csr_inp_regs[2]  = amp_loop_err;
+    assign csr_inp_regs[3]  = phs_measured;
+    assign csr_inp_regs[4]  = phs_loop_err;
 
     // Clock and reset
-    wire dsp_clk = s_axi_aclk;
-    wire dsp_reset = ~s_axi_aresetn;
+    assign dsp_reset = ~s_axi_aresetn;
 
     // Internal trigger source
     reg [31:0] int_trig_cnt=0;
     wire int_trig;
     assign int_trig = (int_trig_cnt == trig_period - 1);
-    always @(posedge dsp_clk) begin
+    always @(posedge s_axi_aclk) begin
         int_trig_cnt <= (dsp_reset || int_trig) ? 0 : int_trig_cnt + 1'b1;
     end
 
@@ -123,17 +152,17 @@ module axil_rf_control #(
     wire evr_trig_edge;
     wire ext_trig_edge;
     sig_cdc_edge evr_trig_edge_inst (
-        .clk(dsp_clk),
+        .clk(s_axi_aclk),
         .sig_in(evr_trigger_in),
         .edge_out(evr_trig_edge)
     );
     sig_cdc_edge ext_trig_edge_inst (
-        .clk(dsp_clk),
+        .clk(s_axi_aclk),
         .sig_in(ext_trigger_in),
         .edge_out(ext_trig_edge)
     );
     sig_cdc_edge rf_permit_edge_inst (
-        .clk(dsp_clk),
+        .clk(s_axi_aclk),
         .sig_in(rf_permit_in),
         .sig_out(rf_permit_in_dsp)
     );
@@ -156,7 +185,7 @@ module axil_rf_control #(
     trigger #(
         .DW(16)
     ) trigger_inst (
-        .clk(dsp_clk),
+        .clk(s_axi_aclk),
         .reset(dsp_reset),
         .trig_in(trigger_int),
         .delay(trig_delay),
@@ -165,7 +194,7 @@ module axil_rf_control #(
     );
 
     // DAC enable
-    assign dac_enable_out = dac_enable && rf_permit_in_dsp;
+    assign rf_permit_out = dac_enable && rf_permit_in_dsp;
 
 endmodule
 

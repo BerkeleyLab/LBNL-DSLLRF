@@ -1,3 +1,4 @@
+`timescale 1ns / 1ns
 
 //  Xilinx UltraRAM True Dual Port Mode - Byte write.  This code implements
 //  a parameterizable UltraRAM block with write/read on both ports in

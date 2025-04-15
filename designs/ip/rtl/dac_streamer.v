@@ -3,8 +3,10 @@
 // Streams data from a BRAM to an AXIS interface.
 
 module dac_streamer #(
-    parameter integer DW = 256,     // 16 samples, 16 bits data == 32 bytes
-    parameter integer AW = 12,      // 2**AW number of rows, total number of samples: 2**AW * DW/16
+    parameter integer SAMP_DW = 16,     // 16 bits data
+    parameter integer SAMP_NUM = 16,    // 16 samples
+    parameter integer DW = SAMP_DW * SAMP_NUM,     // 32 bytes
+    parameter integer AW = 12,          // 2**AW number of rows, total number of samples: 2**AW * DW/16
     parameter integer READ_LATENCY = 3           // Number of read cycles
 ) (
     (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE READ, MEM_SIZE 131072, MEM_WIDTH 256" *)
@@ -42,17 +44,11 @@ module dac_streamer #(
     // Control Input Parameters
     input wire [AW-1:0] n_rows,
     input wire enable,
-    input wire trigger
+    input wire trigger  // single clock cycle pulse
 );
     localparam integer NBPIPE = READ_LATENCY - 2;   // Number of pipeline Registers
     localparam integer NUM_COL = DW/8; // increment address by DW/8 bytes, or 16 samples
     localparam integer TRIG_DELAY = 1;
-    // trigger edge detection
-    (* ASYNC_REG="TRUE" *) reg [2:0] trig_d = 0;
-    always @(posedge axis_clk) begin
-        trig_d <= {trig_d[1:0], trigger};
-    end
-    wire trigger_posedge = ~trig_d[2] & trig_d[1];
 
     // Internal signals
     reg [AW-1:0] vcnt=0;
@@ -75,7 +71,7 @@ module dac_streamer #(
             vcnt <= 0;
             tvalid_pipe <= 0;
         end else begin
-            if (trigger_posedge) begin
+            if (trigger) begin
                 bram_en <= 1'b1;
                 bram_addr <= 0;
                 vcnt <= 0;
@@ -93,9 +89,9 @@ module dac_streamer #(
         end
     end
 
-    // fill in zeros which is also valid data
-    wire tvalid = tvalid_pipe[NBPIPE+1];
+    // zeros are also valid data
     assign m_axis_tvalid = 1'b1;
-    assign m_axis_tdata  = tvalid ? bram_rdata : {DW{1'b0}};
+    wire pulse_tvalid = tvalid_pipe[NBPIPE+1];
+    assign m_axis_tdata  = pulse_tvalid ? bram_rdata : {DW{1'b0}};
 
 endmodule

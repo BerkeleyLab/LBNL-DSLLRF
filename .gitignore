@@ -19,3 +19,4 @@ results.xml
 *.dtbo
 *.vcd
 *.vvp
+*cordicg_b22.v

@@ -22,7 +22,7 @@ help:
 all: $(OVERLAY).bit $(OVERLAY).hwh check_timing
 	echo "Built $(OVERLAY) successfully!";
 
-$(PROJECT): $(OVERLAY).xdc
+$(PROJECT): $(OVERLAY).xdc $(RTL_SRC)
 	XILINX_IP_REPO_PATH="$(IP_DIR)" XILINX_BOARD_REPO_PATH="$(BOARD_FILES_DIR)" $(VIVADO) -source $(SCRIPT_DIR)/proj.tcl -tclargs \
 	$(BOARD) $(OVERLAY) $(TCL_SRC) $(OVERLAY).xdc $(RTL_SRC)
 
@@ -46,6 +46,6 @@ bitstream: $(OVERLAY).bit
 handoff: $(OVERLAY).hwh
 
 .PHONY: clean
-clean:
+clean::
 	rm -rf _xilinx .Xil
 	rm -f $(OVERLAY).xsa $(OVERLAY).hwh $(OVERLAY).bit

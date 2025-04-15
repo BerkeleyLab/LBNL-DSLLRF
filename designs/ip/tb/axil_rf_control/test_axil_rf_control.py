@@ -12,7 +12,6 @@ class TB:
     def __init__(self, dut):
         dut._log.setLevel(logging.INFO)
         self.dut = dut
-        self.addr_length = 1 << dut.ADDR_WIDTH.value
         ip_path = Path(__file__).resolve().parent.parent.parent
         json_path = ip_path / 'rtl' / 'axil_rf_control.json'
         with open(json_path, 'r') as f:
@@ -37,10 +36,6 @@ class TB:
         self.dut.s_axi_aresetn.value = 1
         await RisingEdge(self.dut.s_axi_aclk)
 
-    async def drive_rf_permit(self, value=0):
-        self.dut.rf_permit_in.value = value
-        await RisingEdge(self.dut.s_axi_aclk)
-
     async def write_register(self, register, value):
         await self.axil_master.write(
             self.registers[register]['address_offset'],
@@ -61,29 +56,37 @@ async def test_write(dut):
         'trig_period': 20,
         'trig_divide': 1,
         'pulse_length': 8,
-        'dac_enable': 1
+        'dac_enable': 1,
+        'amp_loop_setpoint': 200,
+        'phs_loop_setpoint': 120,
     }
 
     for reg, value in test_regs_dict.items():
         await tb.write_register(reg, value)
         assert await tb.read_register(reg) == value, \
-            f"write {reg} mismatch"
-
-    for _ in range(2):
-        await RisingEdge(tb.dut.trigger_out)
-
-    assert tb.dut.pulse_length_out.value == 8, \
-        "pulse_length_out mismatch"
+            f"readback {reg} mismatch"
+        assert getattr(tb.dut, reg).value == value, \
+            f"write {reg} mismatch: {getattr(tb.dut, reg).value}"
 
 
 @cocotb.test(timeout_time=1, timeout_unit='us')
 async def test_read(dut):
     tb = TB(dut)
     await tb.cycle_reset()
-    await tb.drive_rf_permit(1)
-    tb.dut.debug_in.value = random.randint(0, 3000)
+    test_regs_dict = {
+        'amp_measured': random.randint(0, 3000),
+        'amp_loop_err': random.randint(0, 1000),
+        'phs_measured': random.randint(0, 3000),
+        'phs_loop_err': random.randint(0, 1000),
+    }
+    for reg, value in test_regs_dict.items():
+        getattr(tb.dut, reg).value = value
+        await RisingEdge(tb.dut.s_axi_aclk)
 
-    assert await tb.read_register('rf_status') == 1, \
-        "status mismatch"
-    assert await tb.read_register('debug_status') == tb.dut.debug_in.value, \
-        "debug mismatch"
+    reg_val = await tb.read_register('rf_status')
+    assert reg_val == 1, f"status mismatch: rf_status = 0x{reg_val}"
+
+    for reg, value in test_regs_dict.items():
+        reg_val = await tb.read_register(reg)
+        assert reg_val == getattr(tb.dut, reg).value, \
+            f"{reg} mismatch: {reg_val} != {getattr(tb.dut, reg).value}"

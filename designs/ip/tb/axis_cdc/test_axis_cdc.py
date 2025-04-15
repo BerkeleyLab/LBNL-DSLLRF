@@ -41,6 +41,7 @@ class TB:
 def gen_payload(length):
     return bytearray(itertools.islice(itertools.cycle(range(256)), length))
 
+
 @cocotb.test(timeout_time=1, timeout_unit='us')
 async def test_axis_cdc(dut, length=8, DATA_WIDTH=256):
     tb = TB(dut)
