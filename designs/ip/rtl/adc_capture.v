@@ -41,16 +41,9 @@ module adc_capture #(
 
     // Control Input Parameters
     input wire [AW-1:0]     n_rows,
-    input wire              trigger
+    input wire              trigger     // single clock cycle pulse
 );
     localparam integer NUM_COL = DW/8; // increment address by DW/8 bytes, or 16 samples
-
-    // trigger edge detection
-    (* ASYNC_REG="TRUE" *) reg [2:0] trig_d = 0;
-    always @(posedge axis_clk) begin
-        trig_d <= {trig_d[1:0], trigger};
-    end
-    wire trigger_posedge = ~trig_d[2] & trig_d[1];
 
     assign bram_clk = axis_clk;
     assign bram_rst = ~axis_aresetn;
@@ -66,7 +59,7 @@ module adc_capture #(
             // bram_we   <= 0;
             bram_en   <= 0;
         end else begin
-            if (trigger_posedge) begin
+            if (trigger) begin
                 bram_addr <= 0;
                 bram_en   <= 1'b1;
                 vcnt <= 0;

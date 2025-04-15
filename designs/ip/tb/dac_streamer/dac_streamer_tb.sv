@@ -3,7 +3,9 @@
 module dac_streamer_tb;
 
     // Parameters
-    parameter int DW = 256;
+    parameter int SAMP_DW = 16;
+    parameter int SAMP_NUM = 16;
+    parameter int DW = SAMP_DW * SAMP_NUM; // 16 samples of 16 bits
     parameter int AW = 5;
     parameter int READ_LATENCY = 3;        // number of cycles for ram read
     parameter [AW-1:0] NUM_ROW = 10;   // number of rows per trigger
@@ -33,7 +35,8 @@ module dac_streamer_tb;
 
     // Instantiate the dac_streamer
     dac_streamer #(
-        .DW(DW), .AW(AW), .READ_LATENCY(READ_LATENCY)
+        .SAMP_DW(SAMP_DW), .SAMP_NUM(SAMP_NUM),
+        .AW(AW), .READ_LATENCY(READ_LATENCY)
     ) dac_inst (
         .bram_wdata     (bram_dac_wdata),
         .bram_we        (bram_dac_we),
@@ -89,6 +92,7 @@ module dac_streamer_tb;
     logic bram_adc_clk;
     logic bram_adc_rst;
     logic [AW-1:0] bram_adc_addr_word;
+    logic [AW-1:0] adc_nrows = NUM_ROW + READ_LATENCY;
     assign bram_adc_addr_word = bram_adc_addr >> AW_WORD;
 
     adc_capture #(
@@ -106,7 +110,7 @@ module dac_streamer_tb;
         .s_axis_tdata   (axis_tdata),
         .s_axis_tready  (axis_tready),
         .s_axis_tvalid  (axis_tvalid),
-        .n_rows         (NUM_ROW + READ_LATENCY),
+        .n_rows         (adc_nrows),
         .trigger
     );
 
@@ -132,7 +136,7 @@ module dac_streamer_tb;
     end
 
     // Task to trigger the streaming
-    task trigger_streaming();
+    task trigger_streaming;
         begin
             @ (posedge axis_clk);
             $display("Time: %g ns, Triggered the streaming...", $time);
@@ -142,7 +146,7 @@ module dac_streamer_tb;
         end
     endtask
 
-    task verify_memory_content();
+    task verify_memory_content;
         int j;
         begin
             @ (negedge bram_adc_en);
@@ -193,7 +197,7 @@ module dac_streamer_tb;
     end
 
     always @(posedge axis_clk) begin
-        if (axis_tvalid && axis_tready && dac_inst.tvalid) begin
+        if (axis_tvalid && axis_tready && dac_inst.pulse_tvalid) begin
             $display("Time: %g ns, AXIS TDATA: %h", $time, axis_tdata);
         end
     end

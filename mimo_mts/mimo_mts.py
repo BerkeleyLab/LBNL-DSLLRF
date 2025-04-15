@@ -68,24 +68,27 @@ class MimoMtsOverlay(Overlay):
 
     def _initialize_dev(self):
         """Alias xrfdc, rf_control and evr, enumurate rfdc blocks."""
-        self.xrfdc = self.rfdc
-        self.rf_control = self.axil_rf_control_0
+        if 'axil_rf_control_0' in self.ip_dict:
+            self.rf_control = self.axil_rf_control_0
+        elif 'axil_llrf_0' in self.ip_dict:
+            self.rf_control = self.axil_llrf_0
+
         if 'axil_evr_0' in self.ip_dict:
             self.evr = self.axil_evr_0
 
         if self.board.converters_per_tile == 2:
             self.dac_blocks = np.array([
-                [self.xrfdc.dac_tiles[i].blocks[j] for j in [0, 2]]
+                [self.rfdc.dac_tiles[i].blocks[j] for j in [0, 2]]
                 for i in range(4)])
             self.adc_blocks = np.array([
-                [self.xrfdc.adc_tiles[i].blocks[j] for j in [0, 1]]
+                [self.rfdc.adc_tiles[i].blocks[j] for j in [0, 1]]
                 for i in range(4)])
         elif self.board.converters_per_tile == 4:
             self.dac_blocks = np.array([
-                [self.xrfdc.dac_tiles[i].blocks[j] for j in range(4)]
+                [self.rfdc.dac_tiles[i].blocks[j] for j in range(4)]
                 for i in range(4)])
             self.adc_blocks = np.array([
-                [self.xrfdc.adc_tiles[i].blocks[j] for j in range(4)]
+                [self.rfdc.adc_tiles[i].blocks[j] for j in range(4)]
                 for i in range(4)])
 
         self.sysref_freqcnt = self.clocktreeMTS.freqcnt_gpio.channel1
@@ -149,31 +152,31 @@ class MimoMtsOverlay(Overlay):
         Add margin to the target latency to ensure alignment.
         """
         if self.board.num_dac_tiles > 0:
-            self.xrfdc.mts_dac_config.Tiles = self.board.active_dac_tiles
-            self.xrfdc.mts_dac_config.SysRef_Enable = 1
-            self.xrfdc.mts_dac_config.Target_Latency = \
+            self.rfdc.mts_dac_config.Tiles = self.board.active_dac_tiles
+            self.rfdc.mts_dac_config.SysRef_Enable = 1
+            self.rfdc.mts_dac_config.Target_Latency = \
                 self.board.mts_dac_target_latency
-            self.xrfdc.mts_dac()
+            self.rfdc.mts_dac()
         else:
-            self.xrfdc.mts_dac_config.Tiles = 0x0
-            self.xrfdc.mts_dac_config.SysRef_Enable = 0
+            self.rfdc.mts_dac_config.Tiles = 0x0
+            self.rfdc.mts_dac_config.SysRef_Enable = 0
         if self.board.num_adc_tiles > 0:
-            self.xrfdc.mts_adc_config.Tiles = self.board.active_adc_tiles
-            self.xrfdc.mts_adc_config.SysRef_Enable = 1
-            self.xrfdc.mts_adc_config.Target_Latency = \
+            self.rfdc.mts_adc_config.Tiles = self.board.active_adc_tiles
+            self.rfdc.mts_adc_config.SysRef_Enable = 1
+            self.rfdc.mts_adc_config.Target_Latency = \
                 self.board.mts_adc_target_latency
-            self.xrfdc.mts_adc()
+            self.rfdc.mts_adc()
         else:
-            self.xrfdc.mts_adc_config.Tiles = 0x0
-            self.xrfdc.mts_adc_config.SysRef_Enable = 0
+            self.rfdc.mts_adc_config.Tiles = 0x0
+            self.rfdc.mts_adc_config.SysRef_Enable = 0
 
     def init_tile_sync(self):
         """Resets the MTS alignment engine"""
         # Set tile distributing reference clock
-        self.xrfdc.mts_adc_init(self.board.adc_ref_index)
-        self.xrfdc.mts_dac_init(self.board.dac_ref_index)
-        self.xrfdc.mts_dac()
-        self.xrfdc.mts_adc()
+        self.rfdc.mts_adc_init(self.board.adc_ref_index)
+        self.rfdc.mts_dac_init(self.board.dac_ref_index)
+        self.rfdc.mts_dac()
+        self.rfdc.mts_adc()
 
         # Reset MTS ClockWizard MMCM - refer to PG065
         self.clocktreeMTS.MTSclkwiz.mmio.write_reg(0, 0xA)
@@ -182,14 +185,14 @@ class MimoMtsOverlay(Overlay):
         bitvector = self.board.active_dac_tiles
         for n in range(4):
             if bitvector & 0x1:
-                self.xrfdc.dac_tiles[n].Reset()
+                self.rfdc.dac_tiles[n].Reset()
             bitvector = bitvector >> 1
         # Reset ADC FIFO of only user selected tiles - restarts MTS engine
         for toggleValue in range(0, 1):
             bitvector = self.board.active_adc_tiles
             for n in range(4):
                 if bitvector & 0x1:
-                    self.xrfdc.adc_tiles[n].SetupFIFOBoth(toggleValue)
+                    self.rfdc.adc_tiles[n].SetupFIFOBoth(toggleValue)
                 bitvector = bitvector >> 1
 
     def verify_clock_tree(self):
@@ -209,7 +212,7 @@ class MimoMtsOverlay(Overlay):
             m01_axis_data -> Tile0, ADC0: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
             m02_axis_data -> Tile0, ADC1: I7, I6, I5, I4, I3, I2, I1, I0
             m03_axis_data -> Tile0, ADC1: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
-        Quad RF-ADC: Figure 63:
+          Quad RF-ADC: Figure 63:
             m00_axis_data -> Tile0, ADC0: Q3, I3, Q2, I2, Q1, I1, Q0, I0
             m01_axis_data -> Tile0, ADC1: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
             m02_axis_data -> Tile0, ADC2: Q3, I3, Q2, I2, Q1, I1, Q0, I0
@@ -238,7 +241,7 @@ class MimoMtsOverlay(Overlay):
         return i_buffer, q_buffer
 
     def set_dac_mixer_dco(self, freq_mhz=0, nyquist=1, phase=0):
-        self.xrfdc.mts_dac_config.SysRef_Enable = False
+        self.rfdc.mts_dac_config.SysRef_Enable = False
 
         # Set up mixer settings for each DAC tile
         mixer_settings_dac = {
@@ -253,14 +256,14 @@ class MimoMtsOverlay(Overlay):
         for dac_block in self.dac_blocks.ravel():
             dac_block.NyquistZone = nyquist
             dac_block.MixerSettings = mixer_settings_dac
-            # Reset NCO phase
+            dac_block.InterpolationFactor = 2  # for C2R mixer mode
             dac_block.ResetNCOPhase()
 
         # Configure the MTS to use the SYSREF event source
-        self.xrfdc.mts_dac_config.SysRef_Enable = True
+        self.rfdc.mts_dac_config.SysRef_Enable = True
 
     def set_adc_mixer_dco(self, freq_mhz=0, nyquist=1, phase=0):
-        self.xrfdc.mts_adc_config.SysRef_Enable = False
+        self.rfdc.mts_adc_config.SysRef_Enable = False
 
         # Set up mixer settings for each ADC tile
         mixer_settings_adc = {
@@ -275,11 +278,10 @@ class MimoMtsOverlay(Overlay):
         for adc_block in self.adc_blocks.ravel():
             adc_block.NyquistZone = nyquist
             adc_block.MixerSettings = mixer_settings_adc
-            # Reset NCO phase
             adc_block.ResetNCOPhase()
 
         # Configure the MTS to use the SYSREF event source
-        self.xrfdc.mts_adc_config.SysRef_Enable = True
+        self.rfdc.mts_adc_config.SysRef_Enable = True
 
 
 def resolve_binary_path(bitfile_name):

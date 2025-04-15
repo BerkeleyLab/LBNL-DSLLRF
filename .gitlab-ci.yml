@@ -29,7 +29,7 @@ rtl_test:
   script:
     - make SIM=icarus
 
-.bitfile_synthesis_zcu208:
+bitfile_synthesis_zcu208:
   before_script:
     - cd designs/ZCU208/${OVERLAY} && ls /non-free
   stage: synthesis
