@@ -37,7 +37,8 @@ module axil_rf_control #(
     output wire trigger_out,
     output wire rf_permit_out,
     output wire dac_enable,
-    output wire [11:0] pulse_length,
+    output wire pulse_enable,
+    output wire [15:0] pulse_length,
     output wire amp_loop_enable,
     output wire amp_loop_reset,
     output wire signed [KW-1:0] amp_loop_setpoint,
@@ -118,8 +119,9 @@ module axil_rf_control #(
     assign trig_period      = csr_out_regs[1];
     assign trig_delay       = csr_out_regs[2][15:0];
     assign trig_divide      = csr_out_regs[3][15:0];
-    assign pulse_length     = csr_out_regs[4][11:0];
+    assign pulse_length     = csr_out_regs[4][15:0];
     assign dac_enable       = csr_out_regs[5][0];
+    assign pulse_enable     = csr_out_regs[5][1];
     assign amp_loop_enable  = csr_out_regs[6][0];
     assign amp_loop_setpoint= csr_out_regs[7][KW-1:0];
     assign amp_loop_reset   = csr_out_regs[8][0];

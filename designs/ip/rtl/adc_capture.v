@@ -4,9 +4,9 @@
 
 module adc_capture #(
     parameter integer DW = 256,        // 16 samples, 16 bits data == 32 bytes
-    parameter integer AW = 12          // 2**AW number of rows, total number of samples: 2**AW * DW/16
+    parameter integer AW = 16          // 2**AW number of rows, total number of samples: 2**AW * DW/16
 ) (
-    (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE WRITE, MEM_SIZE 131072, MEM_WIDTH 256" *)
+    (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE WRITE_ONLY, MEM_SIZE 131072, MEM_WIDTH 256" *)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A DIN" *)
     output wire [DW-1:0] bram_wdata, // Data In Bus (optional)
@@ -15,7 +15,7 @@ module adc_capture #(
     output wire [DW/8-1:0] bram_we, // Byte Enables (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A EN" *)
-    output reg bram_en, // Chip Enable Signal (optional)
+    output wire bram_en, // Chip Enable Signal (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A DOUT" *)
     input wire [DW-1:0] bram_rdata, // Data Out Bus (optional)
@@ -49,34 +49,22 @@ module adc_capture #(
     assign bram_rst = ~axis_aresetn;
     assign s_axis_tready = 1'b1;
 
-    // Internal signals
-    reg [AW-1:0] vcnt=0;
+    wire pulse_valid;
+    pulse_gen #(
+        .AW(AW)
+    ) pulse_gen_inst (
+        .clk(axis_clk),
+        .trigger(trigger),
+        .high_len(n_rows),
+        .pulse_out(pulse_valid)
+    );
 
-    //BRAM Port B address control
-    always @(posedge axis_clk) begin
-        if (~axis_aresetn) begin
-            bram_addr <= 0;
-            // bram_we   <= 0;
-            bram_en   <= 0;
-        end else begin
-            if (trigger) begin
-                bram_addr <= 0;
-                bram_en   <= 1'b1;
-                vcnt <= 0;
-            end else begin
-                if (bram_en && s_axis_tvalid) begin
-                    if (vcnt < n_rows-1) begin
-                        bram_addr <= bram_addr + NUM_COL;
-                        bram_en   <= 1'b1;
-                        vcnt <= vcnt + 1'b1;
-                    end else begin
-                        bram_en <= 1'b0;
-                        vcnt <= 0;
-                    end
-                end
-            end
-        end
-    end
+    // Assign BRAM interface signals
     assign bram_wdata = s_axis_tdata;
     assign bram_we = s_axis_tvalid ? {NUM_COL{1'b1}} : {NUM_COL{1'b0}};
+    assign bram_en = pulse_valid;
+    always @(posedge axis_clk) begin
+        bram_addr <= pulse_valid ? bram_addr + NUM_COL : 0;
+    end
+
 endmodule

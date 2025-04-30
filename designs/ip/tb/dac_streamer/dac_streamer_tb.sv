@@ -8,7 +8,7 @@ module dac_streamer_tb;
     parameter int DW = SAMP_DW * SAMP_NUM; // 16 samples of 16 bits
     parameter int AW = 5;
     parameter int READ_LATENCY = 3;        // number of cycles for ram read
-    parameter [AW-1:0] NUM_ROW = 10;   // number of rows per trigger
+    parameter int NUM_ROW = 10;   // number of rows per trigger
     parameter int NUM_COL = DW/8;      // number of bytes per word (32 bytes for 16 samples)
     parameter int AW_WORD = $clog2(NUM_COL);
 
@@ -17,7 +17,6 @@ module dac_streamer_tb;
     logic axis_aresetn;
     logic enable;
     logic trigger;
-    logic [AW-1:0] n_rows;
 
     logic [DW-1:0] bram_dac_wdata;
     logic [DW/8-1:0] bram_dac_we;
@@ -31,6 +30,7 @@ module dac_streamer_tb;
     logic axis_tready;
     logic axis_tvalid;
     logic [AW-1:0] bram_dac_addr_word;
+    logic [AW-1:0] dac_n_rows = NUM_ROW;
     assign bram_dac_addr_word = bram_dac_addr >> AW_WORD;
 
     // Instantiate the dac_streamer
@@ -50,13 +50,13 @@ module dac_streamer_tb;
         .m_axis_tdata   (axis_tdata),
         .m_axis_tready  (axis_tready),
         .m_axis_tvalid  (axis_tvalid),
-        .n_rows         (NUM_ROW),
+        .n_rows         (dac_n_rows),
         .enable         (1'b1),
         .trigger
     );
 
     dp_uram #(
-        .DWIDTH(DW), .AWIDTH(AW), .NUM_COL(NUM_COL), .READ_LATENCY(READ_LATENCY)
+        .DWIDTH(DW), .AWIDTH(AW), .READ_LATENCY(READ_LATENCY)
     ) dp_bram_dac (
         .clk       (bram_dac_clk),
         .ena       (1'b0),
@@ -92,6 +92,8 @@ module dac_streamer_tb;
     logic bram_adc_clk;
     logic bram_adc_rst;
     logic [AW-1:0] bram_adc_addr_word;
+    // Additional latency for complete read and verification.
+    // In reality, the adc_nrows = NUM_ROW, and delayed samples will be dropped.
     logic [AW-1:0] adc_nrows = NUM_ROW + READ_LATENCY;
     assign bram_adc_addr_word = bram_adc_addr >> AW_WORD;
 
@@ -115,7 +117,7 @@ module dac_streamer_tb;
     );
 
     dp_uram #(
-        .DWIDTH(DW), .AWIDTH(AW), .NUM_COL(NUM_COL), .READ_LATENCY(READ_LATENCY)
+        .DWIDTH(DW), .AWIDTH(AW), .READ_LATENCY(READ_LATENCY)
     ) dp_bram_adc (
         .clk       (bram_adc_clk),
         .ena       (1'b0),
@@ -197,7 +199,7 @@ module dac_streamer_tb;
     end
 
     always @(posedge axis_clk) begin
-        if (axis_tvalid && axis_tready && dac_inst.pulse_tvalid) begin
+        if (axis_tvalid && axis_tready && dac_inst.pulse_valid_pipe) begin
             $display("Time: %g ns, AXIS TDATA: %h", $time, axis_tdata);
         end
     end

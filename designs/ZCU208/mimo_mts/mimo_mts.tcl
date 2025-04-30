@@ -38,9 +38,9 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 # source mimo_mts_script.tcl
 
 
-# The design that will be created by this Tcl script contains the following 
+# The design that will be created by this Tcl script contains the following
 # module references:
-# axil_rf_control, freq_count, freq_count, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, dac_streamer
+# axil_rf_control, freq_count, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, dac_streamer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -96,7 +96,7 @@ if { ${design_name} eq "" } {
    set errMsg "Design <$design_name> already exists in your project, please set the variable <design_name> to another value."
    set nRet 1
 } elseif { [get_files -quiet ${design_name}.bd] ne "" } {
-   # USE CASES: 
+   # USE CASES:
    #    6) Current opened design, has components, but diff names, design_name exists in project.
    #    7) No opened design, design_name exists in project.
 
@@ -130,7 +130,7 @@ set bCheckIPsPassed 1
 ##################################################################
 set bCheckIPs 1
 if { $bCheckIPs == 1 } {
-   set list_check_ips "\ 
+   set list_check_ips "\
 xilinx.com:ip:usp_rf_data_converter:2.6\
 xilinx.com:ip:xlconcat:2.1\
 xilinx.com:ip:xlconstant:1.1\
@@ -170,9 +170,8 @@ xilinx.com:ip:axis_register_slice:1.1\
 ##################################################################
 set bCheckModules 1
 if { $bCheckModules == 1 } {
-   set list_check_mods "\ 
+   set list_check_mods "\
 axil_rf_control\
-freq_count\
 freq_count\
 adc_capture\
 adc_capture\
@@ -264,7 +263,7 @@ proc create_hier_cell_hier_dac_play { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I enable
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -323,7 +322,7 @@ proc create_hier_cell_hier_dac_play { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins M_AXIS_0] [get_bd_intf_pins axis_register_slice_0/M_AXIS]
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins axi_bram_ctrl_0/BRAM_PORTA] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA]
@@ -388,7 +387,7 @@ proc create_hier_cell_hier_dac_cap { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -402,7 +401,7 @@ proc create_hier_cell_hier_dac_cap { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -504,7 +503,7 @@ proc create_hier_cell_m33 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -518,7 +517,7 @@ proc create_hier_cell_m33 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -621,7 +620,7 @@ proc create_hier_cell_m32 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -635,7 +634,7 @@ proc create_hier_cell_m32 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -738,7 +737,7 @@ proc create_hier_cell_m31 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -752,7 +751,7 @@ proc create_hier_cell_m31 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -855,7 +854,7 @@ proc create_hier_cell_m30 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -869,7 +868,7 @@ proc create_hier_cell_m30 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -972,7 +971,7 @@ proc create_hier_cell_m23 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -986,7 +985,7 @@ proc create_hier_cell_m23 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -1089,7 +1088,7 @@ proc create_hier_cell_m22 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1103,7 +1102,7 @@ proc create_hier_cell_m22 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -1206,7 +1205,7 @@ proc create_hier_cell_m21 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1220,7 +1219,7 @@ proc create_hier_cell_m21 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -1323,7 +1322,7 @@ proc create_hier_cell_m20 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1337,7 +1336,7 @@ proc create_hier_cell_m20 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -1440,7 +1439,7 @@ proc create_hier_cell_m13 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1454,7 +1453,7 @@ proc create_hier_cell_m13 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -1557,7 +1556,7 @@ proc create_hier_cell_m12 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1571,7 +1570,7 @@ proc create_hier_cell_m12 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -1674,7 +1673,7 @@ proc create_hier_cell_m11 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1688,7 +1687,7 @@ proc create_hier_cell_m11 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -1791,7 +1790,7 @@ proc create_hier_cell_m10 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1805,7 +1804,7 @@ proc create_hier_cell_m10 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -1908,7 +1907,7 @@ proc create_hier_cell_m03 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1922,7 +1921,7 @@ proc create_hier_cell_m03 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -2025,7 +2024,7 @@ proc create_hier_cell_m02 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2039,7 +2038,7 @@ proc create_hier_cell_m02 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -2142,7 +2141,7 @@ proc create_hier_cell_m01 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2156,7 +2155,7 @@ proc create_hier_cell_m01 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -2259,7 +2258,7 @@ proc create_hier_cell_m00 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2273,7 +2272,7 @@ proc create_hier_cell_m00 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -2392,7 +2391,7 @@ proc create_hier_cell_transmitter { parentCell nameHier } {
   create_bd_pin -dir I S_AXI_RESETN
   create_bd_pin -dir I aclk
   create_bd_pin -dir I enable
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I trig_cap
 
   # Create instance: axis_broadcaster_0, and set properties
@@ -2432,9 +2431,9 @@ proc create_hier_cell_transmitter { parentCell nameHier } {
    CONFIG.M04_HAS_DATA_FIFO {0} \
    CONFIG.M04_HAS_REGSLICE {3} \
    CONFIG.NUM_MI {2} \
-   CONFIG.S00_HAS_DATA_FIFO {0} \
+   CONFIG.S00_HAS_DATA_FIFO {2} \
    CONFIG.S00_HAS_REGSLICE {3} \
-   CONFIG.STRATEGY {1} \
+   CONFIG.STRATEGY {2} \
  ] $interconnect
 
   # Create interface connections
@@ -2537,7 +2536,7 @@ proc create_hier_cell_receiver { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I S_AXI_CLK
   create_bd_pin -dir I aclk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2556,9 +2555,9 @@ proc create_hier_cell_receiver { parentCell nameHier } {
    CONFIG.M04_HAS_DATA_FIFO {0} \
    CONFIG.M04_HAS_REGSLICE {3} \
    CONFIG.NUM_MI {16} \
-   CONFIG.S00_HAS_DATA_FIFO {0} \
+   CONFIG.S00_HAS_DATA_FIFO {2} \
    CONFIG.S00_HAS_REGSLICE {3} \
-   CONFIG.STRATEGY {1} \
+   CONFIG.STRATEGY {2} \
  ] $interconnect
 
   # Create instance: m00
@@ -2798,28 +2797,14 @@ proc create_hier_cell_clocktreeMTS { parentCell nameHier } {
    CONFIG.freq_width {32} \
  ] $freq_count_0
 
-  # Create instance: freq_count_1, and set properties
-  set block_name freq_count
-  set block_cell_name freq_count_1
-  if { [catch {set freq_count_1 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $freq_count_1 eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-    set_property -dict [ list \
-   CONFIG.freq_width {32} \
- ] $freq_count_1
-
   # Create instance: freqcnt_gpio, and set properties
   set freqcnt_gpio [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 freqcnt_gpio ]
   set_property -dict [ list \
    CONFIG.C_ALL_INPUTS {1} \
-   CONFIG.C_ALL_INPUTS_2 {1} \
+   CONFIG.C_ALL_INPUTS_2 {0} \
    CONFIG.C_ALL_OUTPUTS {0} \
    CONFIG.C_GPIO_WIDTH {32} \
-   CONFIG.C_IS_DUAL {1} \
+   CONFIG.C_IS_DUAL {0} \
    CONFIG.GPIO_BOARD_INTERFACE {Custom} \
  ] $freqcnt_gpio
 
@@ -2861,19 +2846,18 @@ proc create_hier_cell_clocktreeMTS { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net IBUFDS_PL_CLK_IBUF_OUT [get_bd_pins BUFG_PL_CLK/BUFG_I] [get_bd_pins IBUFDS_PL_CLK/IBUF_OUT]
-  connect_bd_net -net IBUFDS_SYSREF_IBUF_OUT [get_bd_pins IBUFDS_SYSREF/IBUF_OUT] [get_bd_pins freq_count_0/f_in] [get_bd_pins synchronizeSYSREF/src_in]
+  connect_bd_net -net IBUFDS_SYSREF_IBUF_OUT [get_bd_pins IBUFDS_SYSREF/IBUF_OUT] [get_bd_pins synchronizeSYSREF/src_in]
   connect_bd_net -net MTSclkwiz_interrupt [get_bd_pins interrupt] [get_bd_pins MTSclkwiz/interrupt]
   connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins egress_aresetn] [get_bd_pins RFegressReset/peripheral_aresetn]
   connect_bd_net -net RFingressReset_peripheral_aresetn [get_bd_pins ingress_aresetn] [get_bd_pins RFingressReset/peripheral_aresetn]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clkRF] [get_bd_pins MTSclkwiz/clk_out1] [get_bd_pins RFingressReset/slowest_sync_clk] [get_bd_pins synchronizeSYSREF/dest_clk]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins MTSclkwiz/locked] [get_bd_pins RFegressReset/dcm_locked] [get_bd_pins RFingressReset/dcm_locked]
-  connect_bd_net -net clk_wiz_adc0_clk_out2 [get_bd_pins clkRFdiv2] [get_bd_pins MTSclkwiz/clk_out2] [get_bd_pins RFegressReset/slowest_sync_clk] [get_bd_pins freq_count_1/f_in]
+  connect_bd_net -net clk_wiz_adc0_clk_out2 [get_bd_pins clkRFdiv2] [get_bd_pins MTSclkwiz/clk_out2] [get_bd_pins RFegressReset/slowest_sync_clk] [get_bd_pins freq_count_0/f_in]
   connect_bd_net -net freq_count_0_frequency [get_bd_pins freq_count_0/frequency] [get_bd_pins freqcnt_gpio/gpio_io_i]
-  connect_bd_net -net freq_count_1_frequency [get_bd_pins freq_count_1/frequency] [get_bd_pins freqcnt_gpio/gpio2_io_i]
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins s_axi_aresetn] [get_bd_pins MTSclkwiz/s_axi_aresetn] [get_bd_pins PSreset_control/peripheral_aresetn] [get_bd_pins RFingressReset/ext_reset_in] [get_bd_pins freqcnt_gpio/s_axi_aresetn] [get_bd_pins interconnect/ARESETN] [get_bd_pins interconnect/M00_ARESETN] [get_bd_pins interconnect/M01_ARESETN] [get_bd_pins interconnect/S00_ARESETN]
   connect_bd_net -net synchronizeSYSREF_dest_out [get_bd_pins UserSYSREF] [get_bd_pins synchronizeSYSREF/dest_out]
   connect_bd_net -net util_ds_buf_0_BUFG_O [get_bd_pins BUFG_PL_CLK/BUFG_O] [get_bd_pins MTSclkwiz/clk_in1] [get_bd_pins synchronizeSYSREF/src_clk]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins s_axi_aclk] [get_bd_pins MTSclkwiz/ref_clk] [get_bd_pins MTSclkwiz/s_axi_aclk] [get_bd_pins PSreset_control/slowest_sync_clk] [get_bd_pins freq_count_0/sysclk] [get_bd_pins freq_count_1/sysclk] [get_bd_pins freqcnt_gpio/s_axi_aclk] [get_bd_pins interconnect/ACLK] [get_bd_pins interconnect/M00_ACLK] [get_bd_pins interconnect/M01_ACLK] [get_bd_pins interconnect/S00_ACLK]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins s_axi_aclk] [get_bd_pins MTSclkwiz/ref_clk] [get_bd_pins MTSclkwiz/s_axi_aclk] [get_bd_pins PSreset_control/slowest_sync_clk] [get_bd_pins freq_count_0/sysclk] [get_bd_pins freqcnt_gpio/s_axi_aclk] [get_bd_pins interconnect/ACLK] [get_bd_pins interconnect/M00_ACLK] [get_bd_pins interconnect/M01_ACLK] [get_bd_pins interconnect/S00_ACLK]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins ext_reset_in] [get_bd_pins PSreset_control/ext_reset_in] [get_bd_pins RFegressReset/ext_reset_in]
 
   # Restore current instance
@@ -2982,7 +2966,7 @@ proc create_root_design { parentCell } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+
   # Create instance: clocktreeMTS
   create_hier_cell_clocktreeMTS [current_bd_instance .] clocktreeMTS
 
@@ -3013,9 +2997,9 @@ proc create_root_design { parentCell } {
    CONFIG.M04_HAS_DATA_FIFO {0} \
    CONFIG.M04_HAS_REGSLICE {3} \
    CONFIG.NUM_MI {3} \
-   CONFIG.S00_HAS_DATA_FIFO {0} \
+   CONFIG.S00_HAS_DATA_FIFO {2} \
    CONFIG.S00_HAS_REGSLICE {3} \
-   CONFIG.STRATEGY {1} \
+   CONFIG.STRATEGY {2} \
  ] $rf_interconnect
 
   # Create instance: rfdc, and set properties
@@ -3320,6 +3304,27 @@ proc create_root_design { parentCell } {
    CONFIG.CONST_VAL {1} \
    CONFIG.CONST_WIDTH {1} \
  ] $xlconstant_0
+
+  # Create instance: xlconstant_1, and set properties
+  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {18} \
+ ] $xlconstant_1
+
+  # Create instance: xlconstant_2, and set properties
+  set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {12} \
+ ] $xlconstant_2
+
+  # Create instance: xlconstant_3, and set properties
+  set xlconstant_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_3 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {4096} \
+   CONFIG.CONST_WIDTH {16} \
+ ] $xlconstant_3
 
   # Create instance: zynq_ultra_ps_e_0, and set properties
   set zynq_ultra_ps_e_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.4 zynq_ultra_ps_e_0 ]
@@ -4952,17 +4957,20 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   # Create port connections
   connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins axil_rf_control_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/egress_aresetn] [get_bd_pins receiver/s_axi_aresetn] [get_bd_pins rf_interconnect/ARESETN] [get_bd_pins rf_interconnect/M00_ARESETN] [get_bd_pins rf_interconnect/M01_ARESETN] [get_bd_pins rf_interconnect/M02_ARESETN] [get_bd_pins rf_interconnect/S00_ARESETN] [get_bd_pins transmitter/S_AXI_RESETN]
   connect_bd_net -net RFingressReset_peripheral_aresetn [get_bd_pins clocktreeMTS/ingress_aresetn] [get_bd_pins rfdc/m0_axis_aresetn] [get_bd_pins rfdc/m1_axis_aresetn] [get_bd_pins rfdc/m2_axis_aresetn] [get_bd_pins rfdc/m3_axis_aresetn] [get_bd_pins rfdc/s0_axis_aresetn] [get_bd_pins rfdc/s1_axis_aresetn] [get_bd_pins rfdc/s2_axis_aresetn] [get_bd_pins rfdc/s3_axis_aresetn]
-  connect_bd_net -net axil_rf_control_0_dac_enable_out [get_bd_pins axil_rf_control_0/dac_enable_out] [get_bd_pins transmitter/enable]
+  connect_bd_net -net axil_rf_control_0_dac_enable [get_bd_pins axil_rf_control_0/dac_enable] [get_bd_pins transmitter/enable]
+  connect_bd_net -net axil_rf_control_0_pulse_length [get_bd_pins axil_rf_control_0/pulse_length] [get_bd_pins transmitter/pulse_length]
   connect_bd_net -net axil_rf_control_0_trigger_out [get_bd_ports TRIG_OUT] [get_bd_pins axil_rf_control_0/trigger_out] [get_bd_pins receiver/trig_cap] [get_bd_pins transmitter/trig_cap]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clocktreeMTS/clkRF] [get_bd_pins receiver/aclk] [get_bd_pins rfdc/m0_axis_aclk] [get_bd_pins rfdc/m1_axis_aclk] [get_bd_pins rfdc/m2_axis_aclk] [get_bd_pins rfdc/m3_axis_aclk] [get_bd_pins rfdc/s0_axis_aclk] [get_bd_pins rfdc/s1_axis_aclk] [get_bd_pins rfdc/s2_axis_aclk] [get_bd_pins rfdc/s3_axis_aclk] [get_bd_pins transmitter/aclk]
   connect_bd_net -net clk_wiz_adc0_clk_out2 [get_bd_pins axil_rf_control_0/s_axi_aclk] [get_bd_pins clocktreeMTS/clkRFdiv2] [get_bd_pins receiver/S_AXI_CLK] [get_bd_pins rf_interconnect/ACLK] [get_bd_pins rf_interconnect/M00_ACLK] [get_bd_pins rf_interconnect/M01_ACLK] [get_bd_pins rf_interconnect/M02_ACLK] [get_bd_pins rf_interconnect/S00_ACLK] [get_bd_pins transmitter/S_AXI_CLK] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
   connect_bd_net -net clocktreeMTS_interrupt [get_bd_pins clocktreeMTS/interrupt] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins clocktreeMTS/s_axi_aresetn] [get_bd_pins control_interconnect/ARESETN] [get_bd_pins control_interconnect/M00_ARESETN] [get_bd_pins control_interconnect/M01_ARESETN] [get_bd_pins control_interconnect/S00_ARESETN] [get_bd_pins rfdc/s_axi_aresetn]
-  connect_bd_net -net pulse_length_1 [get_bd_pins axil_rf_control_0/debug_in] [get_bd_pins axil_rf_control_0/pulse_length_out] [get_bd_pins receiver/pulse_length] [get_bd_pins transmitter/pulse_length]
   connect_bd_net -net synchronizeSYSREF_dest_out [get_bd_pins clocktreeMTS/UserSYSREF] [get_bd_pins rfdc/user_sysref_adc] [get_bd_pins rfdc/user_sysref_dac]
   connect_bd_net -net usp_rf_data_converter_1_irq [get_bd_pins rfdc/irq] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins xlconcat_0/dout] [get_bd_pins zynq_ultra_ps_e_0/pl_ps_irq0]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins axil_rf_control_0/evr_trigger_in] [get_bd_pins axil_rf_control_0/ext_trigger_in] [get_bd_pins axil_rf_control_0/rf_permit_in] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_1_dout [get_bd_pins axil_rf_control_0/amp_measured] [get_bd_pins axil_rf_control_0/phs_measured] [get_bd_pins xlconstant_1/dout]
+  connect_bd_net -net xlconstant_2_dout [get_bd_pins axil_rf_control_0/amp_loop_err] [get_bd_pins axil_rf_control_0/phs_loop_err] [get_bd_pins xlconstant_2/dout]
+  connect_bd_net -net xlconstant_3_dout [get_bd_pins receiver/pulse_length] [get_bd_pins xlconstant_3/dout]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins clocktreeMTS/s_axi_aclk] [get_bd_pins control_interconnect/ACLK] [get_bd_pins control_interconnect/M00_ACLK] [get_bd_pins control_interconnect/M01_ACLK] [get_bd_pins control_interconnect/S00_ACLK] [get_bd_pins rfdc/s_axi_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_lpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins clocktreeMTS/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 

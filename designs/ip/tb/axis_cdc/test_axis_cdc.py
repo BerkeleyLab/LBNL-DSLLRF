@@ -9,7 +9,7 @@ import itertools
 
 class TB:
     def __init__(self, dut):
-        dut._log.setLevel(logging.INFO)
+        dut._log.setLevel(logging.WARNING)
         self.dut = dut
         self.source = AxiStreamSource(
             AxiStreamBus.from_prefix(dut, "s_axis"),

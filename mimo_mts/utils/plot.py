@@ -10,6 +10,23 @@ plt.rcParams['grid.alpha'] = 0.5
 plt.rcParams['font.size'] = 8
 
 
+def plot_complex_wfm(cdata, fs=4e9, width=8, height=4, mode='iq'):
+    fs /= 1e9
+    n_samples = len(cdata)
+    t = np.arange(0, n_samples/fs, 1/fs)
+    fig, axes = plt.subplots(
+        2, sharex=True, figsize=(width, 2*height))
+    if mode == 'iq':
+        axes[0].plot(t, cdata.real, label='I [cnt]')
+        axes[1].plot(t, cdata.imag, label='Q [cnt]')
+    elif mode == 'ap':
+        axes[0].plot(t, np.abs(cdata), label='amplitude [cnt]')
+        axes[1].plot(t, np.angle(cdata, deg=True), label='phase [deg]')
+    axes[1].set_xlabel('Time [ns]')
+    axes[0].legend()
+    axes[1].legend()
+
+
 def plot_adc_wfm(cdata, fs=4e9, width=8, height=1):
     fs /= 1e9
     n_ch, n_samples = cdata.shape

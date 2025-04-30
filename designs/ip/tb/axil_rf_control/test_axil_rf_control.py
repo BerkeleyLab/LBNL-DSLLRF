@@ -10,7 +10,7 @@ from cocotbext.axi import AxiLiteBus, AxiLiteMaster
 
 class TB:
     def __init__(self, dut):
-        dut._log.setLevel(logging.INFO)
+        dut._log.setLevel(logging.WARNING)
         self.dut = dut
         ip_path = Path(__file__).resolve().parent.parent.parent
         json_path = ip_path / 'rtl' / 'axil_rf_control.json'
@@ -63,10 +63,13 @@ async def test_write(dut):
 
     for reg, value in test_regs_dict.items():
         await tb.write_register(reg, value)
-        assert await tb.read_register(reg) == value, \
-            f"readback {reg} mismatch"
-        assert getattr(tb.dut, reg).value == value, \
-            f"write {reg} mismatch: {getattr(tb.dut, reg).value}"
+        reg_val_expect = getattr(tb.dut, reg).value.integer
+        tb.dut._log.warning(f"reg_val: {reg_val_expect}, expect: {value}")
+        assert reg_val_expect == value, \
+            f"write {reg} mismatch: {reg_val_expect} != {value}"
+        reg_val_readback = await tb.read_register(reg)
+        assert reg_val_readback == value, \
+            f"readback {reg} mismatch: {reg_val_readback} != {value}"
 
 
 @cocotb.test(timeout_time=1, timeout_unit='us')
@@ -88,5 +91,7 @@ async def test_read(dut):
 
     for reg, value in test_regs_dict.items():
         reg_val = await tb.read_register(reg)
-        assert reg_val == getattr(tb.dut, reg).value, \
-            f"{reg} mismatch: {reg_val} != {getattr(tb.dut, reg).value}"
+        reg_val_expect = getattr(tb.dut, reg).value.integer
+        tb.dut._log.warning(f"reg_val: {reg_val}, expect: {reg_val_expect}")
+        assert reg_val == reg_val_expect, \
+            f"{reg} mismatch: {reg_val} != {reg_val_expect}"

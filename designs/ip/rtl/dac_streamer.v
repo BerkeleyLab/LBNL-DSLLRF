@@ -6,10 +6,10 @@ module dac_streamer #(
     parameter integer SAMP_DW = 16,     // 16 bits data
     parameter integer SAMP_NUM = 16,    // 16 samples
     parameter integer DW = SAMP_DW * SAMP_NUM,     // 32 bytes
-    parameter integer AW = 12,          // 2**AW number of rows, total number of samples: 2**AW * DW/16
+    parameter integer AW = 16,          // 2**AW number of rows, total number of samples: 2**AW * DW/16
     parameter integer READ_LATENCY = 3           // Number of read cycles
 ) (
-    (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE READ, MEM_SIZE 131072, MEM_WIDTH 256" *)
+    (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE READ_ONLY, MEM_SIZE 131072, MEM_WIDTH 256" *)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A DIN" *)
     output wire [DW-1:0] bram_wdata, // Data In Bus (optional)
@@ -18,7 +18,7 @@ module dac_streamer #(
     output [DW/8-1:0] bram_we, // Byte Enables (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A EN" *)
-    output reg bram_en, // Chip Enable Signal (optional)
+    output wire bram_en, // Chip Enable Signal (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A DOUT" *)
     input wire [DW-1:0] bram_rdata, // Data Out Bus (optional)
@@ -42,56 +42,40 @@ module dac_streamer #(
     output wire              m_axis_tvalid,
 
     // Control Input Parameters
-    input wire [AW-1:0] n_rows,
+    input wire [AW-1:0]     n_rows,
     input wire enable,
     input wire trigger  // single clock cycle pulse
 );
-    localparam integer NBPIPE = READ_LATENCY - 2;   // Number of pipeline Registers
+    localparam integer NBPIPE = READ_LATENCY-1;   // Number of pipeline Registers
     localparam integer NUM_COL = DW/8; // increment address by DW/8 bytes, or 16 samples
-    localparam integer TRIG_DELAY = 1;
 
-    // Internal signals
-    reg [AW-1:0] vcnt=0;
+    wire pulse_valid;
+    pulse_gen #(
+        .AW(AW)
+    ) pulse_gen_inst (
+        .clk(axis_clk),
+        .trigger(trigger),
+        .high_len(n_rows),
+        .pulse_out(pulse_valid)
+    );
 
     // Assign BRAM interface signals
     assign bram_wdata = 0;
     assign bram_clk = axis_clk;
     assign bram_rst = ~axis_aresetn;
     assign bram_we = {NUM_COL{1'b0}};
+    assign bram_en = pulse_valid & enable;
 
-    // Pipeline delay for m_axis_tvalid, 2 cycles on top of the BRAM read latency
-    reg [NBPIPE+1:0] tvalid_pipe = 0;
-    // Main logic
+    // Pipeline delay for warting BRAM read latency
+    reg [NBPIPE:0] tvalid_pipe = 0;
     always @(posedge axis_clk) begin
-        tvalid_pipe <= {tvalid_pipe[NBPIPE:0], enable & bram_en};
-
-        if (~axis_aresetn) begin
-            bram_en <= 0;
-            bram_addr <= 0;
-            vcnt <= 0;
-            tvalid_pipe <= 0;
-        end else begin
-            if (trigger) begin
-                bram_en <= 1'b1;
-                bram_addr <= 0;
-                vcnt <= 0;
-            end else begin
-                if (bram_en) begin
-                    if (vcnt < n_rows-1) begin
-                        bram_addr <= bram_addr + NUM_COL;
-                        bram_en <= 1'b1;
-                        vcnt <= vcnt + 1'b1;
-                    end else begin
-                        bram_en <= 0;
-                    end
-                end
-            end
-        end
+        tvalid_pipe <= {tvalid_pipe[NBPIPE-1:0], bram_en};
+        bram_addr <= pulse_valid ? bram_addr + NUM_COL : 0;
     end
 
     // zeros are also valid data
     assign m_axis_tvalid = 1'b1;
-    wire pulse_tvalid = tvalid_pipe[NBPIPE+1];
-    assign m_axis_tdata  = pulse_tvalid ? bram_rdata : {DW{1'b0}};
+    wire pulse_valid_pipe = tvalid_pipe[NBPIPE];
+    assign m_axis_tdata  = pulse_valid_pipe ? bram_rdata : {DW{1'b0}};
 
 endmodule

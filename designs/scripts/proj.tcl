@@ -120,7 +120,7 @@ foreach src $proj_src {
   lappend files [file normalize $src]
 }
 set obj [get_filesets sources_1]
-import_files -norecurse -fileset $obj $files
+add_files -norecurse -fileset $obj $files
 
 # Set 'sources_1' fileset file properties for remote files
 # None
@@ -402,6 +402,14 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_rou
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_bus_skew_0]
 if { $obj != "" } {
 set_property -name "options.warn_on_violation" -value "1" -objects $obj
+
+}
+# Create 'impl_1_route_report_datasheet_0' report (if not found)
+if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_datasheet_0] "" ] } {
+  create_report_config -report_name impl_1_route_report_datasheet_0 -report_type report_datasheet -steps route_design -runs impl_1
+}
+set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_datasheet_0]
+if { $obj != "" } {
 
 }
 # Create 'impl_1_post_route_phys_opt_report_timing_summary_0' report (if not found)

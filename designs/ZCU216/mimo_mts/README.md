@@ -23,7 +23,8 @@
 
 ## Status
 
-- [x] ADC / DAC waveforms
-- [x] MTS tested
-- [x] Determinisitc Latency
-- [x] Trigger source multiplex
+* [x] ADC / DAC waveforms
+* [x] MTS
+* [x] NCO phase alignment
+* [x] Trigger source multiplex
+* [] Determinisitc Latency

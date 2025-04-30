@@ -8,7 +8,7 @@ from cocotbext.axi import AxiLiteBus, AxiLiteMaster
 
 class TB:
     def __init__(self, dut):
-        dut._log.setLevel(logging.INFO)
+        dut._log.setLevel(logging.WARNING)
         self.dut = dut
         self.registers = {
             'gpio_out0': {
