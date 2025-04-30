@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following
 # module references:
-# axil_evr, axil_llrf, freq_count, freq_count, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, axis_adder, dac_streamer
+# axil_evr, axil_llrf, pulse_gen, freq_count, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, axis_adder, dac_streamer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -173,7 +173,7 @@ if { $bCheckModules == 1 } {
    set list_check_mods "\
 axil_evr\
 axil_llrf\
-freq_count\
+pulse_gen\
 freq_count\
 adc_capture\
 adc_capture\
@@ -268,7 +268,7 @@ proc create_hier_cell_hier_dac_play { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I enable
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -405,7 +405,7 @@ proc create_hier_cell_hier_dac_cap { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -521,7 +521,7 @@ proc create_hier_cell_m33 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -638,7 +638,7 @@ proc create_hier_cell_m32 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -755,7 +755,7 @@ proc create_hier_cell_m31 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -872,7 +872,7 @@ proc create_hier_cell_m30 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -989,7 +989,7 @@ proc create_hier_cell_m23 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1106,7 +1106,7 @@ proc create_hier_cell_m22 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1223,7 +1223,7 @@ proc create_hier_cell_m21 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1340,7 +1340,7 @@ proc create_hier_cell_m20 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1457,7 +1457,7 @@ proc create_hier_cell_m13 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1574,7 +1574,7 @@ proc create_hier_cell_m12 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1691,7 +1691,7 @@ proc create_hier_cell_m11 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1808,7 +1808,7 @@ proc create_hier_cell_m10 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1925,7 +1925,7 @@ proc create_hier_cell_m03 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2042,7 +2042,7 @@ proc create_hier_cell_m02 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2161,7 +2161,7 @@ proc create_hier_cell_m01 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2285,7 +2285,7 @@ proc create_hier_cell_m00 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2425,7 +2425,7 @@ proc create_hier_cell_transmitter { parentCell nameHier } {
   create_bd_pin -dir I S_AXI_RESETN
   create_bd_pin -dir I aclk
   create_bd_pin -dir I enable
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I trig_cap
 
   # Create instance: axis_broadcaster_0, and set properties
@@ -2575,7 +2575,7 @@ proc create_hier_cell_receiver { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I S_AXI_CLK
   create_bd_pin -dir I aclk
-  create_bd_pin -dir I -from 11 -to 0 pulse_length
+  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2594,9 +2594,9 @@ proc create_hier_cell_receiver { parentCell nameHier } {
    CONFIG.M04_HAS_DATA_FIFO {0} \
    CONFIG.M04_HAS_REGSLICE {3} \
    CONFIG.NUM_MI {16} \
-   CONFIG.S00_HAS_DATA_FIFO {0} \
+   CONFIG.S00_HAS_DATA_FIFO {2} \
    CONFIG.S00_HAS_REGSLICE {3} \
-   CONFIG.STRATEGY {1} \
+   CONFIG.STRATEGY {2} \
  ] $interconnect
 
   # Create instance: m00
@@ -2795,13 +2795,13 @@ proc create_hier_cell_clocktreeMTS { parentCell nameHier } {
    CONFIG.JITTER_OPTIONS {PS} \
    CONFIG.JITTER_SEL {Min_O_Jitter} \
    CONFIG.MMCM_BANDWIDTH {HIGH} \
-   CONFIG.MMCM_CLKFBOUT_MULT_F {6.000} \
+   CONFIG.MMCM_CLKFBOUT_MULT_F {3.000} \
    CONFIG.MMCM_CLKIN1_PERIOD {2.000} \
    CONFIG.MMCM_CLKIN2_PERIOD {10.0} \
    CONFIG.MMCM_CLKOUT0_DIVIDE_F {3.000} \
    CONFIG.MMCM_CLKOUT1_DIVIDE {6} \
    CONFIG.MMCM_COMPENSATION {AUTO} \
-   CONFIG.MMCM_DIVCLK_DIVIDE {2} \
+   CONFIG.MMCM_DIVCLK_DIVIDE {1} \
    CONFIG.MMCM_REF_JITTER1 {0.000} \
    CONFIG.MMCM_REF_JITTER2 {0.010} \
    CONFIG.NUM_OUT_CLKS {2} \
@@ -2838,28 +2838,14 @@ proc create_hier_cell_clocktreeMTS { parentCell nameHier } {
    CONFIG.freq_width {32} \
  ] $freq_count_0
 
-  # Create instance: freq_count_1, and set properties
-  set block_name freq_count
-  set block_cell_name freq_count_1
-  if { [catch {set freq_count_1 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $freq_count_1 eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-    set_property -dict [ list \
-   CONFIG.freq_width {32} \
- ] $freq_count_1
-
   # Create instance: freqcnt_gpio, and set properties
   set freqcnt_gpio [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 freqcnt_gpio ]
   set_property -dict [ list \
    CONFIG.C_ALL_INPUTS {1} \
-   CONFIG.C_ALL_INPUTS_2 {1} \
+   CONFIG.C_ALL_INPUTS_2 {0} \
    CONFIG.C_ALL_OUTPUTS {0} \
    CONFIG.C_GPIO_WIDTH {32} \
-   CONFIG.C_IS_DUAL {1} \
+   CONFIG.C_IS_DUAL {0} \
    CONFIG.GPIO_BOARD_INTERFACE {Custom} \
  ] $freqcnt_gpio
 
@@ -2901,19 +2887,18 @@ proc create_hier_cell_clocktreeMTS { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net IBUFDS_PL_CLK_IBUF_OUT [get_bd_pins BUFG_PL_CLK/BUFG_I] [get_bd_pins IBUFDS_PL_CLK/IBUF_OUT]
-  connect_bd_net -net IBUFDS_SYSREF_IBUF_OUT [get_bd_pins IBUFDS_SYSREF/IBUF_OUT] [get_bd_pins freq_count_0/f_in] [get_bd_pins synchronizeSYSREF/src_in]
+  connect_bd_net -net IBUFDS_SYSREF_IBUF_OUT [get_bd_pins IBUFDS_SYSREF/IBUF_OUT] [get_bd_pins synchronizeSYSREF/src_in]
   connect_bd_net -net MTSclkwiz_interrupt [get_bd_pins interrupt] [get_bd_pins MTSclkwiz/interrupt]
   connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins egress_aresetn] [get_bd_pins RFegressReset/peripheral_aresetn]
   connect_bd_net -net RFingressReset_peripheral_aresetn [get_bd_pins ingress_aresetn] [get_bd_pins RFingressReset/peripheral_aresetn]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clkRF] [get_bd_pins MTSclkwiz/clk_out1] [get_bd_pins RFingressReset/slowest_sync_clk] [get_bd_pins synchronizeSYSREF/dest_clk]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins MTSclkwiz/locked] [get_bd_pins RFegressReset/dcm_locked] [get_bd_pins RFingressReset/dcm_locked]
-  connect_bd_net -net clk_wiz_adc0_clk_out2 [get_bd_pins clkRFdiv2] [get_bd_pins MTSclkwiz/clk_out2] [get_bd_pins RFegressReset/slowest_sync_clk] [get_bd_pins freq_count_1/f_in]
-  connect_bd_net -net freq_count_0_frequency [get_bd_pins freq_count_0/frequency] [get_bd_pins freqcnt_gpio/gpio_io_i]
-  connect_bd_net -net freq_count_1_frequency [get_bd_pins freq_count_1/frequency] [get_bd_pins freqcnt_gpio/gpio2_io_i]
+  connect_bd_net -net clk_wiz_adc0_clk_out2 [get_bd_pins clkRFdiv2] [get_bd_pins MTSclkwiz/clk_out2] [get_bd_pins RFegressReset/slowest_sync_clk] [get_bd_pins freq_count_0/f_in]
+  connect_bd_net -net freq_count_1_frequency [get_bd_pins freq_count_0/frequency] [get_bd_pins freqcnt_gpio/gpio_io_i]
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins s_axi_aresetn] [get_bd_pins MTSclkwiz/s_axi_aresetn] [get_bd_pins PSreset_control/peripheral_aresetn] [get_bd_pins RFingressReset/ext_reset_in] [get_bd_pins freqcnt_gpio/s_axi_aresetn] [get_bd_pins interconnect/ARESETN] [get_bd_pins interconnect/M00_ARESETN] [get_bd_pins interconnect/M01_ARESETN] [get_bd_pins interconnect/S00_ARESETN]
   connect_bd_net -net synchronizeSYSREF_dest_out [get_bd_pins UserSYSREF] [get_bd_pins synchronizeSYSREF/dest_out]
   connect_bd_net -net util_ds_buf_0_BUFG_O [get_bd_pins BUFG_PL_CLK/BUFG_O] [get_bd_pins MTSclkwiz/clk_in1] [get_bd_pins synchronizeSYSREF/src_clk]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins s_axi_aclk] [get_bd_pins MTSclkwiz/ref_clk] [get_bd_pins MTSclkwiz/s_axi_aclk] [get_bd_pins PSreset_control/slowest_sync_clk] [get_bd_pins freq_count_0/sysclk] [get_bd_pins freq_count_1/sysclk] [get_bd_pins freqcnt_gpio/s_axi_aclk] [get_bd_pins interconnect/ACLK] [get_bd_pins interconnect/M00_ACLK] [get_bd_pins interconnect/M01_ACLK] [get_bd_pins interconnect/S00_ACLK]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins s_axi_aclk] [get_bd_pins MTSclkwiz/ref_clk] [get_bd_pins MTSclkwiz/s_axi_aclk] [get_bd_pins PSreset_control/slowest_sync_clk] [get_bd_pins freq_count_0/sysclk] [get_bd_pins freqcnt_gpio/s_axi_aclk] [get_bd_pins interconnect/ACLK] [get_bd_pins interconnect/M00_ACLK] [get_bd_pins interconnect/M01_ACLK] [get_bd_pins interconnect/S00_ACLK]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins ext_reset_in] [get_bd_pins PSreset_control/ext_reset_in] [get_bd_pins RFegressReset/ext_reset_in]
 
   # Restore current instance
@@ -2954,6 +2939,8 @@ proc create_root_design { parentCell } {
 
 
   # Create interface ports
+  set AMS_SYSREF [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_usp_rf_data_converter:diff_pins_rtl:1.0 AMS_SYSREF ]
+
   set PL_CLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 PL_CLK ]
   set_property -dict [ list \
    CONFIG.FREQ_HZ {500000000} \
@@ -2974,7 +2961,12 @@ proc create_root_design { parentCell } {
    CONFIG.FREQ_HZ {4000000000} \
    ] $dac2_clk
 
-  set sysref_in_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_usp_rf_data_converter:diff_pins_rtl:1.0 sysref_in_0 ]
+  set sfp2_1x [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 sfp2_1x ]
+
+  set user_mgt_si570_clock [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 user_mgt_si570_clock ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {156250000} \
+   ] $user_mgt_si570_clock
 
   set vin0_01 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_analog_io_rtl:1.0 vin0_01 ]
 
@@ -3010,11 +3002,8 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
-  set SFP2_RX_N [ create_bd_port -dir I SFP2_RX_N ]
-  set SFP2_RX_P [ create_bd_port -dir I SFP2_RX_P ]
+  set GPIO_LED_0_LS [ create_bd_port -dir O GPIO_LED_0_LS ]
   set TRIG_OUT [ create_bd_port -dir O TRIG_OUT ]
-  set gty_refclk_n [ create_bd_port -dir I -type clk -freq_hz 100000000 gty_refclk_n ]
-  set gty_refclk_p [ create_bd_port -dir I -type clk -freq_hz 100000000 gty_refclk_p ]
 
   # Create instance: axil_evr_0, and set properties
   set block_name axil_evr
@@ -3052,6 +3041,20 @@ proc create_root_design { parentCell } {
    CONFIG.S00_HAS_REGSLICE {3} \
    CONFIG.STRATEGY {1} \
  ] $control_interconnect
+
+  # Create instance: pulse_gen_0, and set properties
+  set block_name pulse_gen
+  set block_cell_name pulse_gen_0
+  if { [catch {set pulse_gen_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $pulse_gen_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.AW {25} \
+ ] $pulse_gen_0
 
   # Create instance: receiver
   create_hier_cell_receiver [current_bd_instance .] receiver
@@ -3378,6 +3381,20 @@ proc create_root_design { parentCell } {
    CONFIG.CONST_VAL {1} \
    CONFIG.CONST_WIDTH {1} \
  ] $xlconstant_0
+
+  # Create instance: xlconstant_1, and set properties
+  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0x1ffffff} \
+   CONFIG.CONST_WIDTH {25} \
+ ] $xlconstant_1
+
+  # Create instance: xlconstant_2, and set properties
+  set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {4096} \
+   CONFIG.CONST_WIDTH {16} \
+ ] $xlconstant_2
 
   # Create instance: zynq_ultra_ps_e_0, and set properties
   set zynq_ultra_ps_e_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.4 zynq_ultra_ps_e_0 ]
@@ -4961,6 +4978,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net S_AXI_1 [get_bd_intf_pins receiver/S_AXI] [get_bd_intf_pins rf_interconnect/M02_AXI]
   connect_bd_intf_net -intf_net S_AXI_2 [get_bd_intf_pins rf_interconnect/M01_AXI] [get_bd_intf_pins transmitter/S_AXI]
   connect_bd_intf_net -intf_net adc1_clk_1_1 [get_bd_intf_ports adc1_clk] [get_bd_intf_pins rfdc/adc1_clk]
+  connect_bd_intf_net -intf_net axil_evr_0_gt_rx [get_bd_intf_ports sfp2_1x] [get_bd_intf_pins axil_evr_0/gt_rx]
   connect_bd_intf_net -intf_net axil_llrf_0_m_axis [get_bd_intf_pins axil_llrf_0/m_axis] [get_bd_intf_pins transmitter/s1_axis]
   connect_bd_intf_net -intf_net control_interconnect_M02_AXI [get_bd_intf_pins axil_evr_0/s_axi] [get_bd_intf_pins control_interconnect/M02_AXI]
   connect_bd_intf_net -intf_net dac2_clk_0_1 [get_bd_intf_ports dac2_clk] [get_bd_intf_pins rfdc/dac2_clk]
@@ -4991,7 +5009,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net rfdc_vout22 [get_bd_intf_ports vout22] [get_bd_intf_pins rfdc/vout22]
   connect_bd_intf_net -intf_net rfdc_vout30 [get_bd_intf_ports vout30] [get_bd_intf_pins rfdc/vout30]
   connect_bd_intf_net -intf_net rfdc_vout32 [get_bd_intf_ports vout32] [get_bd_intf_pins rfdc/vout32]
-  connect_bd_intf_net -intf_net sysref_in_0_1 [get_bd_intf_ports sysref_in_0] [get_bd_intf_pins rfdc/sysref_in]
+  connect_bd_intf_net -intf_net sysref_in_0_1 [get_bd_intf_ports AMS_SYSREF] [get_bd_intf_pins rfdc/sysref_in]
   connect_bd_intf_net -intf_net transmitter_M00_AXIS [get_bd_intf_pins rfdc/s00_axis] [get_bd_intf_pins transmitter/M00_AXIS]
   connect_bd_intf_net -intf_net transmitter_M01_AXIS [get_bd_intf_pins rfdc/s02_axis] [get_bd_intf_pins transmitter/M01_AXIS]
   connect_bd_intf_net -intf_net transmitter_M02_AXIS [get_bd_intf_pins rfdc/s10_axis] [get_bd_intf_pins transmitter/M02_AXIS]
@@ -5000,6 +5018,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net transmitter_M05_AXIS [get_bd_intf_pins rfdc/s22_axis] [get_bd_intf_pins transmitter/M05_AXIS]
   connect_bd_intf_net -intf_net transmitter_M06_AXIS [get_bd_intf_pins rfdc/s30_axis] [get_bd_intf_pins transmitter/M06_AXIS]
   connect_bd_intf_net -intf_net transmitter_M07_AXIS [get_bd_intf_pins rfdc/s32_axis] [get_bd_intf_pins transmitter/M07_AXIS]
+  connect_bd_intf_net -intf_net user_mgt_si570_clock_1 [get_bd_intf_ports user_mgt_si570_clock] [get_bd_intf_pins axil_evr_0/gt_refclk]
   connect_bd_intf_net -intf_net vin0_01_0_1 [get_bd_intf_ports vin0_01] [get_bd_intf_pins rfdc/vin0_01]
   connect_bd_intf_net -intf_net vin0_23_0_1 [get_bd_intf_ports vin0_23] [get_bd_intf_pins rfdc/vin0_23]
   connect_bd_intf_net -intf_net vin1_01_1_1 [get_bd_intf_ports vin1_01] [get_bd_intf_pins rfdc/vin1_01]
@@ -5014,22 +5033,21 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   # Create port connections
   connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins axil_llrf_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/egress_aresetn] [get_bd_pins receiver/s_axi_aresetn] [get_bd_pins rf_interconnect/ARESETN] [get_bd_pins rf_interconnect/M00_ARESETN] [get_bd_pins rf_interconnect/M01_ARESETN] [get_bd_pins rf_interconnect/M02_ARESETN] [get_bd_pins rf_interconnect/S00_ARESETN] [get_bd_pins transmitter/S_AXI_RESETN]
   connect_bd_net -net RFingressReset_peripheral_aresetn [get_bd_pins clocktreeMTS/ingress_aresetn] [get_bd_pins rfdc/m0_axis_aresetn] [get_bd_pins rfdc/m1_axis_aresetn] [get_bd_pins rfdc/m2_axis_aresetn] [get_bd_pins rfdc/m3_axis_aresetn] [get_bd_pins rfdc/s0_axis_aresetn] [get_bd_pins rfdc/s1_axis_aresetn] [get_bd_pins rfdc/s2_axis_aresetn] [get_bd_pins rfdc/s3_axis_aresetn]
-  connect_bd_net -net SFP2_RX_N_1 [get_bd_ports SFP2_RX_N] [get_bd_pins axil_evr_0/gt_rxn_in]
-  connect_bd_net -net SFP2_RX_P_1 [get_bd_ports SFP2_RX_P] [get_bd_pins axil_evr_0/gt_rxp_in]
-  connect_bd_net -net axil_evr_0_event1_dsp [get_bd_pins axil_evr_0/event1_dsp] [get_bd_pins axil_llrf_0/evr_trigger_in]
+  connect_bd_net -net axil_evr_0_event1_dsp [get_bd_pins axil_evr_0/event1_dsp] [get_bd_pins axil_llrf_0/evr_trigger_in] [get_bd_pins pulse_gen_0/trigger]
+  connect_bd_net -net axil_llrf_0_pulse_length [get_bd_pins axil_llrf_0/pulse_length] [get_bd_pins transmitter/pulse_length]
   connect_bd_net -net axil_llrf_0_rf_permit_out [get_bd_pins axil_llrf_0/rf_permit_out] [get_bd_pins transmitter/enable]
-  connect_bd_net -net axil_rf_control_0_pulse_length_out [get_bd_pins axil_llrf_0/pulse_length] [get_bd_pins receiver/pulse_length] [get_bd_pins transmitter/pulse_length]
   connect_bd_net -net axil_rf_control_0_trigger_out [get_bd_ports TRIG_OUT] [get_bd_pins axil_llrf_0/trigger_out] [get_bd_pins receiver/trig_cap] [get_bd_pins transmitter/trig_cap]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clocktreeMTS/clkRF] [get_bd_pins receiver/aclk] [get_bd_pins rfdc/m0_axis_aclk] [get_bd_pins rfdc/m1_axis_aclk] [get_bd_pins rfdc/m2_axis_aclk] [get_bd_pins rfdc/m3_axis_aclk] [get_bd_pins rfdc/s0_axis_aclk] [get_bd_pins rfdc/s1_axis_aclk] [get_bd_pins rfdc/s2_axis_aclk] [get_bd_pins rfdc/s3_axis_aclk] [get_bd_pins transmitter/aclk]
-  connect_bd_net -net clocktreeMTS_clkRFdiv2 [get_bd_pins axil_evr_0/dsp_clk] [get_bd_pins axil_llrf_0/clk] [get_bd_pins clocktreeMTS/clkRFdiv2] [get_bd_pins receiver/S_AXI_CLK] [get_bd_pins rf_interconnect/ACLK] [get_bd_pins rf_interconnect/M00_ACLK] [get_bd_pins rf_interconnect/M01_ACLK] [get_bd_pins rf_interconnect/M02_ACLK] [get_bd_pins rf_interconnect/S00_ACLK] [get_bd_pins transmitter/S_AXI_CLK] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
+  connect_bd_net -net clocktreeMTS_clkRFdiv2 [get_bd_pins axil_evr_0/dsp_clk] [get_bd_pins axil_llrf_0/clk] [get_bd_pins clocktreeMTS/clkRFdiv2] [get_bd_pins pulse_gen_0/clk] [get_bd_pins receiver/S_AXI_CLK] [get_bd_pins rf_interconnect/ACLK] [get_bd_pins rf_interconnect/M00_ACLK] [get_bd_pins rf_interconnect/M01_ACLK] [get_bd_pins rf_interconnect/M02_ACLK] [get_bd_pins rf_interconnect/S00_ACLK] [get_bd_pins transmitter/S_AXI_CLK] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
   connect_bd_net -net clocktreeMTS_interrupt [get_bd_pins clocktreeMTS/interrupt] [get_bd_pins xlconcat_0/In0]
-  connect_bd_net -net gty_refclk_n_1 [get_bd_ports gty_refclk_n] [get_bd_pins axil_evr_0/gt_refclk_n]
-  connect_bd_net -net gty_refclk_p_1 [get_bd_ports gty_refclk_p] [get_bd_pins axil_evr_0/gt_refclk_p]
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins axil_evr_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/s_axi_aresetn] [get_bd_pins control_interconnect/ARESETN] [get_bd_pins control_interconnect/M00_ARESETN] [get_bd_pins control_interconnect/M01_ARESETN] [get_bd_pins control_interconnect/M02_ARESETN] [get_bd_pins control_interconnect/S00_ARESETN] [get_bd_pins rfdc/s_axi_aresetn]
+  connect_bd_net -net pulse_gen_0_pulse_out [get_bd_ports GPIO_LED_0_LS] [get_bd_pins pulse_gen_0/pulse_out]
   connect_bd_net -net synchronizeSYSREF_dest_out [get_bd_pins clocktreeMTS/UserSYSREF] [get_bd_pins rfdc/user_sysref_adc] [get_bd_pins rfdc/user_sysref_dac]
   connect_bd_net -net usp_rf_data_converter_1_irq [get_bd_pins rfdc/irq] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins xlconcat_0/dout] [get_bd_pins zynq_ultra_ps_e_0/pl_ps_irq0]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins axil_llrf_0/ext_trigger_in] [get_bd_pins axil_llrf_0/rf_permit_in] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_1_dout [get_bd_pins pulse_gen_0/high_len] [get_bd_pins xlconstant_1/dout]
+  connect_bd_net -net xlconstant_2_dout [get_bd_pins receiver/pulse_length] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axil_evr_0/s_axi_aclk] [get_bd_pins clocktreeMTS/s_axi_aclk] [get_bd_pins control_interconnect/ACLK] [get_bd_pins control_interconnect/M00_ACLK] [get_bd_pins control_interconnect/M01_ACLK] [get_bd_pins control_interconnect/M02_ACLK] [get_bd_pins control_interconnect/S00_ACLK] [get_bd_pins rfdc/s_axi_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_lpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins clocktreeMTS/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 

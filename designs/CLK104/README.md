@@ -17,6 +17,56 @@ FoutB_FREQ      :     2000.000 MHz
 Fpd_FREQ        :      250.000 MHz
 Fvco_FREQ       :     8000.000 MHz
 ********************************************************************************
+DUAL_PLL_MODE_LMK04828_1.25MHz_SYSREF.tcs
+********************************************************************************
+part            :    LMK04828B
+SYSREF_FREQ     :        1.249 MHz
+OSCout_FREQ     :      160.124 MHz
+CLKin0_FREQ     :      499.640 MHz
+CLKin1_FREQ     :       10.000 MHz
+CLKin2_FREQ     :       76.800 MHz
+CLKout0_FREQ    :      499.640 MHz
+CLKout1_FREQ    :        1.249 MHz
+CLKout2_FREQ    :      499.640 MHz
+CLKout3_FREQ    :        1.249 MHz
+CLKout4_FREQ    :      499.640 MHz
+CLKout5_FREQ    :        1.249 MHz
+CLKout6_FREQ    :      499.640 MHz
+CLKout7_FREQ    :        1.249 MHz
+CLKout8_FREQ    :      499.640 MHz
+CLKout9_FREQ    :        1.249 MHz
+CLKout10_FREQ   :      499.640 MHz
+CLKout11_FREQ   :      499.640 MHz
+CLKout12_FREQ   :      499.640 MHz
+CLKout13_FREQ   :        1.249 MHz
+CLKin_SEL_MODE  :       CLKin0
+VCO_MUX         :         VCO0
+********************************************************************************
+DIST_MODE_LMK04828_1.25MHz_SYSREF.tcs
+********************************************************************************
+part            :    LMK04828B
+SYSREF_FREQ     :        1.249 MHz
+OSCout_FREQ     :      160.124 MHz
+CLKin0_FREQ     :      500.000 MHz
+CLKin1_FREQ     :      499.640 MHz
+CLKin2_FREQ     :       76.800 MHz
+CLKout0_FREQ    :      499.640 MHz
+CLKout1_FREQ    :        1.249 MHz
+CLKout2_FREQ    :      499.640 MHz
+CLKout3_FREQ    :        1.249 MHz
+CLKout4_FREQ    :      499.640 MHz
+CLKout5_FREQ    :        1.249 MHz
+CLKout6_FREQ    :      499.640 MHz
+CLKout7_FREQ    :        1.249 MHz
+CLKout8_FREQ    :      499.640 MHz
+CLKout9_FREQ    :        1.249 MHz
+CLKout10_FREQ   :      499.640 MHz
+CLKout11_FREQ   :      499.640 MHz
+CLKout12_FREQ   :      499.640 MHz
+CLKout13_FREQ   :        1.249 MHz
+CLKin_SEL_MODE  :       CLKin0
+VCO_MUX         : CLKin1 (ext)
+********************************************************************************
 LMK04828_499.64MHz_CLKin2_124.91MHz.tcs
 ********************************************************************************
 part            :    LMK04828B
@@ -41,6 +91,15 @@ CLKout12_FREQ   :      499.640 MHz
 CLKout13_FREQ   :        4.996 MHz
 CLKin_SEL_MODE  :       CLKin2
 VCO_MUX         :         VCO0
+********************************************************************************
+LMX2594_3500MHz.tcs
+********************************************************************************
+part            :      LMX2594
+Fosc_FREQ       :      499.640 MHz
+FoutA_FREQ      :     3497.480 MHz
+FoutB_FREQ      :     3497.480 MHz
+Fpd_FREQ        :      249.820 MHz
+Fvco_FREQ       :    13989.920 MHz
 ********************************************************************************
 DIST_MTS_LMK04828_124.91.tcs
 ********************************************************************************
@@ -100,6 +159,15 @@ FoutA_FREQ      :     3997.120 MHz
 FoutB_FREQ      :     3997.120 MHz
 Fpd_FREQ        :      249.820 MHz
 Fvco_FREQ       :     7994.240 MHz
+********************************************************************************
+LMX2594_7000MHz.tcs
+********************************************************************************
+part            :      LMX2594
+Fosc_FREQ       :      499.640 MHz
+FoutA_FREQ      :     6994.960 MHz
+FoutB_FREQ      :     6994.960 MHz
+Fpd_FREQ        :      249.820 MHz
+Fvco_FREQ       :    13989.920 MHz
 ********************************************************************************
 LMK04828_499.64MHz_CLKin0_499.64MHz.tcs
 ********************************************************************************

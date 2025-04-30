@@ -9,7 +9,7 @@ from cocotbext.axi import AxiLiteBus, AxiLiteMaster
 
 class TB:
     def __init__(self, dut):
-        dut._log.setLevel(logging.INFO)
+        dut._log.setLevel(logging.WARNING)
         self.dut = dut
         self.addr_length = 1 << dut.ADDR_WIDTH.value
         self.fcnt_width = dut.FCNT_WIDTH.value

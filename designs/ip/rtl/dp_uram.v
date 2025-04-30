@@ -8,25 +8,25 @@
 //  presented on the output port.
 module dp_uram #(
     parameter AWIDTH = 12,  // Address Width
-    parameter NUM_COL= 9,   // Number of columns
-    parameter DWIDTH = 72,  // Data Width, (Byte * NUM_COL)
-    parameter READ_LATENCY = 3, // Number of read cycles
-    parameter NBPIPE = READ_LATENCY - 2    // Number of pipeline Registers
+    parameter DWIDTH = 72,  // Data Width
+    parameter READ_LATENCY = 3 // Number of read cycles
 ) (
-    input wire clk,                     // Clock
     // Port A
-    input wire [NUM_COL-1:0] wea,       // Write Enable
+    input wire clk,                     // Clock
+    input wire [DWIDTH/8-1:0] wea,      // Write Enable
     input wire ena,                     // Memory Enable
     input wire [DWIDTH-1:0] dina,       // Data Input
     input wire [AWIDTH-1:0] addra,      // Address Input
     output reg [DWIDTH-1:0] douta,      // Data Output
     // Port B
-    input wire [NUM_COL-1:0] web,       // Write Enable
+    input wire [DWIDTH/8-1:0] web,      // Write Enable
     input wire enb,                     // Memory Enable
     input wire [DWIDTH-1:0] dinb,       // Data Input
     input wire [AWIDTH-1:0] addrb,      // Address Input
     output reg [DWIDTH-1:0] doutb       // Data Output
 );
+
+    localparam  NBPIPE = READ_LATENCY - 2;    // Number of pipeline Registers
 
     (* ram_style = "ultra" *)
     reg [DWIDTH-1:0] mem [(1<<AWIDTH)-1:0];        // Memory Declaration
@@ -43,7 +43,7 @@ module dp_uram #(
     // RAM : Both READ and WRITE have a latency of one
     always @ (posedge clk) begin
         if(ena) begin
-            for(i = 0;i < NUM_COL; i = i + 1)
+            for(i = 0;i < DWIDTH/8; i = i + 1)
                 if(wea[i]) mem[addra][i*8 +: 8] <= dina[i*8 +: 8];
             end
     end
@@ -81,7 +81,7 @@ module dp_uram #(
 
     always @ (posedge clk) begin
         if(enb) begin
-            for(i = 0;i<NUM_COL;i=i+1)
+            for(i = 0;i<DWIDTH/8;i=i+1)
                 if(web[i]) mem[addrb][i*8 +: 8] <= dinb[i*8 +: 8];
         end
     end

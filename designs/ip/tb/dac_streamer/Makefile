@@ -12,6 +12,7 @@ MODULE_TB = dac_streamer_tb
 # Source files
 SRC  = $(RTL_DIR)/$(MODULE).v $(MODULE_TB).sv
 SRC += $(RTL_DIR)/adc_capture.v $(RTL_DIR)/dp_uram.v
+SRC += $(RTL_DIR)/pulse_gen.v
 
 # Output files
 VVP_FILE = $(MODULE_TB).vvp

@@ -7,7 +7,7 @@ from cocotbext.axi import AxiLiteBus, AxiLiteMaster
 
 class TB:
     def __init__(self, dut):
-        dut._log.setLevel(logging.INFO)
+        dut._log.setLevel(logging.WARNING)
         self.dut = dut
         self.n_regs_out = dut.N_REGS_OUT.value
         self.n_regs_inp = dut.N_REGS_INP.value

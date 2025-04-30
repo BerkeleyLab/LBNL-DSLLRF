@@ -1,4 +1,4 @@
-# ZCU208 MIMO MTS overlay
+# LBL208 MIMO MTS overlay
 
 ## Features
 

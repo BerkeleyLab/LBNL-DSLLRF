@@ -29,19 +29,22 @@ module axil_evr #(
     input wire s_axi_rready,
 
     // transceiver IOs
-    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 gt_refclk_p CLK" *)
+    (* X_INTERFACE_INFO = "xilinx.com:interface:diff_clock_rtl:1.0 gt_refclk CLK_P" *)
     input wire         gt_refclk_p,
-    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 gt_refclk_n CLK" *)
+    (* X_INTERFACE_INFO = "xilinx.com:interface:diff_clock_rtl:1.0 gt_refclk CLK_N" *)
     input wire         gt_refclk_n,
-    input wire         gt_rxp_in,
-    input wire         gt_rxn_in,
+    (* X_INTERFACE_INFO = "xilinx.com:interface:gt_rtl:1.0 gt_rx GRX_P" *)
+    input wire         gt_rxp,
+    (* X_INTERFACE_INFO = "xilinx.com:interface:gt_rtl:1.0 gt_rx GRX_N" *)
+    input wire         gt_rxn,
     output wire        gt_refclk_out,
 
     // evr_clk
+    (* X_INTERFACE_PARAMETER = "FREQ_HZ 125000000" *)
+    output wire        evr_clk,
     output wire        event1_evr,
 
     // dsp_clock
-    (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 dsp_clk CLK" *)
     input              dsp_clk,
     output wire        event1_dsp,
     output wire [63:0] live_ts_dsp
@@ -104,7 +107,6 @@ module axil_evr #(
     wire [0:0]  reset_all;
 
     // Instantiate the Timing Event Receiver (EVR)
-    wire evr_clk;
     wire [15:0] evr_chars;
     wire [1:0] evr_charisk;
 
@@ -117,8 +119,8 @@ module axil_evr #(
     ) evr_gt_wrapper (
         .gt_refclk_p        (gt_refclk_p),
         .gt_refclk_n        (gt_refclk_n),
-        .gt_rxp_in          (gt_rxp_in),
-        .gt_rxn_in          (gt_rxn_in),
+        .gt_rxp_in          (gt_rxp),
+        .gt_rxn_in          (gt_rxn),
         .gt_refclk_out      (gt_refclk_out),
         .sys_clk            (s_axi_aclk),
         .soft_reset         (reset_all),

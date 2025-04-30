@@ -16,9 +16,6 @@ class RfControl(DefaultIP):
             description['registers'] = json.load(f)
         super().__init__(description)
 
-    def set_rf_enable(self, enable=True):
-        self.register_map.dac_enable = enable
-
     @property
     def tx_gain(self):
         return CORDIC_GAIN / 4

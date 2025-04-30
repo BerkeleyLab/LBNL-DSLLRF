@@ -29,7 +29,7 @@ rtl_test:
   script:
     - make SIM=icarus
 
-bitfile_synthesis_zcu208:
+.bitfile_synthesis_zcu208:
   before_script:
     - cd designs/ZCU208/${OVERLAY} && ls /non-free
   stage: synthesis
@@ -50,7 +50,7 @@ bitfile_synthesis_zcu208:
     matrix:
       - OVERLAY: [config_evr, als_llrf_mts]
 
-.bitfile_synthesis_zcu216:
+bitfile_synthesis_zcu216:
   before_script:
     - cd designs/ZCU216/${OVERLAY} && ls /non-free
   stage: synthesis
@@ -71,9 +71,9 @@ bitfile_synthesis_zcu208:
     matrix:
       - OVERLAY: [mimo_mts]
 
-bitfile_synthesis_lbl208:
+bitfile_synthesis_208:
   before_script:
-    - cd designs/LBL208/${OVERLAY} && ls /non-free
+    - cd designs/${BOARD}/${OVERLAY} && ls /non-free
   stage: synthesis
   timeout: 3h
   script:
@@ -83,11 +83,12 @@ bitfile_synthesis_lbl208:
     expire_in: 4 weeks
     when: always
     paths:
-      - designs/LBL208/${OVERLAY}/${OVERLAY}.bit
-      - designs/LBL208/${OVERLAY}/${OVERLAY}.hwh
-      - designs/LBL208/${OVERLAY}/${OVERLAY}.xsa
-      - designs/LBL208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
-      - designs/LBL208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
+      - designs/${BOARD}/${OVERLAY}/${OVERLAY}.bit
+      - designs/${BOARD}/${OVERLAY}/${OVERLAY}.hwh
+      - designs/${BOARD}/${OVERLAY}/${OVERLAY}.xsa
+      - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
+      - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
     matrix:
-      - OVERLAY: [config_evr, als_llrf_mts]
+      - OVERLAY: [als_llrf_mts, mimo_mts]
+        BOARD: [ZCU208, LBL208]

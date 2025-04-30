@@ -5,9 +5,11 @@ module axil_llrf #(
     parameter integer AXI_DW = 32,
     // Width of address bus in bits
     parameter integer AXI_AW = 8,
-    parameter integer SAMP_DW = 16,     // 16 bits data
-    parameter integer SAMP_NUM = 16,    // 16 samples per clock
-    parameter integer DW = SAMP_DW * SAMP_NUM,     // 32 bytes
+    parameter integer SAMP_DW = 16,
+    parameter integer S_AXIS_SAMP_NUM = 16,
+    parameter integer S_AXIS_DW = SAMP_DW * S_AXIS_SAMP_NUM,
+    parameter integer M_AXIS_SAMP_NUM = 16,
+    parameter integer M_AXIS_DW = SAMP_DW * M_AXIS_SAMP_NUM,
     parameter integer KW = 18,          // Width of dsp signals
     parameter integer EW = 12           // error width
 ) (
@@ -36,24 +38,25 @@ module axil_llrf #(
     input wire s_axi_rready,
 
     // AXI Stream input interface for feedback channel, base band, I
-    input wire [DW-1:0] s0_axis_tdata,
+    input wire [S_AXIS_DW-1:0] s0_axis_tdata,
     input wire s0_axis_tvalid,
     output wire s0_axis_tready,
 
     // AXI Stream input interface for feedback channel, base band, Q
-    input wire [DW-1:0] s1_axis_tdata,
+    input wire [S_AXIS_DW-1:0] s1_axis_tdata,
     input wire s1_axis_tvalid,
     output wire s1_axis_tready,
 
     // AXI Stream output interface for feedback channel
-    output wire [DW-1:0] m_axis_tdata,
+    output wire [M_AXIS_DW-1:0] m_axis_tdata,
     output wire m_axis_tvalid,
     input wire m_axis_tready,
 
     // IOs
     output wire trigger_out,
     output wire rf_permit_out,
-    output wire [11:0] pulse_length,
+    output wire pulse_enable_out,
+    output wire [15:0] pulse_length,
     input wire  ext_trigger_in,
     input wire  evr_trigger_in,
     input wire  rf_permit_in
@@ -104,6 +107,7 @@ module axil_llrf #(
         .dsp_reset(dsp_reset),
         .trigger_out(trigger_out),
         .rf_permit_out(rf_permit_out),
+        .pulse_enable(pulse_enable_out),
         .dac_enable(dac_enable),
         .pulse_length(pulse_length),
         .amp_loop_enable(amp_loop_enable),
@@ -127,15 +131,16 @@ module axil_llrf #(
 
     llrf_dsp #(
         .SAMP_DW(SAMP_DW),
-        .SAMP_NUM(SAMP_NUM),
+        .S_AXIS_SAMP_NUM(S_AXIS_SAMP_NUM),
+        .M_AXIS_SAMP_NUM(M_AXIS_SAMP_NUM),
         .KW(KW),
         .EW(EW)
     ) llrf_dsp (
         .clk(clk),
-        .axis_aresetn(s_axi_aresetn),
         .dsp_reset(dsp_reset),
         .trigger(trigger_out),
         .rf_permit(rf_permit_out),
+        .pulse_enable(pulse_enable_out),
         .pulse_length(pulse_length),
         .amp_loop_enable(amp_loop_enable),
         .amp_loop_reset(amp_loop_reset),

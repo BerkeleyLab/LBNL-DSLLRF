@@ -10,7 +10,7 @@ import numpy as np
 
 class TB:
     def __init__(self, dut):
-        dut._log.setLevel(logging.INFO)
+        dut._log.setLevel(logging.WARNING)
         self.dut = dut
         self.source0 = AxiStreamSource(
             AxiStreamBus.from_prefix(dut, "s0_axis"),
@@ -55,6 +55,7 @@ async def test_axis_adder(dut, length=8, DATA_WIDTH=256):
         tx_arr = np.frombuffer(frame.tdata, dtype=np.uint16)
         rx_arr = np.frombuffer(rx_frame.tdata, dtype=np.uint16)
         for t_val, r_val in zip(tx_arr, rx_arr):
+            tb.dut._log.warning(f"t_val: {hex(t_val)}, r_val: {hex(r_val)}")
             assert r_val == 2 * t_val, \
                 f"Data mismatch: {hex(t_val)} != {hex(r_val)}"
     assert tb.sink.empty()

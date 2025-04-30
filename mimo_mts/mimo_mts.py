@@ -91,16 +91,11 @@ class MimoMtsOverlay(Overlay):
                 [self.rfdc.adc_tiles[i].blocks[j] for j in range(4)]
                 for i in range(4)])
 
-        self.sysref_freqcnt = self.clocktreeMTS.freqcnt_gpio.channel1
-        self.dspclk_freqcnt = self.clocktreeMTS.freqcnt_gpio.channel2
+        self.dspclk_freqcnt = self.clocktreeMTS.freqcnt_gpio.channel1
 
     def convert_freq_to_hz(self, f_cnt, f_ref=100.0e6):
         """Convert the frequency counter value to Hz"""
         return (f_cnt / 2**24) * f_ref
-
-    @property
-    def sysref_freq_hz(self):
-        return self.convert_freq_to_hz(self.sysref_freqcnt.read())
 
     @property
     def dspclk_freq_hz(self):
@@ -147,28 +142,18 @@ class MimoMtsOverlay(Overlay):
         return ipmmio.array[0:ipmmio.length].view(dtype)
 
     def sync_tiles(self):
-        """Configures RFSoC MTS alignment for deterministic latency
-        Measured max latency is 112 DAC samples and 88 ADC samples,
-        Add margin to the target latency to ensure alignment.
-        """
-        if self.board.num_dac_tiles > 0:
-            self.rfdc.mts_dac_config.Tiles = self.board.active_dac_tiles
-            self.rfdc.mts_dac_config.SysRef_Enable = 1
-            self.rfdc.mts_dac_config.Target_Latency = \
-                self.board.mts_dac_target_latency
-            self.rfdc.mts_dac()
-        else:
-            self.rfdc.mts_dac_config.Tiles = 0x0
-            self.rfdc.mts_dac_config.SysRef_Enable = 0
-        if self.board.num_adc_tiles > 0:
-            self.rfdc.mts_adc_config.Tiles = self.board.active_adc_tiles
-            self.rfdc.mts_adc_config.SysRef_Enable = 1
-            self.rfdc.mts_adc_config.Target_Latency = \
-                self.board.mts_adc_target_latency
-            self.rfdc.mts_adc()
-        else:
-            self.rfdc.mts_adc_config.Tiles = 0x0
-            self.rfdc.mts_adc_config.SysRef_Enable = 0
+        """Configures RFSoC MTS alignment for deterministic latency"""
+        self.rfdc.mts_dac_config.Tiles = self.board.active_dac_tiles
+        self.rfdc.mts_dac_config.SysRef_Enable = self.board.num_dac_tiles > 0
+        self.rfdc.mts_dac_config.Target_Latency = \
+            self.board.mts_dac_target_latency
+        self.rfdc.mts_dac()
+
+        self.rfdc.mts_adc_config.Tiles = self.board.active_adc_tiles
+        self.rfdc.mts_adc_config.SysRef_Enable = self.board.num_adc_tiles > 0
+        self.rfdc.mts_adc_config.Target_Latency = \
+            self.board.mts_adc_target_latency
+        self.rfdc.mts_adc()
 
     def init_tile_sync(self):
         """Resets the MTS alignment engine"""
@@ -240,8 +225,31 @@ class MimoMtsOverlay(Overlay):
                 np.copyto(q_buffer[i], self.adc_bufs[2*i+1])
         return i_buffer, q_buffer
 
+    def write_dac_iq_buf(self, i_buffer, q_buffer):
+        """Writes DAC samples to all channels
+        Follow PG269, DAC I/Q input to Real output (Figure 101/110):
+          Dual RF-DAC: Figure 103:
+            s00_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
+            s02_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
+          Quad RF-DAC: Figure 112:
+            s00_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
+            s01_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
+            s02_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
+            s03_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
+        """
+        assert np.issubdtype(i_buffer.dtype, np.int16), \
+            "i_buffer dtype of np.int16 required."
+        assert np.issubdtype(q_buffer.dtype, np.int16), \
+            "q_buffer dtype of np.int16 required."
+        assert i_buffer.size == self.dac_player.size // 2, \
+            "i_buffer size must be half of the DAC player buffer size."
+        assert q_buffer.size == self.dac_player.size // 2, \
+            "q_buffer size must be half of the DAC player buffer size."
+        self.dac_player[0::2] = i_buffer
+        self.dac_player[1::2] = q_buffer
+
     def set_dac_mixer_dco(self, freq_mhz=0, nyquist=1, phase=0):
-        self.rfdc.mts_dac_config.SysRef_Enable = False
+        self.rfdc.mts_dac_config.SysRef_Enable = 1
 
         # Set up mixer settings for each DAC tile
         mixer_settings_dac = {
@@ -259,11 +267,10 @@ class MimoMtsOverlay(Overlay):
             dac_block.InterpolationFactor = 2  # for C2R mixer mode
             dac_block.ResetNCOPhase()
 
-        # Configure the MTS to use the SYSREF event source
-        self.rfdc.mts_dac_config.SysRef_Enable = True
+        self.rfdc.mts_dac_config.SysRef_Enable = 0
 
     def set_adc_mixer_dco(self, freq_mhz=0, nyquist=1, phase=0):
-        self.rfdc.mts_adc_config.SysRef_Enable = False
+        self.rfdc.mts_adc_config.SysRef_Enable = 1
 
         # Set up mixer settings for each ADC tile
         mixer_settings_adc = {
@@ -280,8 +287,7 @@ class MimoMtsOverlay(Overlay):
             adc_block.MixerSettings = mixer_settings_adc
             adc_block.ResetNCOPhase()
 
-        # Configure the MTS to use the SYSREF event source
-        self.rfdc.mts_adc_config.SysRef_Enable = True
+        self.rfdc.mts_adc_config.SysRef_Enable = 0
 
 
 def resolve_binary_path(bitfile_name):

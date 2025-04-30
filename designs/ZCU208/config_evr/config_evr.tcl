@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following
 # module references:
-# axil_evr
+# axil_evr, pulse_gen, pulse_gen
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -132,6 +132,7 @@ set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\
 xilinx.com:ip:proc_sys_reset:5.0\
+xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:zynq_ultra_ps_e:3.4\
 "
 
@@ -159,6 +160,8 @@ set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\
 axil_evr\
+pulse_gen\
+pulse_gen\
 "
 
    set list_mods_missing ""
@@ -221,13 +224,18 @@ proc create_root_design { parentCell } {
 
 
   # Create interface ports
+  set sfp2_1x [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 sfp2_1x ]
+
+  set user_mgt_si570_clock [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 user_mgt_si570_clock ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {156250000} \
+   ] $user_mgt_si570_clock
+
 
   # Create ports
   set EVR_EVENT1 [ create_bd_port -dir O -type clk EVR_EVENT1 ]
-  set SFP2_RX_N [ create_bd_port -dir I -type data SFP2_RX_N ]
-  set SFP2_RX_P [ create_bd_port -dir I -type data SFP2_RX_P ]
-  set gty_refclk_n [ create_bd_port -dir I -type clk -freq_hz 156137500 gty_refclk_n ]
-  set gty_refclk_p [ create_bd_port -dir I -type clk -freq_hz 156137500 gty_refclk_p ]
+  set GPIO_LED_0_LS [ create_bd_port -dir O GPIO_LED_0_LS ]
+  set GPIO_LED_1_LS [ create_bd_port -dir O GPIO_LED_1_LS ]
 
   # Create instance: axil_evr_0, and set properties
   set block_name axil_evr
@@ -246,8 +254,43 @@ proc create_root_design { parentCell } {
    CONFIG.NUM_MI {1} \
  ] $ps8_0_axi_periph
 
+  # Create instance: pulse_gen_0, and set properties
+  set block_name pulse_gen
+  set block_cell_name pulse_gen_0
+  if { [catch {set pulse_gen_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $pulse_gen_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.AW {25} \
+ ] $pulse_gen_0
+
+  # Create instance: pulse_gen_1, and set properties
+  set block_name pulse_gen
+  set block_cell_name pulse_gen_1
+  if { [catch {set pulse_gen_1 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $pulse_gen_1 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.AW {25} \
+ ] $pulse_gen_1
+
   # Create instance: rst_ps8_0_99M, and set properties
   set rst_ps8_0_99M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps8_0_99M ]
+
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0x1ffffff} \
+   CONFIG.CONST_WIDTH {25} \
+ ] $xlconstant_0
 
   # Create instance: zynq_ultra_ps_e_0, and set properties
   set zynq_ultra_ps_e_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.4 zynq_ultra_ps_e_0 ]
@@ -916,18 +959,21 @@ Port;FD4A0000;FD4AFFFF;0|FPD;DPDMA;FD4C0000;FD4CFFFF;0|FPD;DDR_XMPU5_CFG;FD05000
  ] $zynq_ultra_ps_e_0
 
   # Create interface connections
+  connect_bd_intf_net -intf_net axil_evr_0_gt_rx [get_bd_intf_ports sfp2_1x] [get_bd_intf_pins axil_evr_0/gt_rx]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M00_AXI [get_bd_intf_pins axil_evr_0/s_axi] [get_bd_intf_pins ps8_0_axi_periph/M00_AXI]
+  connect_bd_intf_net -intf_net user_mgt_si570_clock_1 [get_bd_intf_ports user_mgt_si570_clock] [get_bd_intf_pins axil_evr_0/gt_refclk]
   connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_FPD [get_bd_intf_pins ps8_0_axi_periph/S00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_FPD]
 
   # Create port connections
-  connect_bd_net -net SFP2_RX_N_1 [get_bd_ports SFP2_RX_N] [get_bd_pins axil_evr_0/gt_rxn_in]
-  connect_bd_net -net SFP2_RX_P_1 [get_bd_ports SFP2_RX_P] [get_bd_pins axil_evr_0/gt_rxp_in]
-  connect_bd_net -net axil_evr_0_event1_evr [get_bd_ports EVR_EVENT1] [get_bd_pins axil_evr_0/event1_evr]
-  connect_bd_net -net gty_refclk_n_1 [get_bd_ports gty_refclk_n] [get_bd_pins axil_evr_0/gt_refclk_n]
-  connect_bd_net -net gty_refclk_p_1 [get_bd_ports gty_refclk_p] [get_bd_pins axil_evr_0/gt_refclk_p]
+  connect_bd_net -net axil_evr_0_event1_dsp [get_bd_pins axil_evr_0/event1_dsp] [get_bd_pins pulse_gen_1/trigger]
+  connect_bd_net -net axil_evr_0_event1_evr [get_bd_ports EVR_EVENT1] [get_bd_pins axil_evr_0/event1_evr] [get_bd_pins pulse_gen_0/trigger]
+  connect_bd_net -net axil_evr_0_evr_clk [get_bd_pins axil_evr_0/evr_clk] [get_bd_pins pulse_gen_0/clk]
+  connect_bd_net -net pulse_gen_0_pulse_out [get_bd_ports GPIO_LED_0_LS] [get_bd_pins pulse_gen_0/pulse_out]
+  connect_bd_net -net pulse_gen_1_pulse_out [get_bd_ports GPIO_LED_1_LS] [get_bd_pins pulse_gen_1/pulse_out]
   connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins axil_evr_0/s_axi_aresetn] [get_bd_pins ps8_0_axi_periph/ARESETN] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps8_0_99M/peripheral_aresetn]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins pulse_gen_0/high_len] [get_bd_pins pulse_gen_1/high_len] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axil_evr_0/s_axi_aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk1 [get_bd_pins axil_evr_0/dsp_clk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk1]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk1 [get_bd_pins axil_evr_0/dsp_clk] [get_bd_pins pulse_gen_1/clk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk1]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins rst_ps8_0_99M/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments

@@ -33,7 +33,21 @@
         "address_offset": 20,
         "access": "read-write",
         "description": "Pulse length",
-        "size": 32
+        "size": 32,
+        "fields": {
+            "dac_enable": {
+                "bit_offset": 0,
+                "bit_width": 1,
+                "access": "read-write",
+                "description": "DAC enable"
+            },
+            "pulse_enable": {
+                "bit_offset": 1,
+                "bit_width": 1,
+                "access": "read-write",
+                "description": "Pulse enable"
+            }
+        }
     },
     "amp_loop_enable": {
         "address_offset": 24,
