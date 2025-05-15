@@ -8,11 +8,21 @@ class CLK104Config:
     def __init__(self,
                  lmk_tcs='LMK04828.tcs',
                  lmxadc_tcs='LMX2594.tcs',
-                 lmxdac_tcs='LMX2594.tcs'):
+                 lmxdac_tcs='LMX2594.tcs',
+                 write=True):
         self.lmk_cfg = LMKConfig(lmk_tcs)
         self.lmxadc_cfg = LMXConfig(lmxadc_tcs)
         self.lmxdac_cfg = LMXConfig(lmxdac_tcs)
-        self.devinfo = self.find_devices()
+        if write:
+            self.devinfo = self.find_devices()
+            self.write_regs
+
+    def __repr__(self):
+        str = (f"< {self.__class__.__name__:12s} >:\n"
+               f"  === LMK04828: ===\n{self.lmk_cfg}\n"
+               f"  === LMX2594 ADC: ===\n{self.lmxadc_cfg}\n"
+               f"  === LMX2594 DAC: ===\n{self.lmxdac_cfg}")
+        return str
 
     def find_devices(self):
         devinfo = {}
@@ -40,7 +50,8 @@ class CLK104Config:
         return devinfo
 
     def write_regs(self):
-        xrfclk._write_LMK_regs(self.lmk_cfg.reg_vals, self.devinfo['lmk'])
+        xrfclk._write_LMK_regs(
+            self.lmk_cfg.reg_vals, self.devinfo['lmk'])
         xrfclk._write_LMX_regs(
             self.lmxadc_cfg.reg_vals, self.devinfo['lmxadc'])
         xrfclk._write_LMX_regs(

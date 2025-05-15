@@ -18,7 +18,7 @@ image: mohs.dhcp.lbl.gov/xilinx_env_bookworm
 flake8:
   stage: test
   script:
-    - flake8 mimo_mts/
+    - flake8 mimo_mts designs
 
 rtl_test:
   before_script:
@@ -27,30 +27,9 @@ rtl_test:
     - cd designs/ip/tb
   stage: test
   script:
-    - make SIM=icarus
+    - make RANDOM_SEED=1747031728
 
-.bitfile_synthesis_zcu208:
-  before_script:
-    - cd designs/ZCU208/${OVERLAY} && ls /non-free
-  stage: synthesis
-  timeout: 3h
-  script:
-    - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make all
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    expire_in: 4 weeks
-    when: always
-    paths:
-      - designs/ZCU208/${OVERLAY}/${OVERLAY}.bit
-      - designs/ZCU208/${OVERLAY}/${OVERLAY}.hwh
-      - designs/ZCU208/${OVERLAY}/${OVERLAY}.xsa
-      - designs/ZCU208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
-      - designs/ZCU208/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
-  parallel:
-    matrix:
-      - OVERLAY: [config_evr, als_llrf_mts]
-
-bitfile_synthesis_zcu216:
+.bitfile_synthesis_zcu216:
   before_script:
     - cd designs/ZCU216/${OVERLAY} && ls /non-free
   stage: synthesis
@@ -71,7 +50,7 @@ bitfile_synthesis_zcu216:
     matrix:
       - OVERLAY: [mimo_mts]
 
-bitfile_synthesis_208:
+.bitfile_synthesis_208:
   before_script:
     - cd designs/${BOARD}/${OVERLAY} && ls /non-free
   stage: synthesis

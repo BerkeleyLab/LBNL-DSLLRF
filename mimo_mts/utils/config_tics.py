@@ -9,6 +9,7 @@ class TICSConfig:
     """
     def __init__(self, config_file='LMX2594.tcs'):
         self.config = config = configparser.ConfigParser(strict=False)
+        assert Path(config_file).exists(), f"File {config_file} not found"
         config.read(config_file, encoding='utf-8-sig')
         self.part = config['SETUP']['PART']
 
@@ -118,5 +119,6 @@ if __name__ == '__main__':
             print(lmk)
         elif 'LMX' in file.name:
             lmx = LMXConfig(file)
+            # lmx.export_regmap(file.with_suffix('.txt'))
             print('*' * 80)
             print(lmx)

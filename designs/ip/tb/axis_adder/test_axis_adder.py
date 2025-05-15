@@ -1,8 +1,7 @@
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, ClockCycles
-from cocotbext.axi import (AxiStreamBus, AxiStreamFrame,
-                           AxiStreamSource, AxiStreamSink)
+from cocotbext.axi import AxiStreamBus, AxiStreamSource, AxiStreamSink
 import logging
 import itertools
 import numpy as np
@@ -44,16 +43,16 @@ async def test_axis_adder(dut, length=8, DATA_WIDTH=256):
     await tb.cycle_reset()
 
     test_data = gen_payload(DATA_WIDTH // 8)
-    test_frames = [AxiStreamFrame(test_data) for _ in range(length)]
+    test_frames = [test_data for _ in range(length)]
 
     for frame in test_frames:
-        await tb.source0.send(frame)
-        await tb.source1.send(frame)
+        await tb.source0.write(frame)
+        await tb.source1.write(frame)
 
     for frame in test_frames:
-        rx_frame = await tb.sink.recv()
-        tx_arr = np.frombuffer(frame.tdata, dtype=np.uint16)
-        rx_arr = np.frombuffer(rx_frame.tdata, dtype=np.uint16)
+        rx_frame = await tb.sink.read()
+        tx_arr = np.frombuffer(bytes(frame), dtype=np.uint16)
+        rx_arr = np.frombuffer(bytes(rx_frame), dtype=np.uint16)
         for t_val, r_val in zip(tx_arr, rx_arr):
             tb.dut._log.warning(f"t_val: {hex(t_val)}, r_val: {hex(r_val)}")
             assert r_val == 2 * t_val, \

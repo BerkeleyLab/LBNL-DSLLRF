@@ -1,15 +1,57 @@
-import pynq
 from pynq import Overlay, MMIO
 from .utils.boards import board_info
 from .utils.config_clk104 import CLK104Config
+from .utils.config_si570 import SI570
 from .drivers.evr import EVR
 from .drivers.rf_control import RfControl
+from .drivers.clocktreeMTS import ClockTreeMTS
+
 import xrfdc
 import numpy as np
-import time
 from pathlib import Path
-import subprocess
-__all__ = ('EVR', 'RfControl')
+from pprint import pformat
+__all__ = ('EVR', 'RfControl', 'ClockTreeMTS')
+
+
+ol_configs = {
+    'MIMO_ZCU208': {
+        'bitfile_name': 'mimo_mts.bit',
+        'board': 'ZCU208',
+        'clk104_tcs': {
+            'lmk_tcs': 'designs/CLK104/LMK04828_499.64MHz_CLKin0_499.64MHz.tcs',
+            'lmxadc_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
+            'lmxdac_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
+        }
+    },
+    'MIMO_LBL208': {
+        'bitfile_name': 'mimo_mts.bit',
+        'board': 'LBL208',
+        'clk104_tcs': {
+            'lmk_tcs': 'designs/CLK104/DIST_MTS_LMK04828_5MHz_SYSREF.tcs',
+            'lmxadc_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
+            'lmxdac_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
+        }
+    },
+    'MIMO_ZCU216': {
+        'bitfile_name': 'mimo_mts.bit',
+        'board': 'ZCU216',
+        'clk104_tcs': {
+            'lmk_tcs': 'designs/CLK104/LMK04828_499.64MHz_CLKin0_499.64MHz.tcs',
+            'lmxadc_tcs': 'designs/CLK104/LMX2594_2000MHz.tcs',
+            'lmxdac_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
+        }
+    },
+    'ALS_LLRF_LBL208': {
+        'bitfile_name': 'als_llrf_mts.bit',
+        'board': 'LBL208',
+        'clk104_tcs': {
+            'lmk_tcs': 'designs/CLK104/DIST_MTS_LMK04828_5MHz_SYSREF.tcs',
+            'lmxadc_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
+            'lmxdac_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
+        },
+        'si570_freq_mhz': 156.1375,
+    },
+}
 
 
 class MimoMtsOverlay(Overlay):
@@ -17,54 +59,31 @@ class MimoMtsOverlay(Overlay):
     The MTS overlay demonstrates the RFSoC multi-tile
     synchronization capability that enables
     multiple RF DAC and ADC tiles to achieve latency alignment.
-    This capability is key to enabling
-    Massive MIMO, phased array RADAR applications and beamforming.
     """
-    def __init__(self, bitfile_name: str = "mts_8ch.bit",
-                 board: str = 'ZCU208',
-                 lmk_tcs: str = 'LMK04828.tcs',
-                 lmxadc_tcs: str = 'LMX2594.tcs',
-                 lmxdac_tcs: str = 'LMX2594.tcs',
-                 **kwargs):
-        """
-        This overlay class supports the MTS overlay.
-        It configures the PL gpio, internal memories,
-        PL-DRAM and DMA interfaces.
-        Additional helper methods are provided to: configure and verify
-        MTS, verify the DACRAM and read captured samples from the internal ADC
-        memories and the PL-DDR4 memory. In addition to the bitfile_name,
-        the active ADC and DAC
-        tiles must be provided to use in the MTS initialization.
-        """
-        self.board = board_info[board]
+    def __init__(self, config: str = "MIMO_ZCU208", **kwargs):
+        self.ol_info = ol_info = ol_configs[config]
+        self.board = board_info[ol_info['board']]
+        if 'si570_freq_mhz' in ol_info:
+            with SI570() as si570:
+                si570.set_freq(ol_info['si570_freq_mhz'])
 
-        # self._restart_zocl()
-        self.clk104 = CLK104Config(lmk_tcs, lmxadc_tcs, lmxdac_tcs)
-        self.clk104.write_regs()
+        if 'clk104_tcs' in ol_info:
+            self.clk104 = CLK104Config(**ol_info['clk104_tcs'])
 
-        super().__init__(resolve_binary_path(bitfile_name), **kwargs)
-        """ Check if RFDC IP core is used in the design"""
+        super().__init__(resolve_binary_path(ol_info['bitfile_name']), **kwargs)
         if "rfdc" in self.ip_dict:
             self._initialize_dev()
             self._initialize_memories()
-            self._initialize_dma()
             self._initialize_mts()
             self._initialize_mixers()
 
-    def _restart_zocl(self):
-        """Restart the ZOCL module if necessary."""
-        output = subprocess.check_output(["lsmod"])
-        if b"zocl" in output:
-            rmmod_output = subprocess.run(["rmmod", "zocl"])
-            assert rmmod_output.returncode == 0, (
-                "Could not restart zocl. Shutdown All Kernels and then restart"
-            )
-            modprobe_output = subprocess.run(["modprobe", "zocl"])
-            assert modprobe_output.returncode == 0, (
-                "Could not restart zocl. It did not restart as expected")
-        else:
-            modprobe_output = subprocess.run(["modprobe", "zocl"])
-            assert modprobe_output.returncode == 0, "Could not restart ZOCL!"
+    def __repr__(self):
+        str = "< MimoMtsOverlay >:\n"
+        str += pformat(self.ol_info, indent=2)
+        str += "\n"
+        if "rfdc" in self.ip_dict:
+            str += self.report_mts_latency()
+        return str
 
     def _initialize_dev(self):
         """Alias xrfdc, rf_control and evr, enumurate rfdc blocks."""
@@ -91,22 +110,13 @@ class MimoMtsOverlay(Overlay):
                 [self.rfdc.adc_tiles[i].blocks[j] for j in range(4)]
                 for i in range(4)])
 
-        self.dspclk_freqcnt = self.clocktreeMTS.freqcnt_gpio.channel1
-
-    def convert_freq_to_hz(self, f_cnt, f_ref=100.0e6):
-        """Convert the frequency counter value to Hz"""
-        return (f_cnt / 2**24) * f_ref
-
-    @property
-    def dspclk_freq_hz(self):
-        return self.convert_freq_to_hz(self.dspclk_freqcnt.read())
-
     def _initialize_memories(self):
         """ Initialize adc / dac waveform buffers. """
         self.dac_player = self.memdict_to_view(
             "transmitter/hier_dac_play/axi_bram_ctrl_0")
-        self.dac_capture = self.memdict_to_view(
-            "transmitter/hier_dac_cap/axi_bram_ctrl_0")
+        if 'transmitter/hier_dac_cap/axi_bram_ctrl_0' in self.mem_dict:
+            self.dac_capture = self.memdict_to_view(
+                "transmitter/hier_dac_cap/axi_bram_ctrl_0")
 
         self.adc_bufs = []
         for tile in range(self.board.num_adc_tiles):
@@ -115,20 +125,21 @@ class MimoMtsOverlay(Overlay):
                     self.memdict_to_view(
                         f"receiver/m{tile}{i}/axi_bram_ctrl_0"))
 
-    def _initialize_dma(self):
-        """Initialize DMA for ADC deep capture."""
-        if 'deepCapture/axi_dma_adc' in self.ip_dict:
-            self.adc_dma = self.deepCapture.axi_dma_adc  # PL DMA to DDR4
-            self.ADCdeepcapture = self.memdict_to_view("ddr4_0")
-            dts = pynq.DeviceTreeSegment(resolve_binary_path("ddr4.dtbo"))
-            if not dts.is_dtbo_applied():
-                dts.insert()
-
     def _initialize_mts(self):
-        """Initialize the MTS engine."""
-        self.init_tile_sync()
-        self.verify_clock_tree()
-        self.sync_tiles()
+        """
+        Initialize the MTS.
+        https://docs.amd.com/r/en-US/pg269-rf-data-converter/Main-Sequence-to-Perform-Synchronization-for-AC-or-DC-Coupled-Single-or-Multiple-Device
+        """
+        # Set tile distributing reference clock
+        self.rfdc.mts_adc_init(self.board.adc_ref_index)
+        self.rfdc.mts_dac_init(self.board.dac_ref_index)
+        self.rfdc.mts_dac()
+        self.rfdc.mts_adc()
+
+        self.init_mts_clocks()
+        self.sync_mts()
+        self.sync_digital_features()
+        self.check_mts_latency()
 
     def _initialize_mixers(self):
         self.set_dac_mixer_dco(0)
@@ -141,31 +152,14 @@ class MimoMtsOverlay(Overlay):
         ipmmio = MMIO(baseAddress, mem_range)
         return ipmmio.array[0:ipmmio.length].view(dtype)
 
-    def sync_tiles(self):
-        """Configures RFSoC MTS alignment for deterministic latency"""
-        self.rfdc.mts_dac_config.Tiles = self.board.active_dac_tiles
-        self.rfdc.mts_dac_config.SysRef_Enable = self.board.num_dac_tiles > 0
-        self.rfdc.mts_dac_config.Target_Latency = \
-            self.board.mts_dac_target_latency
-        self.rfdc.mts_dac()
+    def init_mts_clocks(self):
+        """
+        Resets the MTS alignment engine
+        Verify the PL and PL_SYSREF clocks are active
+        by verifying an MMCM is in the LOCKED state
+        """
+        self.clocktreeMTS.reset_mmcm()
 
-        self.rfdc.mts_adc_config.Tiles = self.board.active_adc_tiles
-        self.rfdc.mts_adc_config.SysRef_Enable = self.board.num_adc_tiles > 0
-        self.rfdc.mts_adc_config.Target_Latency = \
-            self.board.mts_adc_target_latency
-        self.rfdc.mts_adc()
-
-    def init_tile_sync(self):
-        """Resets the MTS alignment engine"""
-        # Set tile distributing reference clock
-        self.rfdc.mts_adc_init(self.board.adc_ref_index)
-        self.rfdc.mts_dac_init(self.board.dac_ref_index)
-        self.rfdc.mts_dac()
-        self.rfdc.mts_adc()
-
-        # Reset MTS ClockWizard MMCM - refer to PG065
-        self.clocktreeMTS.MTSclkwiz.mmio.write_reg(0, 0xA)
-        time.sleep(0.1)
         # Reset only user selected DAC tiles
         bitvector = self.board.active_dac_tiles
         for n in range(4):
@@ -180,14 +174,57 @@ class MimoMtsOverlay(Overlay):
                     self.rfdc.adc_tiles[n].SetupFIFOBoth(toggleValue)
                 bitvector = bitvector >> 1
 
-    def verify_clock_tree(self):
-        """Verify the PL and PL_SYSREF clocks are active
-        by verifying an MMCM is in the LOCKED state"""
-        # reads the LOCK register
-        status = self.clocktreeMTS.MTSclkwiz.read(0x0004)
-        # the ClockWizard AXILite registers are NOT fully mapped:
-        # refer to PG065
-        assert status == 1, "The MTS ClockTree has failed to LOCK."
+        assert self.clocktreeMTS.check_mmcm_locked(), "The MTS ClockTree has failed to LOCK."
+
+    def sync_mts(self):
+        """
+        Configures RFSoC MTS alignment for deterministic latency, following
+        https://github.com/Xilinx/embeddedsw/blob/master/XilinxProcessorIPLib/drivers/rfdc/examples/xrfdc_mts_example.c
+        """
+        self.rfdc.mts_dac_config.Tiles = self.board.active_dac_tiles
+        self.rfdc.mts_dac_config.SysRef_Enable = self.board.num_dac_tiles > 0
+        self.rfdc.mts_dac_config.Target_Latency = \
+            self.board.mts_dac_target_latency
+        self.rfdc.mts_dac()
+
+        self.rfdc.mts_adc_config.Tiles = self.board.active_adc_tiles
+        self.rfdc.mts_adc_config.SysRef_Enable = self.board.num_adc_tiles > 0
+        self.rfdc.mts_adc_config.Target_Latency = \
+            self.board.mts_adc_target_latency
+        self.rfdc.mts_adc()
+
+    def sync_digital_features(self):
+        """
+        Use Case 2: Synchronize Digital Features Using SYSREF
+          for Multiple Devices with DC-Coupling
+        https://docs.amd.com/r/en-US/pg269-rf-data-converter/Use-Case-2-Synchronize-Digital-Features-Using-SYSREF-for-Multiple-Devices-with-DC-Coupling
+        """
+        pass
+
+    def check_mts_latency(self):
+        for i in range(self.board.num_dac_tiles):
+            assert self.rfdc.mts_dac_config.Latency[i] == \
+                self.board.mts_dac_target_latency, \
+                f"Tile {i} Latency {self.rfdc.mts_dac_config.Latency[i]} != " \
+                f"Target Latency {self.board.mts_dac_target_latency}"
+        for i in range(self.board.num_adc_tiles):
+            assert self.rfdc.mts_adc_config.Latency[i] == \
+                self.board.mts_adc_target_latency, \
+                f"Tile {i} Latency {self.rfdc.mts_adc_config.Latency[i]} != " \
+                f"Target Latency {self.board.mts_adc_target_latency}"
+
+    def report_mts_latency(self):
+        """Reports the MTS latency for each tile"""
+        str = "RFDC MTS Latency Report:\n"
+        for i in range(self.board.num_dac_tiles):
+            str += (f"DAC Tile {i} Latency: "
+                    f"{self.rfdc.mts_dac_config.Latency[i]:3d}, "
+                    f"Offset: {self.rfdc.mts_dac_config.Offset[i]}\n")
+        for i in range(self.board.num_adc_tiles):
+            str += (f"ADC Tile {i} Latency: "
+                    f"{self.rfdc.mts_adc_config.Latency[i]:3d}, "
+                    f"Offset: {self.rfdc.mts_adc_config.Offset[i]}\n")
+        return str
 
     def capture_adc_iq_buf(self, i_buffer=None, q_buffer=None):
         """Captures ADC samples from all channels
@@ -264,7 +301,7 @@ class MimoMtsOverlay(Overlay):
         for dac_block in self.dac_blocks.ravel():
             dac_block.NyquistZone = nyquist
             dac_block.MixerSettings = mixer_settings_dac
-            dac_block.InterpolationFactor = 2  # for C2R mixer mode
+            dac_block.InterpolationFactor = self.board.dac_interpolation_fator
             dac_block.ResetNCOPhase()
 
         self.rfdc.mts_dac_config.SysRef_Enable = 0
