@@ -62,7 +62,7 @@ class SI570:
         fxtal = fdco / rfreq
         return fxtal
 
-    def set_freq(self, freq_mhz=156.1375):
+    def set_freq(self, freq_mhz=156.25):
         """Configure the SI570 to a new frequency
            Args:
                freq_mhz (float): the new frequency in MHz

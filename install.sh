@@ -35,6 +35,8 @@ if [ "$pynq_version" != "3.0.1" ]; then
     sudo python3 -m pip install pynqmetadata
 fi
 
+sudo python3 -m pip install softioc
+
 # Install python package and notebook
 # python3 -m pip install . --no-build-isolation
 # pynq-get-notebooks RFSoC-MTS -p $PYNQ_JUPYTER_NOTEBOOKS
