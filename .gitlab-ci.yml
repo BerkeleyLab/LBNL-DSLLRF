@@ -29,7 +29,7 @@ rtl_test:
   script:
     - make RANDOM_SEED=1747031728
 
-.bitfile_synthesis_zcu216:
+bitfile_synthesis_zcu216:
   before_script:
     - cd designs/ZCU216/${OVERLAY} && ls /non-free
   stage: synthesis
@@ -50,7 +50,7 @@ rtl_test:
     matrix:
       - OVERLAY: [mimo_mts]
 
-.bitfile_synthesis_208:
+bitfile_synthesis_208:
   before_script:
     - cd designs/${BOARD}/${OVERLAY} && ls /non-free
   stage: synthesis
