@@ -1,57 +1,16 @@
-from pynq import Overlay, MMIO
-from .utils.boards import board_info
-from .utils.config_clk104 import CLK104Config
-from .utils.config_si570 import SI570
-from .drivers.evr import EVR
-from .drivers.rf_control import RfControl
-from .drivers.clocktreeMTS import ClockTreeMTS
+from pynq import Overlay, MMIO, PL
+from mimo_mts.utils.config_clk104 import CLK104Config
+from mimo_mts.utils.config_si570 import SI570
+from mimo_mts.drivers.evr import EVR
+from mimo_mts.drivers.rf_control import RfControl
+from mimo_mts.drivers.clocktreeMTS import ClockTreeMTS
+from mimo_mts.config import ol_configs
 
 import xrfdc
 import numpy as np
 from pathlib import Path
 from pprint import pformat
 __all__ = ('EVR', 'RfControl', 'ClockTreeMTS')
-
-
-ol_configs = {
-    'MIMO_ZCU208': {
-        'bitfile_name': 'mimo_mts.bit',
-        'board': 'ZCU208',
-        'clk104_tcs': {
-            'lmk_tcs': 'designs/CLK104/LMK04828_499.64MHz_CLKin0_499.64MHz.tcs',
-            'lmxadc_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
-            'lmxdac_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
-        }
-    },
-    'MIMO_LBL208': {
-        'bitfile_name': 'mimo_mts.bit',
-        'board': 'LBL208',
-        'clk104_tcs': {
-            'lmk_tcs': 'designs/CLK104/DIST_MTS_LMK04828_5MHz_SYSREF.tcs',
-            'lmxadc_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
-            'lmxdac_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
-        }
-    },
-    'MIMO_ZCU216': {
-        'bitfile_name': 'mimo_mts.bit',
-        'board': 'ZCU216',
-        'clk104_tcs': {
-            'lmk_tcs': 'designs/CLK104/LMK04828_499.64MHz_CLKin0_499.64MHz.tcs',
-            'lmxadc_tcs': 'designs/CLK104/LMX2594_2000MHz.tcs',
-            'lmxdac_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
-        }
-    },
-    'ALS_LLRF_LBL208': {
-        'bitfile_name': 'als_llrf_mts.bit',
-        'board': 'LBL208',
-        'clk104_tcs': {
-            'lmk_tcs': 'designs/CLK104/DIST_MTS_LMK04828_5MHz_SYSREF.tcs',
-            'lmxadc_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
-            'lmxdac_tcs': 'designs/CLK104/LMX2594_4000MHz.tcs',
-        },
-        'si570_freq_mhz': 156.1375,
-    },
-}
 
 
 class MimoMtsOverlay(Overlay):
@@ -62,7 +21,8 @@ class MimoMtsOverlay(Overlay):
     """
     def __init__(self, config: str = "MIMO_ZCU208", **kwargs):
         self.ol_info = ol_info = ol_configs[config]
-        self.board = board_info[ol_info['board']]
+        assert Path(ol_info['bitfile_name']).exists(), f"File {ol_info['bitfile_name']} not found."
+        self.board = ol_info['board']
         if 'si570_freq_mhz' in ol_info:
             with SI570() as si570:
                 si570.set_freq(ol_info['si570_freq_mhz'])
@@ -70,7 +30,10 @@ class MimoMtsOverlay(Overlay):
         if 'clk104_tcs' in ol_info:
             self.clk104 = CLK104Config(**ol_info['clk104_tcs'])
 
-        super().__init__(resolve_binary_path(ol_info['bitfile_name']), **kwargs)
+        self.mixer_cfg = ol_info['rfdc']['mixer']
+        self.mts_cfg = ol_info['rfdc']['mts']
+        PL.reset()
+        super().__init__(str(ol_info['bitfile_name']), **kwargs)
         if "rfdc" in self.ip_dict:
             self._initialize_dev()
             self._initialize_memories()
@@ -78,7 +41,7 @@ class MimoMtsOverlay(Overlay):
             self._initialize_mixers()
 
     def __repr__(self):
-        str = "< MimoMtsOverlay >:\n"
+        str = f"< {self.__class__.__name__} >:\n"
         str += pformat(self.ol_info, indent=2)
         str += "\n"
         if "rfdc" in self.ip_dict:
@@ -142,8 +105,14 @@ class MimoMtsOverlay(Overlay):
         self.check_mts_latency()
 
     def _initialize_mixers(self):
-        self.set_dac_mixer_dco(0)
-        self.set_adc_mixer_dco(0)
+        self.set_dac_mixer(
+            self.mixer_cfg['dac_mixer_nco_freq_mhz'],
+            self.mixer_cfg['dac_mixer_nco_nyquist'],
+            self.mixer_cfg['dac_mixer_nco_phase'])
+        self.set_adc_mixer(
+            self.mixer_cfg['adc_mixer_nco_freq_mhz'],
+            self.mixer_cfg['adc_mixer_nco_nyquist'],
+            self.mixer_cfg['adc_mixer_nco_phase'])
 
     def memdict_to_view(self, ip, dtype="int16"):
         """Configures access to internal memory via MMIO"""
@@ -184,13 +153,13 @@ class MimoMtsOverlay(Overlay):
         self.rfdc.mts_dac_config.Tiles = self.board.active_dac_tiles
         self.rfdc.mts_dac_config.SysRef_Enable = self.board.num_dac_tiles > 0
         self.rfdc.mts_dac_config.Target_Latency = \
-            self.board.mts_dac_target_latency
+            self.mts_cfg['mts_dac_target_latency']
         self.rfdc.mts_dac()
 
         self.rfdc.mts_adc_config.Tiles = self.board.active_adc_tiles
         self.rfdc.mts_adc_config.SysRef_Enable = self.board.num_adc_tiles > 0
         self.rfdc.mts_adc_config.Target_Latency = \
-            self.board.mts_adc_target_latency
+            self.mts_cfg['mts_adc_target_latency']
         self.rfdc.mts_adc()
 
     def sync_digital_features(self):
@@ -204,18 +173,18 @@ class MimoMtsOverlay(Overlay):
     def check_mts_latency(self):
         for i in range(self.board.num_dac_tiles):
             assert self.rfdc.mts_dac_config.Latency[i] == \
-                self.board.mts_dac_target_latency, \
+                self.mts_cfg['mts_dac_target_latency'], \
                 f"Tile {i} Latency {self.rfdc.mts_dac_config.Latency[i]} != " \
-                f"Target Latency {self.board.mts_dac_target_latency}"
+                f"Target Latency {self.mts_cfg['mts_dac_target_latency']}"
         for i in range(self.board.num_adc_tiles):
             assert self.rfdc.mts_adc_config.Latency[i] == \
-                self.board.mts_adc_target_latency, \
+                self.mts_cfg['mts_adc_target_latency'], \
                 f"Tile {i} Latency {self.rfdc.mts_adc_config.Latency[i]} != " \
-                f"Target Latency {self.board.mts_adc_target_latency}"
+                f"Target Latency {self.mts_cfg['mts_adc_target_latency']}"
 
     def report_mts_latency(self):
         """Reports the MTS latency for each tile"""
-        str = "RFDC MTS Latency Report:\n"
+        str = "< RFDC MTS Latency Report: >\n"
         for i in range(self.board.num_dac_tiles):
             str += (f"DAC Tile {i} Latency: "
                     f"{self.rfdc.mts_dac_config.Latency[i]:3d}, "
@@ -285,7 +254,17 @@ class MimoMtsOverlay(Overlay):
         self.dac_player[0::2] = i_buffer
         self.dac_player[1::2] = q_buffer
 
-    def set_dac_mixer_dco(self, freq_mhz=0, nyquist=1, phase=0):
+    def capture_dac_iq_buf(ol, i_buffer=None, q_buffer=None):
+        length = ol.dac_capture.size // 2
+        if i_buffer is None:
+            i_buffer = np.empty((length,), dtype=np.int16)
+        if q_buffer is None:
+            q_buffer = np.empty((length,), dtype=np.int16)
+        np.copyto(i_buffer, ol.dac_capture[0::2])
+        np.copyto(q_buffer, ol.dac_capture[1::2])
+        return i_buffer, q_buffer
+
+    def set_dac_mixer(self, freq_mhz=0, nyquist=1, phase=0):
         self.rfdc.mts_dac_config.SysRef_Enable = 1
 
         # Set up mixer settings for each DAC tile
@@ -301,12 +280,17 @@ class MimoMtsOverlay(Overlay):
         for dac_block in self.dac_blocks.ravel():
             dac_block.NyquistZone = nyquist
             dac_block.MixerSettings = mixer_settings_dac
-            dac_block.InterpolationFactor = self.board.dac_interpolation_fator
+            dac_block.InterpolationFactor = self.ol_info['rfdc']['dac_interplation_factor']
             dac_block.ResetNCOPhase()
 
         self.rfdc.mts_dac_config.SysRef_Enable = 0
+        # keep track of mixer settings
+        self.mixer_cfg['dac_mixer_nco_freq_mhz'] = freq_mhz
+        self.mixer_cfg['dac_mixer_nco_nyquist'] = nyquist
+        self.mixer_cfg['dac_mixer_nco_phase'] = phase
+        print(f"Set DAC mixer: freq={freq_mhz} MHz, nyquist={nyquist}, phase={phase} degrees")
 
-    def set_adc_mixer_dco(self, freq_mhz=0, nyquist=1, phase=0):
+    def set_adc_mixer(self, freq_mhz=0, nyquist=1, phase=0):
         self.rfdc.mts_adc_config.SysRef_Enable = 1
 
         # Set up mixer settings for each ADC tile
@@ -325,16 +309,8 @@ class MimoMtsOverlay(Overlay):
             adc_block.ResetNCOPhase()
 
         self.rfdc.mts_adc_config.SysRef_Enable = 0
-
-
-def resolve_binary_path(bitfile_name):
-    """this helper function is necessary to locate
-    the bit file during overlay loading"""
-    p = Path(__file__).resolve().parent
-
-    if Path(bitfile_name).exists():
-        return bitfile_name
-    elif Path(p / bitfile_name).exists():
-        return str(p / bitfile_name)
-    else:
-        raise FileNotFoundError(f"Cannot find {bitfile_name}.")
+        # keep track of mixer settings
+        self.mixer_cfg['adc_mixer_nco_freq_mhz'] = freq_mhz
+        self.mixer_cfg['adc_mixer_nco_nyquist'] = nyquist
+        self.mixer_cfg['adc_mixer_nco_phase'] = phase
+        print(f"Set ADC mixer: freq={freq_mhz} MHz, nyquist={nyquist}, phase={phase} degrees")

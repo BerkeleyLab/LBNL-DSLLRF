@@ -5,7 +5,7 @@ module dac_streamer_tb;
     // Parameters
     parameter int SAMP_DW = 16;
     parameter int SAMP_NUM = 16;
-    parameter int DW = SAMP_DW * SAMP_NUM; // 16 samples of 16 bits
+    parameter int DW = SAMP_DW * SAMP_NUM;
     parameter int AW = 5;
     parameter int READ_LATENCY = 3;        // number of cycles for ram read
     parameter int NUM_ROW = 10;   // number of rows per trigger
@@ -98,7 +98,7 @@ module dac_streamer_tb;
     assign bram_adc_addr_word = bram_adc_addr >> AW_WORD;
 
     adc_capture #(
-        .DW(DW), .AW(AW)
+        .SAMP_DW(SAMP_DW), .SAMP_NUM(SAMP_NUM), .AW(AW)
     ) adc_inst (
         .bram_wdata     (bram_adc_wdata),   // output
         .bram_we        (bram_adc_we),      // output

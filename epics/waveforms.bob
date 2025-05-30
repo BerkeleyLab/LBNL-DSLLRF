@@ -1,0 +1,1353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Saved on 2025-05-28 16:27:01 by du-->
+<display version="2.0.0">
+  <name>mimo_mts</name>
+  <width>1150</width>
+  <height>1024</height>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <class>TITLE</class>
+    <text>$(P)</text>
+    <x use_class="true">0</x>
+    <y use_class="true">0</y>
+    <width>530</width>
+    <height>50</height>
+    <font use_class="true">
+      <font name="Header 1" family="Liberation Sans" style="BOLD" size="22.0">
+      </font>
+    </font>
+    <foreground_color use_class="true">
+      <color name="Text" red="0" green="0" blue="0">
+      </color>
+    </foreground_color>
+    <background_color>
+      <color name="Header_Background" red="77" green="77" blue="77">
+      </color>
+    </background_color>
+    <transparent use_class="true">true</transparent>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="bool_button" version="2.0.0">
+    <name>Boolean Button_15</name>
+    <pv_name>$(P):rf_control:dac_enable</pv_name>
+    <x>950</x>
+    <y>110</y>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_35</name>
+    <text>DAC Enable</text>
+    <x>850</x>
+    <y>110</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_14</name>
+    <pv_name>$(P):rf_control:pulse_length:RBV</pv_name>
+    <x>1060</x>
+    <y>180</y>
+    <width>80</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_36</name>
+    <text>Pulse width</text>
+    <x>850</x>
+    <y>180</y>
+    <width>90</width>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="scaledslider" version="2.0.0">
+    <name>Scaled Slider_3</name>
+    <pv_name>$(P):rf_control:pulse_length</pv_name>
+    <x>950</x>
+    <y>180</y>
+    <width>100</width>
+    <height>30</height>
+    <show_minor_ticks>false</show_minor_ticks>
+    <show_hihi>false</show_hihi>
+    <show_high>false</show_high>
+    <show_low>false</show_low>
+    <show_lolo>false</show_lolo>
+    <maximum>8000.0</maximum>
+    <limits_from_pv>false</limits_from_pv>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):ioc:STARTTOD</pv_name>
+    <x>990</x>
+    <y>10</y>
+    <width>150</width>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_3</name>
+    <text>IOC status:</text>
+    <x>900</x>
+    <y>10</y>
+    <width>90</width>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_4</name>
+    <text>IOC up time:</text>
+    <x>900</x>
+    <y>30</y>
+    <width>90</width>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update_1</name>
+    <pv_name>$(P):ioc:UPTIME</pv_name>
+    <x>990</x>
+    <y>30</y>
+    <width>150</width>
+  </widget>
+  <widget type="tabs" version="2.0.0">
+    <name>Tabs</name>
+    <tabs>
+      <tab>
+        <name>ADC I/Q</name>
+        <children>
+          <widget type="group" version="3.0.0">
+            <name>IQ_plots</name>
+            <x>10</x>
+            <y>20</y>
+            <width>800</width>
+            <height>803</height>
+            <style>3</style>
+            <transparent>true</transparent>
+            <widget type="xyplot" version="3.0.0">
+              <name>AdcQPlot</name>
+              <y>410</y>
+              <width>800</width>
+              <height>400</height>
+              <foreground_color>
+                <color name="Header_ForeGround" red="255" green="255" blue="255">
+                </color>
+              </foreground_color>
+              <background_color>
+                <color name="Header_Background" red="77" green="77" blue="77">
+                </color>
+              </background_color>
+              <title>Q [count]</title>
+              <show_legend>false</show_legend>
+              <x_axis>
+                <title>Time [ns]</title>
+                <autoscale>true</autoscale>
+                <log_scale>false</log_scale>
+                <minimum>0.0</minimum>
+                <maximum>100.0</maximum>
+                <show_grid>false</show_grid>
+                <title_font>
+                  <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                  </font>
+                </title_font>
+                <scale_font>
+                  <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                  </font>
+                </scale_font>
+                <visible>true</visible>
+              </x_axis>
+              <y_axes>
+                <y_axis>
+                  <title></title>
+                  <autoscale>false</autoscale>
+                  <log_scale>false</log_scale>
+                  <minimum>-32768.0</minimum>
+                  <maximum>32767.0</maximum>
+                  <show_grid>true</show_grid>
+                  <title_font>
+                    <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                    </font>
+                  </title_font>
+                  <scale_font>
+                    <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                    </font>
+                  </scale_font>
+                  <on_right>false</on_right>
+                  <visible>true</visible>
+                  <color>
+                    <color name="Text" red="0" green="0" blue="0">
+                    </color>
+                  </color>
+                </y_axis>
+              </y_axes>
+              <traces>
+                <trace>
+                  <name>$(traces[0].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC0:QWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="0" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[1].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC1:QWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="0" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[2].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC2:QWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[3].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC3:QWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="170" green="0" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[4].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC4:QWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[5].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC5:QWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="234" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[6].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC6:QWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="127" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[7].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC7:QWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="191" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+              </traces>
+            </widget>
+            <widget type="action_button" version="3.0.0">
+              <name>Action Button_8</name>
+              <actions>
+                <action type="execute">
+                  <script file="EmbeddedPy">
+                    <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
+
+# 'widget' is this button.
+# Fetch plot widget based on its name
+plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcQPlot")
+
+# The widget's "autoscale" option is still 'true',
+# not updated from the plot as user zooms in.
+# Force update by changing falue to false, then true again.
+plot.setPropertyValue("y_axes[0].autoscale", False)
+plot.setPropertyValue("y_axes[0].minimum", -32768)
+plot.setPropertyValue("y_axes[0].maximum", 32767)
+]]></text>
+                  </script>
+                  <description>Fullscale</description>
+                </action>
+              </actions>
+              <x>660</x>
+              <y>410</y>
+              <width>70</width>
+              <height>16</height>
+              <tooltip>$(actions)</tooltip>
+            </widget>
+            <widget type="action_button" version="3.0.0">
+              <name>Action Button_9</name>
+              <actions>
+                <action type="execute">
+                  <script file="EmbeddedPy">
+                    <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
+
+# 'widget' is this button.
+# Fetch plot widget based on its name
+plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcQPlot")
+
+# The widget's "autoscale" option is still 'true',
+# not updated from the plot as user zooms in.
+# Force update by changing falue to false, then true again.
+plot.setPropertyValue("y_axes[0].autoscale", False)
+plot.setPropertyValue("y_axes[0].autoscale", True)
+]]></text>
+                  </script>
+                  <description>Autoscale</description>
+                </action>
+              </actions>
+              <x>730</x>
+              <y>410</y>
+              <width>70</width>
+              <height>16</height>
+              <tooltip>$(actions)</tooltip>
+            </widget>
+            <widget type="xyplot" version="3.0.0">
+              <name>AdcIPlot</name>
+              <width>800</width>
+              <height>400</height>
+              <foreground_color>
+                <color name="Header_ForeGround" red="255" green="255" blue="255">
+                </color>
+              </foreground_color>
+              <background_color>
+                <color name="Header_Background" red="77" green="77" blue="77">
+                </color>
+              </background_color>
+              <title>I [count]</title>
+              <show_legend>false</show_legend>
+              <x_axis>
+                <title>Time [ns]</title>
+                <autoscale>true</autoscale>
+                <log_scale>false</log_scale>
+                <minimum>0.0</minimum>
+                <maximum>100.0</maximum>
+                <show_grid>false</show_grid>
+                <title_font>
+                  <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                  </font>
+                </title_font>
+                <scale_font>
+                  <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                  </font>
+                </scale_font>
+                <visible>true</visible>
+              </x_axis>
+              <y_axes>
+                <y_axis>
+                  <title></title>
+                  <autoscale>false</autoscale>
+                  <log_scale>false</log_scale>
+                  <minimum>-32768.0</minimum>
+                  <maximum>32767.0</maximum>
+                  <show_grid>true</show_grid>
+                  <title_font>
+                    <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                    </font>
+                  </title_font>
+                  <scale_font>
+                    <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                    </font>
+                  </scale_font>
+                  <on_right>false</on_right>
+                  <visible>true</visible>
+                  <color>
+                    <color name="Text" red="0" green="0" blue="0">
+                    </color>
+                  </color>
+                </y_axis>
+              </y_axes>
+              <traces>
+                <trace>
+                  <name>$(traces[0].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC0:IWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="0" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[1].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC1:IWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="0" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[2].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC2:IWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[3].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC3:IWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="170" green="0" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[4].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC4:IWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[5].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC5:IWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="234" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[6].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC6:IWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="127" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[7].y_pv)</name>
+                  <x_pv>$(P):ADC:TWF</x_pv>
+                  <y_pv>$(P):ADC7:IWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="191" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+              </traces>
+            </widget>
+            <widget type="action_button" version="3.0.0">
+              <name>Action Button_10</name>
+              <actions>
+                <action type="execute">
+                  <script file="EmbeddedPy">
+                    <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
+
+# 'widget' is this button.
+# Fetch plot widget based on its name
+plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcIPlot")
+
+# The widget's "autoscale" option is still 'true',
+# not updated from the plot as user zooms in.
+# Force update by changing falue to false, then true again.
+plot.setPropertyValue("y_axes[0].autoscale", False)
+plot.setPropertyValue("y_axes[0].autoscale", True)
+]]></text>
+                  </script>
+                  <description>Autoscale</description>
+                </action>
+              </actions>
+              <x>730</x>
+              <width>70</width>
+              <height>16</height>
+              <tooltip>$(actions)</tooltip>
+            </widget>
+            <widget type="action_button" version="3.0.0">
+              <name>Action Button_11</name>
+              <actions>
+                <action type="execute">
+                  <script file="EmbeddedPy">
+                    <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
+
+# 'widget' is this button.
+# Fetch plot widget based on its name
+plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcIPlot")
+
+# The widget's "autoscale" option is still 'true',
+# not updated from the plot as user zooms in.
+# Force update by changing falue to false, then true again.
+plot.setPropertyValue("y_axes[0].autoscale", False)
+plot.setPropertyValue("y_axes[0].minimum", -32768)
+plot.setPropertyValue("y_axes[0].maximum", 32767)
+]]></text>
+                  </script>
+                  <description>Fullscale</description>
+                </action>
+              </actions>
+              <x>660</x>
+              <width>70</width>
+              <height>16</height>
+              <tooltip>$(actions)</tooltip>
+            </widget>
+          </widget>
+        </children>
+      </tab>
+      <tab>
+        <name>Base Band Amp/Phs</name>
+        <children>
+          <widget type="group" version="3.0.0">
+            <name>AP_plots</name>
+            <x>10</x>
+            <y>20</y>
+            <width>800</width>
+            <height>800</height>
+            <style>3</style>
+            <transparent>true</transparent>
+            <widget type="xyplot" version="3.0.0">
+              <name>AdcPhsPlot</name>
+              <y>410</y>
+              <width>800</width>
+              <height>400</height>
+              <foreground_color>
+                <color name="Header_ForeGround" red="255" green="255" blue="255">
+                </color>
+              </foreground_color>
+              <background_color>
+                <color name="Header_Background" red="77" green="77" blue="77">
+                </color>
+              </background_color>
+              <title>Phase [deg]</title>
+              <show_legend>false</show_legend>
+              <x_axis>
+                <title>Time [ns]</title>
+                <autoscale>true</autoscale>
+                <log_scale>false</log_scale>
+                <minimum>0.0</minimum>
+                <maximum>100.0</maximum>
+                <show_grid>false</show_grid>
+                <title_font>
+                  <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                  </font>
+                </title_font>
+                <scale_font>
+                  <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                  </font>
+                </scale_font>
+                <visible>true</visible>
+              </x_axis>
+              <y_axes>
+                <y_axis>
+                  <title></title>
+                  <autoscale>false</autoscale>
+                  <log_scale>false</log_scale>
+                  <minimum>-180.0</minimum>
+                  <maximum>180.0</maximum>
+                  <show_grid>true</show_grid>
+                  <title_font>
+                    <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                    </font>
+                  </title_font>
+                  <scale_font>
+                    <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                    </font>
+                  </scale_font>
+                  <on_right>false</on_right>
+                  <visible>true</visible>
+                  <color>
+                    <color name="Text" red="0" green="0" blue="0">
+                    </color>
+                  </color>
+                </y_axis>
+              </y_axes>
+              <traces>
+                <trace>
+                  <name>$(traces[0].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC0:PWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="0" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[1].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC1:PWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="0" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[2].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC2:PWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[3].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC3:PWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="170" green="0" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[4].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC4:PWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[5].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC5:PWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="234" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[6].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC6:PWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="127" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[7].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC7:PWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="191" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+              </traces>
+            </widget>
+            <widget type="action_button" version="3.0.0">
+              <name>Action Button_6</name>
+              <actions>
+                <action type="execute">
+                  <script file="EmbeddedPy">
+                    <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
+
+# 'widget' is this button.
+# Fetch plot widget based on its name
+plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcPhsPlot")
+
+# The widget's "autoscale" option is still 'true',
+# not updated from the plot as user zooms in.
+# Force update by changing falue to false, then true again.
+plot.setPropertyValue("y_axes[0].autoscale", False)
+plot.setPropertyValue("y_axes[0].minimum", -180)
+plot.setPropertyValue("y_axes[0].maximum", 180)
+]]></text>
+                  </script>
+                  <description>Fullscale</description>
+                </action>
+              </actions>
+              <x>660</x>
+              <y>410</y>
+              <width>70</width>
+              <height>16</height>
+              <tooltip>$(actions)</tooltip>
+            </widget>
+            <widget type="action_button" version="3.0.0">
+              <name>Action Button_7</name>
+              <actions>
+                <action type="execute">
+                  <script file="EmbeddedPy">
+                    <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
+
+# 'widget' is this button.
+# Fetch plot widget based on its name
+plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcPhsPlot")
+
+# The widget's "autoscale" option is still 'true',
+# not updated from the plot as user zooms in.
+# Force update by changing falue to false, then true again.
+plot.setPropertyValue("y_axes[0].autoscale", False)
+plot.setPropertyValue("y_axes[0].autoscale", True)
+]]></text>
+                  </script>
+                  <description>Autoscale</description>
+                </action>
+              </actions>
+              <x>730</x>
+              <y>410</y>
+              <width>70</width>
+              <height>16</height>
+              <tooltip>$(actions)</tooltip>
+            </widget>
+            <widget type="xyplot" version="3.0.0">
+              <name>AdcAmpPlot</name>
+              <width>800</width>
+              <height>400</height>
+              <foreground_color>
+                <color name="Header_ForeGround" red="255" green="255" blue="255">
+                </color>
+              </foreground_color>
+              <background_color>
+                <color name="Header_Background" red="77" green="77" blue="77">
+                </color>
+              </background_color>
+              <title>Amp [count]</title>
+              <show_legend>false</show_legend>
+              <x_axis>
+                <title>Time [ns]</title>
+                <autoscale>true</autoscale>
+                <log_scale>false</log_scale>
+                <minimum>0.0</minimum>
+                <maximum>100.0</maximum>
+                <show_grid>false</show_grid>
+                <title_font>
+                  <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                  </font>
+                </title_font>
+                <scale_font>
+                  <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                  </font>
+                </scale_font>
+                <visible>true</visible>
+              </x_axis>
+              <y_axes>
+                <y_axis>
+                  <title></title>
+                  <autoscale>false</autoscale>
+                  <log_scale>false</log_scale>
+                  <minimum>0.0</minimum>
+                  <maximum>4000.0</maximum>
+                  <show_grid>true</show_grid>
+                  <title_font>
+                    <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                    </font>
+                  </title_font>
+                  <scale_font>
+                    <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                    </font>
+                  </scale_font>
+                  <on_right>false</on_right>
+                  <visible>true</visible>
+                  <color>
+                    <color name="Text" red="0" green="0" blue="0">
+                    </color>
+                  </color>
+                </y_axis>
+              </y_axes>
+              <traces>
+                <trace>
+                  <name>$(traces[0].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC0:AWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="0" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[1].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC1:AWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="0" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[2].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC2:AWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[3].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC3:AWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="170" green="0" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[4].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC4:AWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[5].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC5:AWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="0" green="234" blue="255">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[6].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC6:AWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="255" green="127" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+                <trace>
+                  <name>$(traces[7].y_pv)</name>
+                  <x_pv>$(P):DSP:TWF</x_pv>
+                  <y_pv>$(P):DSP:ADC7:AWF</y_pv>
+                  <err_pv></err_pv>
+                  <axis>0</axis>
+                  <trace_type>1</trace_type>
+                  <color>
+                    <color red="191" green="255" blue="0">
+                    </color>
+                  </color>
+                  <line_width>1</line_width>
+                  <line_style>0</line_style>
+                  <point_type>0</point_type>
+                  <point_size>10</point_size>
+                  <visible>true</visible>
+                </trace>
+              </traces>
+            </widget>
+            <widget type="action_button" version="3.0.0">
+              <name>Action Button</name>
+              <actions>
+                <action type="execute">
+                  <script file="EmbeddedPy">
+                    <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
+
+# 'widget' is this button.
+# Fetch plot widget based on its name
+plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcAmpPlot")
+
+# The widget's "autoscale" option is still 'true',
+# not updated from the plot as user zooms in.
+# Force update by changing falue to false, then true again.
+plot.setPropertyValue("y_axes[0].autoscale", False)
+plot.setPropertyValue("y_axes[0].autoscale", True)
+]]></text>
+                  </script>
+                  <description>Autoscale</description>
+                </action>
+              </actions>
+              <x>730</x>
+              <width>70</width>
+              <height>16</height>
+              <tooltip>$(actions)</tooltip>
+            </widget>
+            <widget type="action_button" version="3.0.0">
+              <name>Action Button_5</name>
+              <actions>
+                <action type="execute">
+                  <script file="EmbeddedPy">
+                    <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
+
+# 'widget' is this button.
+# Fetch plot widget based on its name
+plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcAmpPlot")
+
+# The widget's "autoscale" option is still 'true',
+# not updated from the plot as user zooms in.
+# Force update by changing falue to false, then true again.
+plot.setPropertyValue("y_axes[0].autoscale", False)
+plot.setPropertyValue("y_axes[0].minimum", 0)
+plot.setPropertyValue("y_axes[0].maximum", 32767)
+]]></text>
+                  </script>
+                  <description>Fullscale</description>
+                </action>
+              </actions>
+              <x>660</x>
+              <width>70</width>
+              <height>16</height>
+              <tooltip>$(actions)</tooltip>
+            </widget>
+          </widget>
+        </children>
+      </tab>
+    </tabs>
+    <x>10</x>
+    <y>50</y>
+    <width>830</width>
+    <height>880</height>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_37</name>
+    <text>DAC nco freq</text>
+    <x>850</x>
+    <y>220</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:dac_mixer_nco_freq_mhz</pv_name>
+    <x>960</x>
+    <y>220</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_15</name>
+    <pv_name>$(P):rfdc_mixer:dac_mixer_nco_freq_mhz:RBV</pv_name>
+    <x>1060</x>
+    <y>220</y>
+    <width>80</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_38</name>
+    <text>ADC nco freq</text>
+    <x>850</x>
+    <y>260</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_16</name>
+    <pv_name>$(P):rfdc_mixer:adc_mixer_nco_freq_mhz</pv_name>
+    <x>960</x>
+    <y>260</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_17</name>
+    <pv_name>$(P):rfdc_mixer:adc_mixer_nco_freq_mhz:RBV</pv_name>
+    <x>1060</x>
+    <y>260</y>
+    <width>80</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="bool_button" version="2.0.0">
+    <name>Boolean Button_16</name>
+    <pv_name>$(P):rf_control:dac_enable</pv_name>
+    <bit>1</bit>
+    <x>950</x>
+    <y>140</y>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_39</name>
+    <text>Pulse Enable</text>
+    <x>850</x>
+    <y>140</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="led" version="2.0.0">
+    <name>LED</name>
+    <pv_name>$(P):rf_control:dac_enable:RBV</pv_name>
+    <bit>0</bit>
+    <x>1080</x>
+    <y>110</y>
+    <width>30</width>
+    <height>30</height>
+  </widget>
+  <widget type="led" version="2.0.0">
+    <name>LED_1</name>
+    <pv_name>$(P):rf_control:dac_enable:RBV</pv_name>
+    <bit>1</bit>
+    <x>1080</x>
+    <y>140</y>
+    <width>30</width>
+    <height>30</height>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_40</name>
+    <text>Amp Setpoint</text>
+    <x>850</x>
+    <y>300</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_20</name>
+    <pv_name>$(P):rf_control:amp_loop_setpoint</pv_name>
+    <x>960</x>
+    <y>300</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_21</name>
+    <pv_name>$(P):rf_control:amp_loop_setpoint:RBV</pv_name>
+    <x>1060</x>
+    <y>300</y>
+    <width>80</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_41</name>
+    <text>Phs Setpoint</text>
+    <x>850</x>
+    <y>380</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_22</name>
+    <pv_name>$(P):rf_control:phs_loop_setpoint</pv_name>
+    <x>960</x>
+    <y>380</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_23</name>
+    <pv_name>$(P):rf_control:phs_loop_setpoint:RBV</pv_name>
+    <x>1060</x>
+    <y>380</y>
+    <width>80</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="scaledslider" version="2.0.0">
+    <name>Scaled Slider_4</name>
+    <pv_name>$(P):rf_control:phs_loop_setpoint</pv_name>
+    <x>960</x>
+    <y>420</y>
+    <width>180</width>
+    <height>30</height>
+    <show_minor_ticks>false</show_minor_ticks>
+    <show_hihi>false</show_hihi>
+    <show_high>false</show_high>
+    <show_low>false</show_low>
+    <show_lolo>false</show_lolo>
+    <minimum>-131072.0</minimum>
+    <maximum>131071.0</maximum>
+    <limits_from_pv>false</limits_from_pv>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_42</name>
+    <text>Amp Measured</text>
+    <x>850</x>
+    <y>460</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_24</name>
+    <pv_name>$(P):rf_control:amp_measured:RBV</pv_name>
+    <x>1060</x>
+    <y>460</y>
+    <width>80</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_43</name>
+    <text>Phs Measured</text>
+    <x>850</x>
+    <y>490</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry_25</name>
+    <pv_name>$(P):rf_control:phs_measured:RBV</pv_name>
+    <x>1060</x>
+    <y>490</y>
+    <width>80</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+  </widget>
+  <widget type="scaledslider" version="2.0.0">
+    <name>Scaled Slider_5</name>
+    <pv_name>$(P):rf_control:amp_loop_setpoint</pv_name>
+    <x>960</x>
+    <y>330</y>
+    <width>180</width>
+    <height>30</height>
+    <show_minor_ticks>false</show_minor_ticks>
+    <show_hihi>false</show_hihi>
+    <show_high>false</show_high>
+    <show_low>false</show_low>
+    <show_lolo>false</show_lolo>
+    <maximum>78000.0</maximum>
+    <limits_from_pv>false</limits_from_pv>
+  </widget>
+</display>

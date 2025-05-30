@@ -275,9 +275,9 @@ proc create_hier_cell_hier_dac_play { parentCell nameHier } {
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {64} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -291,6 +291,9 @@ proc create_hier_cell_hier_dac_play { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {4} \
+ ] $axis_adder_0
 
   # Create instance: axis_clock_converter_0, and set properties
   set axis_clock_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter:1.1 axis_clock_converter_0 ]
@@ -301,7 +304,7 @@ proc create_hier_cell_hier_dac_play { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {16} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: axis_register_slice_0, and set properties
@@ -323,8 +326,8 @@ proc create_hier_cell_hier_dac_play { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -338,6 +341,14 @@ proc create_hier_cell_hier_dac_play { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.READ_LATENCY {4} \
+   CONFIG.SAMP_NUM {4} \
+ ] $dac_streamer_0
+
+  set_property -dict [ list \
+   CONFIG.MEM_WIDTH {64} \
+ ] [get_bd_intf_pins /transmitter/hier_dac_play/dac_streamer_0/BRAM_A]
 
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins M_AXIS_0] [get_bd_intf_pins axis_register_slice_0/M_AXIS]
@@ -405,7 +416,6 @@ proc create_hier_cell_hier_dac_cap { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -419,13 +429,20 @@ proc create_hier_cell_hier_dac_cap { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {4} \
+ ] $adc_capture_0
+
+  set_property -dict [ list \
+   CONFIG.MEM_WIDTH {64} \
+ ] [get_bd_intf_pins /transmitter/hier_dac_cap/adc_capture_0/BRAM_A]
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {64} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -438,7 +455,7 @@ proc create_hier_cell_hier_dac_cap { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {8} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -454,10 +471,17 @@ proc create_hier_cell_hier_dac_cap { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
+
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {16384} \
+   CONFIG.CONST_WIDTH {16} \
+ ] $xlconstant_0
 
   # Create interface connections
   connect_bd_intf_net -intf_net adc_capture_0_BRAM_A [get_bd_intf_pins adc_capture_0/BRAM_A] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTB]
@@ -471,8 +495,8 @@ proc create_hier_cell_hier_dac_cap { parentCell nameHier } {
   connect_bd_net -net Net [get_bd_pins s_axi_aresetn] [get_bd_pins adc_capture_0/axis_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn]
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk]
   connect_bd_net -net axis_clk_1 [get_bd_pins axis_clk] [get_bd_pins adc_capture_0/axis_clk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk]
-  connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins adc_capture_0/n_rows]
   connect_bd_net -net trig_cap_1 [get_bd_pins trig_cap] [get_bd_pins adc_capture_0/trigger]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins adc_capture_0/n_rows] [get_bd_pins xlconstant_0/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -535,13 +559,17 @@ proc create_hier_cell_m33 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -555,7 +583,7 @@ proc create_hier_cell_m33 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -571,8 +599,8 @@ proc create_hier_cell_m33 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -652,13 +680,17 @@ proc create_hier_cell_m32 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -672,7 +704,7 @@ proc create_hier_cell_m32 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -688,8 +720,8 @@ proc create_hier_cell_m32 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -769,13 +801,17 @@ proc create_hier_cell_m31 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -789,7 +825,7 @@ proc create_hier_cell_m31 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -805,8 +841,8 @@ proc create_hier_cell_m31 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -886,13 +922,17 @@ proc create_hier_cell_m30 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -906,7 +946,7 @@ proc create_hier_cell_m30 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -922,8 +962,8 @@ proc create_hier_cell_m30 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -1003,13 +1043,17 @@ proc create_hier_cell_m23 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1023,7 +1067,7 @@ proc create_hier_cell_m23 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -1039,8 +1083,8 @@ proc create_hier_cell_m23 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -1120,13 +1164,17 @@ proc create_hier_cell_m22 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1140,7 +1188,7 @@ proc create_hier_cell_m22 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -1156,8 +1204,8 @@ proc create_hier_cell_m22 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -1237,13 +1285,17 @@ proc create_hier_cell_m21 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1257,7 +1309,7 @@ proc create_hier_cell_m21 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -1273,8 +1325,8 @@ proc create_hier_cell_m21 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -1354,13 +1406,17 @@ proc create_hier_cell_m20 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1374,7 +1430,7 @@ proc create_hier_cell_m20 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -1390,8 +1446,8 @@ proc create_hier_cell_m20 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -1471,13 +1527,17 @@ proc create_hier_cell_m13 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1491,7 +1551,7 @@ proc create_hier_cell_m13 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -1507,8 +1567,8 @@ proc create_hier_cell_m13 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -1588,13 +1648,17 @@ proc create_hier_cell_m12 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1608,7 +1672,7 @@ proc create_hier_cell_m12 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -1624,8 +1688,8 @@ proc create_hier_cell_m12 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -1705,13 +1769,17 @@ proc create_hier_cell_m11 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1725,7 +1793,7 @@ proc create_hier_cell_m11 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -1741,8 +1809,8 @@ proc create_hier_cell_m11 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -1822,13 +1890,17 @@ proc create_hier_cell_m10 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1842,7 +1914,7 @@ proc create_hier_cell_m10 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -1858,8 +1930,8 @@ proc create_hier_cell_m10 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -1939,13 +2011,17 @@ proc create_hier_cell_m03 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1959,7 +2035,7 @@ proc create_hier_cell_m03 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -1975,8 +2051,8 @@ proc create_hier_cell_m03 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -2056,13 +2132,17 @@ proc create_hier_cell_m02 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -2076,7 +2156,7 @@ proc create_hier_cell_m02 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -2092,8 +2172,8 @@ proc create_hier_cell_m02 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -2175,13 +2255,17 @@ proc create_hier_cell_m01 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -2198,7 +2282,7 @@ proc create_hier_cell_m01 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -2214,8 +2298,8 @@ proc create_hier_cell_m01 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -2299,13 +2383,17 @@ proc create_hier_cell_m00 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.SAMP_NUM {2} \
+ ] $adc_capture_0
 
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
-   CONFIG.DATA_WIDTH {256} \
+   CONFIG.DATA_WIDTH {32} \
    CONFIG.ECC_TYPE {0} \
-   CONFIG.READ_LATENCY {3} \
+   CONFIG.PROTOCOL {AXI4} \
+   CONFIG.READ_LATENCY {4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -2322,7 +2410,7 @@ proc create_hier_cell_m00 { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: blk_mem_gen_0, and set properties
@@ -2338,8 +2426,8 @@ proc create_hier_cell_m00 { parentCell nameHier } {
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.READ_LATENCY_A {3} \
-   CONFIG.READ_LATENCY_B {3} \
+   CONFIG.READ_LATENCY_A {4} \
+   CONFIG.READ_LATENCY_B {4} \
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
@@ -2432,16 +2520,18 @@ proc create_hier_cell_transmitter { parentCell nameHier } {
   set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
   set_property -dict [ list \
    CONFIG.HAS_TREADY {1} \
-   CONFIG.M02_TDATA_REMAP {tdata[127:0]} \
-   CONFIG.M03_TDATA_REMAP {tdata[127:0]} \
-   CONFIG.M04_TDATA_REMAP {tdata[127:0]} \
-   CONFIG.M05_TDATA_REMAP {tdata[127:0]} \
-   CONFIG.M06_TDATA_REMAP {tdata[127:0]} \
-   CONFIG.M07_TDATA_REMAP {tdata[127:0]} \
-   CONFIG.M08_TDATA_REMAP {tdata[127:0]} \
-   CONFIG.M_TDATA_NUM_BYTES {16} \
+   CONFIG.M00_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M01_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M02_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M03_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M04_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M05_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M06_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M07_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M08_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
    CONFIG.NUM_MI {9} \
-   CONFIG.S_TDATA_NUM_BYTES {16} \
+   CONFIG.S_TDATA_NUM_BYTES {4} \
  ] $axis_broadcaster_0
 
   # Create instance: hier_dac_cap
@@ -2491,7 +2581,7 @@ proc create_hier_cell_transmitter { parentCell nameHier } {
   connect_bd_net -net S_AXI_RESETN_1 [get_bd_pins S_AXI_RESETN] [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins hier_dac_cap/s_axi_aresetn] [get_bd_pins hier_dac_play/s_axi_aresetn] [get_bd_pins interconnect/ARESETN] [get_bd_pins interconnect/M00_ARESETN] [get_bd_pins interconnect/M01_ARESETN] [get_bd_pins interconnect/S00_ARESETN]
   connect_bd_net -net dac_clk_1 [get_bd_pins aclk] [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins hier_dac_cap/aclk] [get_bd_pins hier_dac_play/aclk]
   connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins hier_dac_play/enable]
-  connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins hier_dac_cap/pulse_length] [get_bd_pins hier_dac_play/pulse_length]
+  connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins hier_dac_play/pulse_length]
   connect_bd_net -net trig_cap_1 [get_bd_pins trig_cap] [get_bd_pins hier_dac_cap/trig_cap] [get_bd_pins hier_dac_play/trigger]
 
   # Restore current instance
@@ -3029,6 +3119,10 @@ proc create_root_design { parentCell } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
+    set_property -dict [ list \
+   CONFIG.M_AXIS_SAMP_NUM {4} \
+   CONFIG.S_AXIS_SAMP_NUM {2} \
+ ] $axil_llrf_0
 
   # Create instance: clocktreeMTS
   create_hier_cell_clocktreeMTS [current_bd_instance .] clocktreeMTS
@@ -3145,32 +3239,38 @@ proc create_root_design { parentCell } {
    CONFIG.ADC_Data_Type31 {1} \
    CONFIG.ADC_Data_Type32 {1} \
    CONFIG.ADC_Data_Type33 {1} \
-   CONFIG.ADC_Data_Width00 {8} \
-   CONFIG.ADC_Data_Width01 {8} \
-   CONFIG.ADC_Data_Width10 {8} \
-   CONFIG.ADC_Data_Width11 {8} \
-   CONFIG.ADC_Data_Width12 {8} \
-   CONFIG.ADC_Data_Width13 {8} \
-   CONFIG.ADC_Data_Width20 {8} \
-   CONFIG.ADC_Data_Width21 {8} \
-   CONFIG.ADC_Data_Width30 {8} \
-   CONFIG.ADC_Data_Width31 {8} \
-   CONFIG.ADC_Decimation_Mode00 {1} \
-   CONFIG.ADC_Decimation_Mode01 {1} \
-   CONFIG.ADC_Decimation_Mode02 {1} \
-   CONFIG.ADC_Decimation_Mode03 {1} \
-   CONFIG.ADC_Decimation_Mode10 {1} \
-   CONFIG.ADC_Decimation_Mode11 {1} \
-   CONFIG.ADC_Decimation_Mode12 {1} \
-   CONFIG.ADC_Decimation_Mode13 {1} \
-   CONFIG.ADC_Decimation_Mode20 {1} \
-   CONFIG.ADC_Decimation_Mode21 {1} \
-   CONFIG.ADC_Decimation_Mode22 {1} \
-   CONFIG.ADC_Decimation_Mode23 {1} \
-   CONFIG.ADC_Decimation_Mode30 {1} \
-   CONFIG.ADC_Decimation_Mode31 {1} \
-   CONFIG.ADC_Decimation_Mode32 {1} \
-   CONFIG.ADC_Decimation_Mode33 {1} \
+   CONFIG.ADC_Data_Width00 {1} \
+   CONFIG.ADC_Data_Width01 {1} \
+   CONFIG.ADC_Data_Width02 {1} \
+   CONFIG.ADC_Data_Width03 {1} \
+   CONFIG.ADC_Data_Width10 {1} \
+   CONFIG.ADC_Data_Width11 {1} \
+   CONFIG.ADC_Data_Width12 {1} \
+   CONFIG.ADC_Data_Width13 {1} \
+   CONFIG.ADC_Data_Width20 {1} \
+   CONFIG.ADC_Data_Width21 {1} \
+   CONFIG.ADC_Data_Width22 {1} \
+   CONFIG.ADC_Data_Width23 {1} \
+   CONFIG.ADC_Data_Width30 {1} \
+   CONFIG.ADC_Data_Width31 {1} \
+   CONFIG.ADC_Data_Width32 {1} \
+   CONFIG.ADC_Data_Width33 {1} \
+   CONFIG.ADC_Decimation_Mode00 {8} \
+   CONFIG.ADC_Decimation_Mode01 {8} \
+   CONFIG.ADC_Decimation_Mode02 {8} \
+   CONFIG.ADC_Decimation_Mode03 {8} \
+   CONFIG.ADC_Decimation_Mode10 {8} \
+   CONFIG.ADC_Decimation_Mode11 {8} \
+   CONFIG.ADC_Decimation_Mode12 {8} \
+   CONFIG.ADC_Decimation_Mode13 {8} \
+   CONFIG.ADC_Decimation_Mode20 {8} \
+   CONFIG.ADC_Decimation_Mode21 {8} \
+   CONFIG.ADC_Decimation_Mode22 {8} \
+   CONFIG.ADC_Decimation_Mode23 {8} \
+   CONFIG.ADC_Decimation_Mode30 {8} \
+   CONFIG.ADC_Decimation_Mode31 {8} \
+   CONFIG.ADC_Decimation_Mode32 {8} \
+   CONFIG.ADC_Decimation_Mode33 {8} \
    CONFIG.ADC_Dither00 {true} \
    CONFIG.ADC_Dither01 {true} \
    CONFIG.ADC_Dither10 {true} \
@@ -3294,41 +3394,41 @@ proc create_root_design { parentCell } {
    CONFIG.DAC_Coarse_Mixer_Freq30 {3} \
    CONFIG.DAC_Coarse_Mixer_Freq32 {3} \
    CONFIG.DAC_Data_Type20 {0} \
-   CONFIG.DAC_Data_Width00 {8} \
-   CONFIG.DAC_Data_Width02 {8} \
-   CONFIG.DAC_Data_Width10 {8} \
-   CONFIG.DAC_Data_Width12 {8} \
-   CONFIG.DAC_Data_Width20 {8} \
-   CONFIG.DAC_Data_Width22 {8} \
-   CONFIG.DAC_Data_Width30 {8} \
-   CONFIG.DAC_Data_Width32 {8} \
-   CONFIG.DAC_Interpolation_Mode00 {1} \
+   CONFIG.DAC_Data_Width00 {2} \
+   CONFIG.DAC_Data_Width02 {2} \
+   CONFIG.DAC_Data_Width10 {2} \
+   CONFIG.DAC_Data_Width12 {2} \
+   CONFIG.DAC_Data_Width20 {2} \
+   CONFIG.DAC_Data_Width22 {2} \
+   CONFIG.DAC_Data_Width30 {2} \
+   CONFIG.DAC_Data_Width32 {2} \
+   CONFIG.DAC_Interpolation_Mode00 {8} \
    CONFIG.DAC_Interpolation_Mode01 {0} \
-   CONFIG.DAC_Interpolation_Mode02 {1} \
-   CONFIG.DAC_Interpolation_Mode10 {1} \
-   CONFIG.DAC_Interpolation_Mode12 {1} \
-   CONFIG.DAC_Interpolation_Mode20 {1} \
-   CONFIG.DAC_Interpolation_Mode22 {1} \
-   CONFIG.DAC_Interpolation_Mode30 {1} \
-   CONFIG.DAC_Interpolation_Mode32 {1} \
-   CONFIG.DAC_Mixer_Mode00 {2} \
+   CONFIG.DAC_Interpolation_Mode02 {8} \
+   CONFIG.DAC_Interpolation_Mode10 {8} \
+   CONFIG.DAC_Interpolation_Mode12 {8} \
+   CONFIG.DAC_Interpolation_Mode20 {8} \
+   CONFIG.DAC_Interpolation_Mode22 {8} \
+   CONFIG.DAC_Interpolation_Mode30 {8} \
+   CONFIG.DAC_Interpolation_Mode32 {8} \
+   CONFIG.DAC_Mixer_Mode00 {0} \
    CONFIG.DAC_Mixer_Mode01 {2} \
-   CONFIG.DAC_Mixer_Mode02 {2} \
-   CONFIG.DAC_Mixer_Mode10 {2} \
-   CONFIG.DAC_Mixer_Mode12 {2} \
-   CONFIG.DAC_Mixer_Mode20 {2} \
-   CONFIG.DAC_Mixer_Mode22 {2} \
-   CONFIG.DAC_Mixer_Mode30 {2} \
-   CONFIG.DAC_Mixer_Mode32 {2} \
-   CONFIG.DAC_Mixer_Type00 {1} \
+   CONFIG.DAC_Mixer_Mode02 {0} \
+   CONFIG.DAC_Mixer_Mode10 {0} \
+   CONFIG.DAC_Mixer_Mode12 {0} \
+   CONFIG.DAC_Mixer_Mode20 {0} \
+   CONFIG.DAC_Mixer_Mode22 {0} \
+   CONFIG.DAC_Mixer_Mode30 {0} \
+   CONFIG.DAC_Mixer_Mode32 {0} \
+   CONFIG.DAC_Mixer_Type00 {2} \
    CONFIG.DAC_Mixer_Type01 {3} \
-   CONFIG.DAC_Mixer_Type02 {1} \
-   CONFIG.DAC_Mixer_Type10 {1} \
-   CONFIG.DAC_Mixer_Type12 {1} \
-   CONFIG.DAC_Mixer_Type20 {1} \
-   CONFIG.DAC_Mixer_Type22 {1} \
-   CONFIG.DAC_Mixer_Type30 {1} \
-   CONFIG.DAC_Mixer_Type32 {1} \
+   CONFIG.DAC_Mixer_Type02 {2} \
+   CONFIG.DAC_Mixer_Type10 {2} \
+   CONFIG.DAC_Mixer_Type12 {2} \
+   CONFIG.DAC_Mixer_Type20 {2} \
+   CONFIG.DAC_Mixer_Type22 {2} \
+   CONFIG.DAC_Mixer_Type30 {2} \
+   CONFIG.DAC_Mixer_Type32 {2} \
    CONFIG.DAC_NCO_Freq00 {0.0} \
    CONFIG.DAC_NCO_Freq02 {0.0} \
    CONFIG.DAC_NCO_Freq10 {0.0} \
@@ -3392,7 +3492,7 @@ proc create_root_design { parentCell } {
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
   set_property -dict [ list \
-   CONFIG.CONST_VAL {4096} \
+   CONFIG.CONST_VAL {16384} \
    CONFIG.CONST_WIDTH {16} \
  ] $xlconstant_2
 
@@ -5053,22 +5153,22 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
 
   # Create address segments
   assign_bd_address -offset 0x80050000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs clocktreeMTS/MTSclkwiz/s_axi_lite/Reg] -force
-  assign_bd_address -offset 0xA0000000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m00/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0020000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m01/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0040000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m02/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0060000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m03/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0080000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m10/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA00A0000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m11/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA00C0000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m12/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA00E0000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m13/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0100000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m20/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0120000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m21/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0140000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m22/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0160000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m23/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA0180000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m30/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA01A0000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m31/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA01C0000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m32/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0xA01E0000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m33/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m00/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0020000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m01/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m02/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0060000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m03/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m10/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA00A0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m11/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA00C0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m12/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA00E0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m13/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0100000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m20/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0120000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m21/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0140000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m22/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0160000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m23/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0180000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m30/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA01A0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m31/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA01C0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m32/axi_bram_ctrl_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA01E0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs receiver/m33/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0200000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs transmitter/hier_dac_cap/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0220000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs transmitter/hier_dac_play/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0x80060000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axil_evr_0/s_axi/reg0] -force

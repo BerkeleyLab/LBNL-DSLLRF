@@ -20,3 +20,5 @@ results.xml
 *.vcd
 *.vvp
 *cordicg_b22.v
+*.egg-info/
+build/

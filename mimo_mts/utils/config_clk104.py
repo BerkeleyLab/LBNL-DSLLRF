@@ -15,7 +15,7 @@ class CLK104Config:
         self.lmxdac_cfg = LMXConfig(lmxdac_tcs)
         if write:
             self.devinfo = self.find_devices()
-            self.write_regs
+            self.write_regs()
 
     def __repr__(self):
         str = (f"< {self.__class__.__name__:12s} >:\n"
