@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Saved on 2025-05-28 16:26:02 by du-->
+<display version="2.0.0">
+  <name>MIMO_RFSOC</name>
+  <width>1200</width>
+  <height>1100</height>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <class>TITLE</class>
+    <text>MIMO RFSoC Demo</text>
+    <x use_class="true">0</x>
+    <y use_class="true">0</y>
+    <width>550</width>
+    <height>31</height>
+    <font use_class="true">
+      <font name="Header 1" family="Liberation Sans" style="BOLD" size="22.0">
+      </font>
+    </font>
+    <foreground_color use_class="true">
+      <color name="Text" red="0" green="0" blue="0">
+      </color>
+    </foreground_color>
+    <transparent use_class="true">true</transparent>
+  </widget>
+  <widget type="navtabs" version="2.0.0">
+    <name>Navigation Tabs</name>
+    <tabs>
+      <tab>
+        <name>MIMO ZCU208</name>
+        <file>waveforms.bob</file>
+        <macros>
+          <P>MIMO_ZCU208</P>
+        </macros>
+        <group_name>zcu208</group_name>
+      </tab>
+      <tab>
+        <name>LLRF ZCU208</name>
+        <file>waveforms.bob</file>
+        <macros>
+          <P>ALS_LLRF_ZCU208</P>
+        </macros>
+        <group_name>zcu208</group_name>
+      </tab>
+      <tab>
+        <name>MIMO LBL208</name>
+        <file>waveforms.bob</file>
+        <macros>
+          <P>MIMO_LBL208</P>
+        </macros>
+        <group_name>lbl208</group_name>
+      </tab>
+      <tab>
+        <name>LLRF LBL208</name>
+        <file>waveforms.bob</file>
+        <macros>
+          <P>ALS_LLRF_LBL208</P>
+        </macros>
+        <group_name>lbl208</group_name>
+      </tab>
+      <tab>
+        <name>MIMO ZCU216</name>
+        <file>waveforms.bob</file>
+        <macros>
+          <P>MIMO_ZCU216</P>
+        </macros>
+        <group_name>zcu216</group_name>
+      </tab>
+    </tabs>
+    <x>10</x>
+    <y>30</y>
+    <width>1180</width>
+    <height>1060</height>
+    <direction>0</direction>
+  </widget>
+</display>

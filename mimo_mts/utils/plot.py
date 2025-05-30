@@ -11,25 +11,6 @@ plt.rcParams['font.size'] = 6
 plt.style.use('default')
 
 
-def plot_complex_wfm(cdata, fs=4e9, width=8, height=2, mode='iq', title=''):
-    fs /= 1e9
-    n_samples = len(cdata)
-    t = np.arange(0, n_samples/fs, 1/fs)
-    fig, axes = plt.subplots(
-        2, sharex=True, figsize=(width, 2*height))
-    if mode == 'iq':
-        axes[0].plot(t, cdata.real, label='I [cnt]')
-        axes[1].plot(t, cdata.imag, label='Q [cnt]')
-    elif mode == 'ap':
-        axes[0].plot(t, np.abs(cdata), label='amplitude [cnt]')
-        axes[1].plot(t, np.angle(cdata, deg=True), label='phase [deg]')
-    axes[1].set_xlabel('Time [ns]')
-    axes[0].legend()
-    axes[1].legend()
-    fig.tight_layout()
-    fig.suptitle(title, y=1.02)
-
-
 def plot_adc_wfm(cdata, fs=4e9, width=8, height=1, title=''):
     fs /= 1e9
     n_ch, n_samples = cdata.shape
@@ -66,17 +47,28 @@ def plot_adc_psd(wfm, fs=4e9, onsided=True, width=8, height=2, title=''):
     fig.suptitle(title, y=1.02)
 
 
-def plot_complex_wfm_stack(cdata, fs=4e9, width=8, height=4, title=''):
+def plot_complex_wfm_stack(cdata, fs=4e9, width=8, height=4, mode='iq', title='', legend=False):
     fs /= 1e9
     n_ch, n_samples = cdata.shape
     t = np.arange(0, n_samples/fs, 1/fs)
     fig, axes = plt.subplots(
         2, 1, sharex=True, figsize=(width, height))
     for ch, wfm in enumerate(cdata):
-        axes[0].plot(t, wfm.real, label=f'ADC{ch} I')
-        axes[1].plot(t, wfm.imag, label=f'ADC{ch} Q')
+        if mode == 'iq':
+            axes[0].plot(t, wfm.real, label=f'{ch}')
+            axes[1].plot(t, wfm.imag, label=f'{ch}')
+        elif mode == 'ap':
+            axes[0].plot(t, np.abs(wfm), label=f'{ch}')
+            axes[1].plot(t, np.angle(wfm, deg=True), label=f'{ch}')
+    if legend:
         axes[0].legend()
         axes[1].legend()
+    if mode == 'iq':
+        axes[0].set_title('I [cnt]')
+        axes[1].set_title('Q [cnt]')
+    elif mode == 'ap':
+        axes[0].set_title('Amplitude [cnt]')
+        axes[1].set_title('Phase [deg]')
     axes[-1].set_xlabel('Time [ns]')
-    fig.tight_layout()
+    # fig.tight_layout()
     fig.suptitle(title, y=1.02)

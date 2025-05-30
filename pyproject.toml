@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mimo_mts"
+version = "0.1.0"
+authors = [
+  {name = "Qiang Du", email = "QDu@lbl.gov"},
+  {name = "Shreeharshini Murthy", email = "SDMurthy@lbl.gov"},
+  {name = "Keith Penney", email = "kpenney@lbl.gov"},
+]
+description = "RFSoC based Many-In-Many-Output control with Multi-Tile Synchronization"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pynq==3.0.1",
+    "smbus2==0.4.3",
+    "softioc==4.6.1"
+]
+license = "LicenseRef-Government-Use"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://gitlab.lbl.gov/llrf-projects/pynq_llrf"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mimo_mts"]
+exclude = ["mimo_mts.tests"]
+
+[tool.setuptools.package-data]
+"utils.clk104" = ["*.tcs"]
+
+[project.scripts]
+mimo-zcu208-ioc = "mimo_mts.ioc.app_iocs:mimo_zcu208_ioc"
+mimo-lbl208-ioc = "mimo_mts.ioc.app_iocs:mimo_lbl208_ioc"
+mimo-zcu216-ioc = "mimo_mts.ioc.app_iocs:mimo_zcu216_ioc"
+llrf-zcu208-ioc = "mimo_mts.ioc.app_iocs:llrf_zcu208_ioc"
+llrf-lbl208-ioc = "mimo_mts.ioc.app_iocs:llrf_lbl208_ioc"

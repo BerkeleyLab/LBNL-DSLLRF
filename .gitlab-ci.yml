@@ -20,10 +20,19 @@ flake8:
   script:
     - flake8 mimo_mts designs
 
+packaging:
+  stage: test
+  before_script:
+    - pip install -U pip
+    - pip install -U setuptools packaging pytest
+    - pip install -e .
+  script:
+    - pytest mimo_mts/tests
+
 rtl_test:
   before_script:
     - apt-get install verilator
-    - pip install -r requirements.txt
+    - pip install -r designs/ip/tb/requirements.txt
     - cd designs/ip/tb
   stage: test
   script:
@@ -31,7 +40,7 @@ rtl_test:
 
 bitfile_synthesis_zcu216:
   before_script:
-    - cd designs/ZCU216/${OVERLAY} && ls /non-free
+    - cd designs/ZCU216/${OVERLAY}
   stage: synthesis
   timeout: 3h
   script:
@@ -52,7 +61,7 @@ bitfile_synthesis_zcu216:
 
 bitfile_synthesis_208:
   before_script:
-    - cd designs/${BOARD}/${OVERLAY} && ls /non-free
+    - cd designs/${BOARD}/${OVERLAY}
   stage: synthesis
   timeout: 3h
   script:

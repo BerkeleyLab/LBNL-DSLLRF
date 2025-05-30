@@ -46,15 +46,55 @@ Jupyter notebooks using the driver to demonstrate features of the overlay design
 
 1. Prepare SD card, following instructions [here](https://pynq.readthedocs.io/en/latest/appendix/sdcard.html), example:
 
-    ```bash
-    sudo umount /dev/sdb1
-    sudo dd bs=4M if=ZCU208-3.0.1.img of=/dev/sdb status=progress
-    ```
+   ```bash
+   sudo umount /dev/sdb1
+   sudo dd bs=4M if=ZCU208-3.0.1.img of=/dev/sdb status=progress
+   ```
+
+   Board images can be found [here](https://www.pynq.io/boards.html).
 
 2. Change hostname and IP address, following instructions [here](https://pynq.readthedocs.io/en/v2.4/getting_started.html#change-the-hostname). Example:
 
-    ```bash
-    pynq_hostname.sh lbl208
-    ```
+   ```bash
+   sudo -E pynq_hostname.sh lbl208
+   ```
 
 3. Reboot. Clone this repo and run `install.sh`.
+
+4. Prepare overlays:
+
+   Currently the overlay files, e.g. `mimo_mts.bit` and `mimo_mts.hwh`, are expected to be found at `mimo_mts/overlays` directory.
+
+   During the development, the synthesized overlays are manually copied over. For deployment, the overlay files can be packaged as either a hard copy, or a link to an URL, which PYNQ can resolve and download.
+
+5. Run EPICS IOC:
+
+   The `ioc.py` has 3 entry functions, for `MIMO` and `LLRF` overlays on 3 supported RFSoC boards, which are installed as executable scripts by `pip install .`,
+   under the user's default system path, typically at `/home/xilinx/.local/bin/`. This allows the execution of EPICS IOC with MIMO overlays on all 3 boards to be:
+
+   ```bash
+   sudo -E mimo-<board>-ioc
+   ```
+
+   where `<board>` is one of `[zcu208, lbl208, zcu216]`.
+
+   for LLRF on ZCU208,
+
+   ```bash
+   sudo -E llrf-zcu208-ioc
+   ```
+
+   for LLRF on LBL208,
+
+   ```bash
+   sudo -E llrf-lbl208-ioc
+   ```
+
+## Development notes
+
+For development involving python packaging, on the target board, run:
+
+```bash
+cd pynq_llrf
+sudo -E pip install -e . --no-deps
+```

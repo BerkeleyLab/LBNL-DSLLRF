@@ -1,8 +1,7 @@
-# -------------------------------------------------------------------------------------------------
-# Copyright (C) 2023 Advanced Micro Devices, Inc
-# SPDX-License-Identifier: MIT
-# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- --
 #!/bin/bash
+
+sudo -E pip install -U pip
+sudo -E pip install -U setuptools packaging
 
 # Build MTS necessary patch to xrfdc package
 echo "Cloning the PYNQ repository"
@@ -21,23 +20,22 @@ popd
 cd ..
 
 # Create a device-tree overlay to access PL-DRAM
-sudo apt-get update -y
-sudo apt-get install -y device-tree-compiler
-make -C designs/dts ddr4.dtbo
-cp designs/dts/ddr4.dtbo mimo_mts/
+# sudo apt-get update -y
+# sudo apt-get install -y device-tree-compiler
+# make -C designs/dts ddr4.dtbo
+# cp designs/dts/ddr4.dtbo mimo_mts/
 
-pynq_version=`pynq -v | awk -F ": " 'NR==1 {print $2}'`
-if [ "$pynq_version" != "3.0.1" ]; then
-    # Update pynqmetadata to allow custom overlay drivers
-    # see https://discuss.pynq.io/t/how-to-bind-driver-to-rtl-in-pynq3/4890/4
-    sudo python3 -m pip uninstall -y pynqmetadata
-    sudo python3 -m pip cache purge
-    sudo python3 -m pip install pynqmetadata
-fi
+# Update pynqmetadata to allow custom overlay drivers
+# see https://discuss.pynq.io/t/how-to-bind-driver-to-rtl-in-pynq3/4890/4
+# Ensure we have the same version of pynqmetadata on all targets.
+sudo -E pip uninstall -y pynqmetadata
+sudo -E pip cache purge
+sudo -E pip install pynqmetadata
 
-sudo python3 -m pip install softioc
+sudo -E pip install softioc
 
 # Install python package and notebook
-# python3 -m pip install . --no-build-isolation
+# The -e makes it in editable mode for development without reinstalling the module
+sudo -E pip install -e . --no-deps
 # pynq-get-notebooks RFSoC-MTS -p $PYNQ_JUPYTER_NOTEBOOKS
 echo "$BOARD Ready..."

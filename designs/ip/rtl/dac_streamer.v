@@ -5,23 +5,22 @@
 module dac_streamer #(
     parameter integer SAMP_DW = 16,     // 16 bits data
     parameter integer SAMP_NUM = 16,    // 16 samples
-    parameter integer DW = SAMP_DW * SAMP_NUM,     // 32 bytes
     parameter integer AW = 16,          // 2**AW number of rows, total number of samples: 2**AW * DW/16
     parameter integer READ_LATENCY = 3           // Number of read cycles
 ) (
-    (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE READ_ONLY, MEM_SIZE 131072, MEM_WIDTH 256" *)
+    (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE READ_ONLY" *)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A DIN" *)
-    output wire [DW-1:0] bram_wdata, // Data In Bus (optional)
+    output wire [SAMP_DW*SAMP_NUM-1:0] bram_wdata, // Data In Bus (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A WE" *)
-    output [DW/8-1:0] bram_we, // Byte Enables (optional)
+    output [SAMP_DW*SAMP_NUM/8-1:0] bram_we, // Byte Enables (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A EN" *)
     output wire bram_en, // Chip Enable Signal (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A DOUT" *)
-    input wire [DW-1:0] bram_rdata, // Data Out Bus (optional)
+    input wire [SAMP_DW*SAMP_NUM-1:0] bram_rdata, // Data Out Bus (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A ADDR" *)
     output reg [31:0] bram_addr, /// Address Signal (required)
@@ -37,7 +36,7 @@ module dac_streamer #(
     input wire axis_clk,
     (* X_INTERFACE_INFO = "xilinx.com:signal:reset:1.0 axis_aresetn RST" *)
     input  wire              axis_aresetn,
-    output wire [DW-1:0]     m_axis_tdata,
+    output wire [SAMP_DW*SAMP_NUM-1:0]     m_axis_tdata,
     input  wire              m_axis_tready,
     output wire              m_axis_tvalid,
 
@@ -46,8 +45,9 @@ module dac_streamer #(
     input wire enable,
     input wire trigger  // single clock cycle pulse
 );
+    localparam integer DW = SAMP_DW * SAMP_NUM;
     localparam integer NBPIPE = READ_LATENCY-1;   // Number of pipeline Registers
-    localparam integer NUM_COL = DW/8; // increment address by DW/8 bytes, or 16 samples
+    localparam integer NUM_COL = SAMP_DW*SAMP_NUM/8; // increment address by DW/8 bytes, or 16 samples
 
     wire pulse_valid;
     pulse_gen #(

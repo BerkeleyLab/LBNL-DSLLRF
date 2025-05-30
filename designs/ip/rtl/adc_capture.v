@@ -3,22 +3,23 @@
 // Captures data from an AXIS interface to a BRAM.
 
 module adc_capture #(
-    parameter integer DW = 256,        // 16 samples, 16 bits data == 32 bytes
+    parameter integer SAMP_DW = 16,
+    parameter integer SAMP_NUM = 16,
     parameter integer AW = 16          // 2**AW number of rows, total number of samples: 2**AW * DW/16
 ) (
-    (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE WRITE_ONLY, MEM_SIZE 131072, MEM_WIDTH 256" *)
+    (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE WRITE_ONLY" *)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A DIN" *)
-    output wire [DW-1:0] bram_wdata, // Data In Bus (optional)
+    output wire [SAMP_DW*SAMP_NUM-1:0] bram_wdata, // Data In Bus (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A WE" *)
-    output wire [DW/8-1:0] bram_we, // Byte Enables (optional)
+    output wire [SAMP_DW*SAMP_NUM/8-1:0] bram_we, // Byte Enables (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A EN" *)
     output wire bram_en, // Chip Enable Signal (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A DOUT" *)
-    input wire [DW-1:0] bram_rdata, // Data Out Bus (optional)
+    input wire [SAMP_DW*SAMP_NUM-1:0] bram_rdata, // Data Out Bus (optional)
 
     (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_A ADDR" *)
     output reg [31:0] bram_addr, // Address Signal (required)
@@ -35,7 +36,7 @@ module adc_capture #(
 
     (* X_INTERFACE_INFO = "xilinx.com:signal:reset:1.0 axis_aresetn RST" *)
     input  wire             axis_aresetn,
-    input  wire [DW-1:0]    s_axis_tdata,
+    input  wire [SAMP_DW*SAMP_NUM-1:0]    s_axis_tdata,
     output wire             s_axis_tready,
     input  wire             s_axis_tvalid,
 
@@ -43,7 +44,7 @@ module adc_capture #(
     input wire [AW-1:0]     n_rows,
     input wire              trigger     // single clock cycle pulse
 );
-    localparam integer NUM_COL = DW/8; // increment address by DW/8 bytes, or 16 samples
+    localparam integer NUM_COL = SAMP_DW*SAMP_NUM/8; // increment address by DW/8 bytes
 
     assign bram_clk = axis_clk;
     assign bram_rst = ~axis_aresetn;
