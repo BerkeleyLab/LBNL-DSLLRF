@@ -173,6 +173,18 @@ class MimoMtsIoc:
                 print(f"Setting ADC mixer NCO frequency: {value} MHz, Nyquist: {nyquist}, Phase: {phase}")
                 self.ol.set_adc_mixer(value, nyquist, phase)
 
+    def drive_test_awg(self):
+        # Drive DAC with a test arbitrary waveform
+        Fc = self.fs_ghz / 16  # 250 MHz
+        t = np.arange(self.ol.dac_player.size) / self.fs_ghz  # ns
+        amp = 2**14 - 1
+        dac_wfm = np.exp(1j * 2 * np.pi * Fc * t) * amp
+        # dac_i = np.ones(self.ol.dac_player.size//2, dtype=np.int16) * 32767
+        dac_wfm = dac_wfm[::2]  # decimate by 2
+        dac_i = (dac_wfm.real).astype(np.int16)
+        dac_q = (dac_wfm.imag).astype(np.int16)
+        self.ol.write_dac_iq_buf(dac_i, dac_q)
+
 
 def mimo_auto_ioc():
     ol_name = 'MIMO' + '_' + os.environ['BOARD']

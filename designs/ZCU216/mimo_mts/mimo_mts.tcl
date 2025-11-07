@@ -503,7 +503,7 @@ proc create_hier_cell_m33 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -620,7 +620,7 @@ proc create_hier_cell_m32 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -737,7 +737,7 @@ proc create_hier_cell_m31 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -854,7 +854,7 @@ proc create_hier_cell_m30 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -971,7 +971,7 @@ proc create_hier_cell_m23 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1088,7 +1088,7 @@ proc create_hier_cell_m22 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1205,7 +1205,7 @@ proc create_hier_cell_m21 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1322,7 +1322,7 @@ proc create_hier_cell_m20 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1439,7 +1439,7 @@ proc create_hier_cell_m13 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1556,7 +1556,7 @@ proc create_hier_cell_m12 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1673,7 +1673,7 @@ proc create_hier_cell_m11 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1790,7 +1790,7 @@ proc create_hier_cell_m10 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -1907,7 +1907,7 @@ proc create_hier_cell_m03 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2024,7 +2024,7 @@ proc create_hier_cell_m02 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2141,7 +2141,7 @@ proc create_hier_cell_m01 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2258,7 +2258,7 @@ proc create_hier_cell_m00 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -2571,7 +2571,7 @@ proc create_hier_cell_receiver { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I S_AXI_CLK
   create_bd_pin -dir I aclk
-  create_bd_pin -dir I -from 15 -to 0 pulse_length
+  create_bd_pin -dir I -from 14 -to 0 pulse_length
   create_bd_pin -dir I s_axi_aresetn
   create_bd_pin -dir I trig_cap
 
@@ -3010,6 +3010,7 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
+  set TRIG_IN [ create_bd_port -dir I TRIG_IN ]
 
   # Create instance: axil_rf_control_0, and set properties
   set block_name axil_rf_control
@@ -5080,6 +5081,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   # Create port connections
   connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins axil_rf_control_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/egress_aresetn] [get_bd_pins receiver/s_axi_aresetn] [get_bd_pins rf_interconnect/ARESETN] [get_bd_pins rf_interconnect/M00_ARESETN] [get_bd_pins rf_interconnect/M01_ARESETN] [get_bd_pins rf_interconnect/M02_ARESETN] [get_bd_pins rf_interconnect/S00_ARESETN] [get_bd_pins transmitter/S_AXI_RESETN]
   connect_bd_net -net RFingressReset_peripheral_aresetn [get_bd_pins clocktreeMTS/ingress_aresetn] [get_bd_pins rfdc/m0_axis_aresetn] [get_bd_pins rfdc/m1_axis_aresetn] [get_bd_pins rfdc/m2_axis_aresetn] [get_bd_pins rfdc/m3_axis_aresetn] [get_bd_pins rfdc/s0_axis_aresetn] [get_bd_pins rfdc/s1_axis_aresetn] [get_bd_pins rfdc/s2_axis_aresetn] [get_bd_pins rfdc/s3_axis_aresetn]
+  connect_bd_net -net TRIG_IN_1 [get_bd_ports TRIG_IN] [get_bd_pins axil_rf_control_0/ext_trigger_in]
   connect_bd_net -net axil_rf_control_0_dac_enable_out [get_bd_pins axil_rf_control_0/rf_permit_out] [get_bd_pins transmitter/enable]
   connect_bd_net -net axil_rf_control_0_pulse_length [get_bd_pins axil_rf_control_0/pulse_length] [get_bd_pins transmitter/pulse_length]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clocktreeMTS/clkRF] [get_bd_pins receiver/aclk] [get_bd_pins rfdc/m0_axis_aclk] [get_bd_pins rfdc/m1_axis_aclk] [get_bd_pins rfdc/m2_axis_aclk] [get_bd_pins rfdc/m3_axis_aclk] [get_bd_pins rfdc/s0_axis_aclk] [get_bd_pins rfdc/s1_axis_aclk] [get_bd_pins rfdc/s2_axis_aclk] [get_bd_pins rfdc/s3_axis_aclk] [get_bd_pins transmitter/aclk]
@@ -5090,7 +5092,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_net -net synchronizeSYSREF_dest_out [get_bd_pins clocktreeMTS/UserSYSREF] [get_bd_pins rfdc/user_sysref_adc] [get_bd_pins rfdc/user_sysref_dac]
   connect_bd_net -net usp_rf_data_converter_1_irq [get_bd_pins rfdc/irq] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins xlconcat_0/dout] [get_bd_pins zynq_ultra_ps_e_0/pl_ps_irq0]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins axil_rf_control_0/evr_trigger_in] [get_bd_pins axil_rf_control_0/ext_trigger_in] [get_bd_pins axil_rf_control_0/rf_permit_in] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins axil_rf_control_0/evr_trigger_in] [get_bd_pins axil_rf_control_0/rf_permit_in] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlconstant_1_dout [get_bd_pins axil_rf_control_0/amp_measured] [get_bd_pins axil_rf_control_0/phs_measured] [get_bd_pins xlconstant_1/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axil_rf_control_0/amp_loop_err] [get_bd_pins axil_rf_control_0/phs_loop_err] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlconstant_3_dout [get_bd_pins receiver/pulse_length] [get_bd_pins xlconstant_3/dout]

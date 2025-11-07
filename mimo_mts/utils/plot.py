@@ -25,7 +25,7 @@ def plot_adc_wfm(cdata, fs=4e9, width=8, height=1, title=''):
     fig.suptitle(title, y=1.02)
 
 
-def plot_adc_psd(wfm, fs=4e9, onsided=True, width=8, height=2, title=''):
+def plot_adc_psd(wfm, fs=4e9, onsided=True, fullscale=32767, width=8, height=2, title=''):
     f, pxxs = signal.periodogram(
         wfm, fs, 'flattop', scaling='spectrum',
         return_onesided=onsided)
@@ -35,10 +35,11 @@ def plot_adc_psd(wfm, fs=4e9, onsided=True, width=8, height=2, title=''):
     n_ch, n_samples = wfm.shape
     fig, axes = plt.subplots(
         n_ch, sharex=True, figsize=(width, n_ch*height))
-    for i, (pxx, ax) in enumerate(zip(pxxs, axes)):
-        f_peak = f[np.argmax(pxx)]
-        ax.plot(f, 10*np.log10(pxx),
-                label=f'ADC {i}, peak: {f_peak/1e6:.3f} MHz')
+    fsdb = 20 * np.log10(fullscale / np.sqrt(2))
+    pxx_dbfs = 10 * np.log10(pxxs) - fsdb
+    for i, (p, ax) in enumerate(zip(pxx_dbfs, axes)):
+        f_peak = f[np.argmax(p)]
+        ax.plot(f, p, label=f'ADC {i}, peak: {f_peak/1e6:.3f} MHz')
         # ax.set_title(f'ADC {i}, peak: {f_peak/1e6:.3f} MHz ')
         ax.legend()
         ax.set_xlabel('Freq [MHz]')

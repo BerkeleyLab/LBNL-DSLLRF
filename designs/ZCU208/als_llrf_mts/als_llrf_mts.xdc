@@ -7,7 +7,7 @@ set_property -dict {PACKAGE_PIN B8  IOSTANDARD LVDS_25}     [get_ports PL_CLK_cl
 # CLK 104 AMS_SYSREF is inferred by sysref_in_0_diff_p by vivado
 
 # SYNC_IN on CLK 104 board (J42)
-set_property -dict {PACKAGE_PIN AU2  IOSTANDARD  LVCMOS18} [get_ports TRIG_OUT];
+set_property -dict {PACKAGE_PIN AU2  IOSTANDARD  LVCMOS18} [get_ports TRIG_IN];
 
 # SFPs - MGT 129 - zSFP 2
 set_property PACKAGE_PIN N38        [get_ports sfp2_1x_grx_p];  # Bank 129 - MGTYRXP0_129
@@ -38,6 +38,7 @@ set_clock_groups -asynchronous \
         -group [get_clocks -include_generated_clocks gt_refclk] \
         -group [get_clocks -of_objects [get_pins als_llrf_mts_i/zynq_ultra_ps_e_0/pl_clk0]] \
         -group [get_clocks -include_generated_clocks PL_CLK_clk]
+set_false_path -from [get_ports TRIG_IN]
 
 # Input Delay for PL_SYSREF to ensure MTS requirements via PG269
 set_input_delay -clock [get_clocks PL_CLK_clk] -min -add_delay 1.332 [get_ports PL_SYSREF_clk_p]

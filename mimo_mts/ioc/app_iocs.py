@@ -1,7 +1,6 @@
 #!/usr/local/share/pynq-venv/bin/python
 from mimo_mts.ioc.base_ioc import MimoMtsIoc
 import os
-import numpy as np
 
 
 class AlsLlrfZCU208(MimoMtsIoc):
@@ -50,16 +49,7 @@ class MimoZCU208(MimoMtsIoc):
 
     def init_rf_control(self):
         super().init_rf_control()
-        # Drive DAC with a test arbitrary waveform
-        Fc = self.fs_ghz / 16  # 250 MHz
-        t = np.arange(self.ol.dac_player.size) / self.fs_ghz  # ns
-        amp = 2**14 - 1
-        dac_wfm = np.exp(1j * 2 * np.pi * Fc * t) * amp
-        # dac_i = np.ones(self.ol.dac_player.size//2, dtype=np.int16) * 32767
-        dac_wfm = dac_wfm[::2]  # decimate by 2
-        dac_i = (dac_wfm.real).astype(np.int16)
-        dac_q = (dac_wfm.imag).astype(np.int16)
-        self.ol.write_dac_iq_buf(dac_i, dac_q)
+        self.drive_test_awg()
 
 
 class MimoLBL208(MimoMtsIoc):
@@ -77,16 +67,7 @@ class MimoZCU216(MimoMtsIoc):
 
     def init_rf_control(self):
         super().init_rf_control()
-        # Drive DAC with a constant signal
-        Fc = self.fs_ghz / 16  # 250 MHz
-        t = np.arange(self.ol.dac_player.size) / self.fs_ghz  # ns
-        amp = 2**14 - 1
-        dac_wfm = np.exp(1j * 2 * np.pi * Fc * t) * amp
-        # dac_i = np.ones(self.ol.dac_player.size//2, dtype=np.int16) * 32767
-        dac_wfm = dac_wfm[::2]  # decimate by 2
-        dac_i = (dac_wfm.real).astype(np.int16)
-        dac_q = (dac_wfm.imag).astype(np.int16)
-        self.ol.write_dac_iq_buf(dac_i, dac_q)
+        self.drive_test_awg()
 
 
 def llrf_zcu208_ioc():

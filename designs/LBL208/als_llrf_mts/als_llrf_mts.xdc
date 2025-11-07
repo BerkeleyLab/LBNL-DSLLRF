@@ -5,7 +5,7 @@ set_property -dict {PACKAGE_PIN B10 IOSTANDARD LVDS_25}     [get_ports PL_SYSREF
 set_property -dict {PACKAGE_PIN B8  IOSTANDARD LVDS_25}     [get_ports PL_CLK_clk_p];
 
 # SYNC_IN on CLK 104 board (J42)
-set_property -dict {PACKAGE_PIN AU2  IOSTANDARD  LVCMOS18} [get_ports TRIG_OUT];
+set_property -dict {PACKAGE_PIN AU2  IOSTANDARD  LVCMOS18} [get_ports TRIG_IN];
 
 # SFPs - MGT 129 - zSFP 2
 set_property PACKAGE_PIN N38        [get_ports sfp2_1x_grx_p];  # Bank 129 - MGTYRXP0_129
@@ -44,6 +44,7 @@ set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets als_llrf_mts_i/clocktreeMTS/I
 set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets als_llrf_mts_i/clocktreeMTS/BUFG_PL_CLK/U0/BUFG_O[0]]
 
 set_false_path -from [get_pins {als_llrf_mts_i/clocktreeMTS/RFegressReset/U0/ACTIVE_LOW_PR_OUT_DFF[*].*/C}]
+set_false_path -from [get_ports TRIG_IN]
 
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
 # Bitstream Generation

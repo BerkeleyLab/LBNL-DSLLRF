@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--Saved on 2025-05-28 16:27:01 by du-->
+<!--Saved on 2025-11-03 10:11:03 by du-->
 <display version="2.0.0">
   <name>mimo_mts</name>
   <width>1150</width>
@@ -55,19 +55,18 @@
   </widget>
   <widget type="label" version="2.0.0">
     <name>Label_36</name>
-    <text>Pulse width</text>
+    <text>Pul.width [4ns]</text>
     <x>850</x>
     <y>180</y>
-    <width>90</width>
     <height>30</height>
     <vertical_alignment>1</vertical_alignment>
   </widget>
   <widget type="scaledslider" version="2.0.0">
     <name>Scaled Slider_3</name>
     <pv_name>$(P):rf_control:pulse_length</pv_name>
-    <x>950</x>
+    <x>960</x>
     <y>180</y>
-    <width>100</width>
+    <width>90</width>
     <height>30</height>
     <show_minor_ticks>false</show_minor_ticks>
     <show_hihi>false</show_hihi>
@@ -1138,7 +1137,7 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
   </widget>
   <widget type="label" version="2.0.0">
     <name>Label_37</name>
-    <text>DAC nco freq</text>
+    <text>DAC nco [MHz]</text>
     <x>850</x>
     <y>220</y>
     <height>30</height>
@@ -1166,7 +1165,7 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
   </widget>
   <widget type="label" version="2.0.0">
     <name>Label_38</name>
-    <text>ADC nco freq</text>
+    <text>ADC nco [MHz]</text>
     <x>850</x>
     <y>260</y>
     <height>30</height>
@@ -1349,5 +1348,27 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
     <show_lolo>false</show_lolo>
     <maximum>78000.0</maximum>
     <limits_from_pv>false</limits_from_pv>
+  </widget>
+  <widget type="choice" version="2.0.0">
+    <name>Choice Button</name>
+    <pv_name>$(P):rf_control:trig_sel</pv_name>
+    <x>950</x>
+    <y>70</y>
+    <width>140</width>
+    <height>30</height>
+    <items>
+      <item>Int</item>
+      <item>EVR</item>
+      <item>Ext</item>
+    </items>
+    <items_from_pv>false</items_from_pv>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_44</name>
+    <text>Trigger</text>
+    <x>850</x>
+    <y>70</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
   </widget>
 </display>

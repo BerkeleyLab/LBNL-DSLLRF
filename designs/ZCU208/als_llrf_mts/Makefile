@@ -20,6 +20,7 @@ RTL_SRC += $(BEDROCK_DIR)/serial_io/EVG_EVR/tinyEVR.v $(BEDROCK_DIR)/serial_io/E
 RTL_SRC += $(BEDROCK_DIR)/dsp/data_xdomain.v $(BEDROCK_DIR)/dsp/flag_xdomain.v $(BEDROCK_DIR)/dsp/reg_tech_cdc.v
 RTL_SRC += cordicg_b22.v
 RTL_SRC += $(BEDROCK_DIR)/cordic/addsubg.v $(BEDROCK_DIR)/cordic/cstageg.v
+RTL_SRC += $(BEDROCK_DIR)/dsp/trigger.v
 
 TCL_SRC += $(IP_DIR)/tcl/evr_gty_als.tcl
 
