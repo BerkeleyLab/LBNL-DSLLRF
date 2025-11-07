@@ -200,40 +200,6 @@ module axil_rf_control #(
 
 endmodule
 
-// generate a trigger signal with a delay and divide
-module trigger #(
-    parameter DW=16
-) (
-    input   clk,
-    input   reset,
-    input   trig_in,
-    input   [DW-1:0] delay,
-    input   [DW-1:0] divide,
-    output  trig_out
-);
-
-    reg [DW-1:0] cnt=0;
-    reg [DW-1:0] div_cnt=0;
-
-    wire div_val=(div_cnt==divide);
-    reg div_val1=0, reset1=0;
-    wire div_out = div_val & !div_val1;
-
-    always @(posedge clk) begin
-        if (reset | reset1) begin
-            cnt <= 0;
-            div_cnt <= 0;
-        end else begin
-            cnt <= div_out ? 0 : cnt + 1'b1;
-            div_cnt <= div_val ? 0 : div_cnt + trig_in;
-        end
-        div_val1 <= div_val;
-        reset1 <= reset;
-    end
-    assign trig_out = (cnt==delay);
-
-endmodule
-
 module sig_cdc_edge (
     input clk,
     input sig_in,

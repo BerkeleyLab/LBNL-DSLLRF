@@ -1,5 +1,5 @@
 cocotb==1.9.2
 cocotbext-axi==0.1.24
-numpy==2.0.2
+numpy==2.2.4
 pynq==3.0.1
 jupytext==1.17.1

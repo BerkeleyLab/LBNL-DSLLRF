@@ -31,10 +31,9 @@ class TB:
     async def cycle_reset(self):
         self.dut.s_axi_aresetn.setimmediatevalue(1)
         await ClockCycles(self.dut.s_axi_aclk, 2)
-        self.dut.s_axi_aresetn.value = 0
-        await RisingEdge(self.dut.s_axi_aclk)
-        self.dut.s_axi_aresetn.value = 1
-        await RisingEdge(self.dut.s_axi_aclk)
+        for v in [0, 1]:
+            self.dut.s_axi_aresetn.value = v
+            await RisingEdge(self.dut.s_axi_aclk)
 
     async def write_register(self, register, value):
         await self.axil_master.write(
@@ -63,10 +62,10 @@ async def test_write(dut):
 
     for reg, value in test_regs_dict.items():
         await tb.write_register(reg, value)
-        reg_val_expect = getattr(tb.dut, reg).value.integer
-        tb.dut._log.warning(f"reg_val: {reg_val_expect}, expect: {value}")
-        assert reg_val_expect == value, \
-            f"write {reg} mismatch: {reg_val_expect} != {value}"
+        reg_val = getattr(tb.dut, reg).value.integer
+        tb.dut._log.warning(f"reg: {reg:20s} val: {reg_val:>8d}, expect: {value:>8d}")
+        assert reg_val == value, \
+            f"write {reg} mismatch: {reg_val} != {value}"
         reg_val_readback = await tb.read_register(reg)
         assert reg_val_readback == value, \
             f"readback {reg} mismatch: {reg_val_readback} != {value}"
@@ -82,6 +81,7 @@ async def test_read(dut):
         'phs_measured': random.randint(0, 3000),
         'phs_loop_err': random.randint(0, 1000),
     }
+    # set signal values to be read-back and check
     for reg, value in test_regs_dict.items():
         getattr(tb.dut, reg).value = value
         await RisingEdge(tb.dut.s_axi_aclk)
@@ -90,8 +90,32 @@ async def test_read(dut):
     assert reg_val == 1, f"status mismatch: rf_status = 0x{reg_val}"
 
     for reg, value in test_regs_dict.items():
-        reg_val = await tb.read_register(reg)
-        reg_val_expect = getattr(tb.dut, reg).value.integer
-        tb.dut._log.warning(f"reg_val: {reg_val}, expect: {reg_val_expect}")
-        assert reg_val == reg_val_expect, \
-            f"{reg} mismatch: {reg_val} != {reg_val_expect}"
+        reg_val_readback = await tb.read_register(reg)
+        reg_val = getattr(tb.dut, reg).value.integer
+        tb.dut._log.warning(f"reg: {reg:20s} val: {reg_val:>8d}, expect: {value:>8d}")
+        assert reg_val_readback == reg_val == value, \
+            f"{reg} mismatch: {reg_val} != {reg_val}"
+
+
+@cocotb.test(timeout_time=1, timeout_unit='us')
+async def test_trigger_delay(dut):
+    tb = TB(dut)
+    await tb.cycle_reset()
+    trig_delay_cycles = random.randint(0, 30)
+    test_regs_dict = {
+        'trig_sel': 2,  # select external trigger input
+        'trig_divide': 1,  # purposely test divide=0 case
+        'trig_delay': trig_delay_cycles,
+    }
+    for reg, value in test_regs_dict.items():
+        await tb.write_register(reg, value)
+
+    for v in [1, 0]:
+        tb.dut.ext_trigger_in.value = v
+        await RisingEdge(tb.dut.s_axi_aclk)
+    await ClockCycles(tb.dut.s_axi_aclk, trig_delay_cycles)
+    for ix in range(3):
+        await RisingEdge(tb.dut.s_axi_aclk)
+        v = tb.dut.trigger_out.value
+        tb.dut._log.warning(f"dut.trigger_out: {v}")
+        assert v == (ix == 1), "unexpected trigger output"

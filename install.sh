@@ -29,7 +29,7 @@ cd ..
 # see https://discuss.pynq.io/t/how-to-bind-driver-to-rtl-in-pynq3/4890/4
 # Ensure we have the same version of pynqmetadata on all targets.
 sudo -E pip uninstall -y pynqmetadata
-sudo -E pip cache purge
+# sudo -E pip cache purge
 sudo -E pip install pynqmetadata
 
 sudo -E pip install softioc

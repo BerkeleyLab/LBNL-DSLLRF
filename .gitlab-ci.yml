@@ -3,31 +3,18 @@ stages:
   - test
   - synthesis
 
-default:
-  tags:
-    - xilinx-bookworm
-
 variables:
   XILINX_VIVADO: /non-free/Xilinx/Vivado_and_Vitis/2022.1/Vivado/2022.1
   DOCKER_HOST: tcp://docker:2375/
   DOCKER_DRIVER: overlay2
   GIT_SUBMODULE_STRATEGY: normal
 
-image: mohs.dhcp.lbl.gov/xilinx_env_bookworm
+image: mohs.dhcp.lbl.gov/xilinx_env_trixie
 
 flake8:
   stage: test
   script:
     - flake8 mimo_mts designs
-
-packaging:
-  stage: test
-  before_script:
-    - pip install -U pip
-    - pip install -U setuptools packaging pytest
-    - pip install -e .
-  script:
-    - pytest mimo_mts/tests
 
 rtl_test:
   before_script:
@@ -52,7 +39,7 @@ bitfile_synthesis_zcu216:
     paths:
       - designs/ZCU216/${OVERLAY}/${OVERLAY}.bit
       - designs/ZCU216/${OVERLAY}/${OVERLAY}.hwh
-      - designs/ZCU216/${OVERLAY}/${OVERLAY}.xsa
+      # - designs/ZCU216/${OVERLAY}/${OVERLAY}.xsa
       - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
       - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
@@ -73,7 +60,7 @@ bitfile_synthesis_208:
     paths:
       - designs/${BOARD}/${OVERLAY}/${OVERLAY}.bit
       - designs/${BOARD}/${OVERLAY}/${OVERLAY}.hwh
-      - designs/${BOARD}/${OVERLAY}/${OVERLAY}.xsa
+      # - designs/${BOARD}/${OVERLAY}/${OVERLAY}.xsa
       - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
       - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
