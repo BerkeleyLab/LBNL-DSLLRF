@@ -3106,7 +3106,7 @@ proc create_root_design { parentCell } {
      return 1
    }
     set_property -dict [ list \
-   CONFIG.EVCODE1 {36} \
+   CONFIG.EVCODE1 {24} \
  ] $axil_evr_0
 
   # Create instance: axil_llrf_0, and set properties
