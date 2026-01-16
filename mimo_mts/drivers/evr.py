@@ -16,8 +16,8 @@ class EVR(DefaultIP):
         super().__init__(description=description)
 
     def check_frequencies(self,
-                          ref_freq_expect=156.1375,
-                          rx_freq_expect=499.64/4):
+                          ref_freq_expect=156.25,
+                          rx_freq_expect=500/4):
         """Diagnostic function to check the GTY frequencies"""
         self._check_freq(self.gt_ref_freq_mhz, ref_freq_expect)
         self._check_freq(self.gt_rx_freq_mhz, rx_freq_expect)

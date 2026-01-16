@@ -24,7 +24,7 @@ all: $(OVERLAY).bit $(OVERLAY).hwh check_timing
 
 $(PROJECT): $(OVERLAY).xdc $(RTL_SRC)
 	XILINX_IP_REPO_PATH="$(IP_DIR)" XILINX_BOARD_REPO_PATH="$(BOARD_FILES_DIR)" $(VIVADO) -source $(SCRIPT_DIR)/proj.tcl -tclargs \
-	$(BOARD) $(OVERLAY) $(TCL_SRC) $(OVERLAY).xdc $(RTL_SRC)
+	$(BOARD) $(OVERLAY) $(TCL_SRC) $(OVERLAY).xdc $(GT_SRC) $(REFCLK_FREQ) $(RTL_SRC)
 
 $(OVERLAY).bit: $(PROJECT)
 	$(VIVADO) -source $(SCRIPT_DIR)/build_bitstream.tcl -tclargs $(OVERLAY) $(OVERLAY) $(JOBS)

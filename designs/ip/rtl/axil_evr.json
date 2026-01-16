@@ -4,8 +4,14 @@
         "access": "read-write",
         "size": 32
     },
-    "gt_evr_status": {
+    "evcode": {
         "address_offset": 4,
+        "access": "read-write",
+        "size": 8,
+        "description": "EVR event1 value"
+    },
+    "gt_evr_status": {
+        "address_offset": 8,
         "access": "read-only",
         "description": "GT EVR status register",
         "size": 32,
@@ -31,43 +37,43 @@
         }
     },
     "gt_reset_count": {
-        "address_offset": 8,
+        "address_offset": 12,
         "access": "read-only",
         "size": 32,
         "description": "Number of resets issued to GT to align EVR"
     },
     "evr_timestamp_valid": {
-        "address_offset": 12,
+        "address_offset": 16,
         "access": "read-only",
         "size": 32,
         "description": "EVR timestamp valid"
     },
     "evr_event_count": {
-        "address_offset": 16,
+        "address_offset": 20,
         "access": "read-only",
         "size": 32,
         "description": "EVR event1 count"
     },
     "evr_timestamp_lo": {
-        "address_offset": 20,
+        "address_offset": 24,
         "access": "read-only",
         "size": 32,
         "description": "EVR timestamp low 32 bits"
     },
     "evr_timestamp_hi": {
-        "address_offset": 24,
+        "address_offset": 28,
         "access": "read-only",
         "size": 32,
         "description": "EVR timestamp high 32 bits"
     },
     "gt_ref_freq": {
-        "address_offset": 28,
+        "address_offset": 32,
         "access": "read-only",
         "size": 32,
-        "description": "GT referece clock, SI570 frequency counter"
+        "description": "GT reference clock, SI570 frequency counter"
     },
     "gt_rx_freq": {
-        "address_offset": 32,
+        "address_offset": 36,
         "access": "read-only",
         "size": 32,
         "description": "GT RX CDR frequency counter"

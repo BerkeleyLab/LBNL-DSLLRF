@@ -147,4 +147,24 @@ ol_configs = {
             'decimation': 2
         }
     },
+    'CONFIG_EVR_LBL208': {
+        'bitfile_name': files(overlays).joinpath('config_evr.bit'),
+        'board': lbl208,
+        'clk104_tcs': {
+            'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0_DIST.tcs'),
+            'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+            'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+        },
+        'si570_freq_mhz': 156.1375,
+    },
+    'CONFIG_EVR_ZCU208': {
+        'bitfile_name': files(overlays).joinpath('config_evr.bit'),
+        'board': zcu208,
+        'clk104_tcs': {
+            'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
+            'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+            'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+        },
+        'si570_freq_mhz': 156.25,
+    },
 }
