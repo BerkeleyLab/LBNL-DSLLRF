@@ -2888,9 +2888,6 @@ proc create_root_design { parentCell } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-    set_property -dict [ list \
-   CONFIG.EVCODE1 {36} \
- ] $axil_evr_0
 
   # Create instance: axil_llrf_0, and set properties
   set block_name axil_llrf

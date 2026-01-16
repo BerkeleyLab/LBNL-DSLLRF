@@ -30,11 +30,11 @@ class MimoMtsOverlay(Overlay):
         if 'clk104_tcs' in ol_info:
             self.clk104 = CLK104Config(**ol_info['clk104_tcs'])
 
-        self.mixer_cfg = ol_info['rfdc']['mixer']
-        self.mts_cfg = ol_info['rfdc']['mts']
         PL.reset()
         super().__init__(str(ol_info['bitfile_name']), **kwargs)
-        if "rfdc" in self.ip_dict:
+        if "rfdc" in self.ip_dict and "rfdc" in ol_info:
+            self.mixer_cfg = ol_info['rfdc']['mixer']
+            self.mts_cfg = ol_info['rfdc']['mts']
             self._initialize_dev()
             self._initialize_memories()
             self._initialize_mts()

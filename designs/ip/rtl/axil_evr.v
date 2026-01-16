@@ -1,6 +1,5 @@
 module axil_evr #(
     parameter GT_TYPE = "GTY",
-    parameter integer EVCODE1 = 5,
     parameter integer FCNT_WIDTH = 24,  // freq_count update rate: 100M / 2**24 = 5.96 Hz.
     parameter integer DATA_WIDTH  = 32,
     parameter integer ADDR_WIDTH  = 8
@@ -50,7 +49,7 @@ module axil_evr #(
     output wire [63:0] live_ts_dsp
 );
 
-    localparam integer N_REGS_OUT = 1;
+    localparam integer N_REGS_OUT = 2;
     localparam integer N_REGS_INP = 8;
     // Instantiate the AXI-Lite CSR module
     wire [N_REGS_OUT*DATA_WIDTH-1:0] csr_out;
@@ -133,21 +132,23 @@ module axil_evr #(
         .rxcharisk          (evr_charisk)
     );
 
+    wire [7:0] evcode;
     wire [63:0] evr_live_ts;
     timing_core #(
-        .EVCODE1(EVCODE1)
+        .SYSCLK_FREQUENCY(100000000)
     ) timing_core (
         .evr_clk             (evr_clk),
         .evr_rxd             (evr_chars),
         .evr_rxk             (evr_charisk),
-        .event1_evr          (event1_evr),
+        .evcode_evr          (evcode),
+        .event_evr           (event1_evr),
         .sys_clk             (s_axi_aclk),
         .event1_cnt_sys      (evr_evcnt),
         .ts_valid_sys        (evr_timestamp_valid),
         .live_ts_sys         (evr_live_ts),
         .dsp_clk             (dsp_clk),
         .live_ts_dsp         (live_ts_dsp),
-        .event1_dsp          (event1_dsp)
+        .event_dsp           (event1_dsp)
     );
 
     freq_count #(
@@ -185,7 +186,9 @@ module axil_evr #(
     // 6        [31:0]    RO      gt_ref_freq
     // 7        [31:0]    RO      gt_rx_freq
     // 8        [0:0]     WO      reset_all
+    // 9        0x24      RW      evcode
     assign reset_all = csr_out_regs[0][0]; // Reset signal from CSR register
+    assign evcode    = csr_out_regs[1][7:0]; // Evcode from CSR register
     assign csr_inp_regs[0] = gt_evr_status;
     assign csr_inp_regs[1] = gt_rx_reset_cnt;
     assign csr_inp_regs[2] = evr_timestamp_valid;

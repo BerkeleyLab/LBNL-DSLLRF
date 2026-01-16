@@ -21,4 +21,5 @@ results.xml
 *.vvp
 *cordicg_b22.v
 *.egg-info/
+*_test.ipynb/
 build/

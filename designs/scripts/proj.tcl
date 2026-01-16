@@ -1,33 +1,45 @@
-if { $argc < 5 } {
+if { $argc < 6 } {
     puts "Not enough arguments"
-    puts "Usage: vivado -mode batch -nojou -nolog -source proj.tcl -tclargs <board_id> <proj_name> <bd_script.tcl> [opt.tcl] <project_xdc> <source_files...>"
+    puts "Usage: vivado -mode batch -nojou -nolog -source proj.tcl -tclargs <board_id> <proj_name> <bd_script.tcl> <project_xdc> [opt.tcl] [REFCLK_FREQ] <source_files...> "
     exit
 }
 
 # Set the required arguments
 set board_id [lindex $argv 0]
-set proj_name [lindex $argv 1]
-set bd_script [lindex $argv 2]
+puts "Board ID: $board_id"
 
-# Initialize optional arguments
-set opt_tcl ""
-# Determine if the optional TCL script is provided
-if { [string match "*.tcl" [lindex $argv 3]] } {
-    set opt_tcl [lindex $argv 3]
-    set proj_xdc [lindex $argv 4]
-    set proj_src [lrange $argv 5 end]
+set proj_name [lindex $argv 1]
+puts "Project Name: $proj_name"
+
+set bd_script [lindex $argv 2]
+puts "Block Design Script: $bd_script"
+
+set proj_xdc [lindex $argv 3]
+puts "Project XDC: $proj_xdc"
+
+set proj_src [lrange $argv 4 end]
+
+if {[llength $proj_src] > 0 && [string match *.tcl [lindex $proj_src 0]]} {
+    set opt_tcl [lindex $proj_src 0]
+    set proj_src [lrange $proj_src 1 end]
+    if {[llength $proj_src] == 0 || ![string is double [lindex $proj_src 0]]} {
+        puts "Error: REFCLK_FREQ must be provided with opt_tcl"
+        exit
+    }
+    set REFCLK_FREQ [lindex $proj_src 0]
+    set proj_src [lrange $proj_src 1 end]
+    puts "Optional TCL script $opt_tcl"
+    puts "REFCLK_FREQ: $REFCLK_FREQ MHz"
 } else {
-    set proj_xdc [lindex $argv 3]
-    set proj_src [lrange $argv 4 end]
+    set opt_tcl ""
+    set REFCLK_FREQ ""
+    if {[llength $proj_src] > 0 && [string is double [lindex $proj_src 0]]} {
+        puts "Error: REFCLK_FREQ must be provided with opt_tcl"
+        exit
+    }
 }
 
-puts "Board ID: $board_id"
-puts "Project Name: $proj_name"
-puts "Block Design Script: $bd_script"
-puts "Optional TCL Script: $opt_tcl"
-puts "Project XDC: $proj_xdc"
 puts "Source Files: $proj_src"
-
 set bd_name $proj_name.bd
 set wrapper_name ${proj_name}_wrapper
 # Get IP repos from the environment
@@ -161,7 +173,7 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 # Source optional TCL if provided
 if { $opt_tcl != "" } {
     puts "Sourcing optional TCL script: $opt_tcl"
-    source -quiet $opt_tcl
+    source $opt_tcl
 } else {
     puts "No optional TCL script provided."
 }
@@ -174,7 +186,7 @@ source -quiet $bd_script
 set_property REGISTERED_WITH_MANAGER "1" [get_files $bd_name]
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files $bd_name]
 
-#call make_wrapper to create wrapper files
+# call make_wrapper to create wrapper files
 set wrapper_path [make_wrapper -fileset sources_1 -files [ get_files -norecurse $bd_name] -top]
 add_files -norecurse -fileset sources_1 $wrapper_path
 
