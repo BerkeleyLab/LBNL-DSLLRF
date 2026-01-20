@@ -37,9 +37,9 @@ bitfile_synthesis_zcu216:
     expire_in: 4 weeks
     when: always
     paths:
-      - designs/ZCU216/${OVERLAY}/${OVERLAY}.bit
-      - designs/ZCU216/${OVERLAY}/${OVERLAY}.hwh
-      # - designs/ZCU216/${OVERLAY}/${OVERLAY}.xsa
+      - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}.bit
+      - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}.hwh
+      # - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}.xsa
       - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
       - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
@@ -58,9 +58,9 @@ bitfile_synthesis_208:
     expire_in: 4 weeks
     when: always
     paths:
-      - designs/${BOARD}/${OVERLAY}/${OVERLAY}.bit
-      - designs/${BOARD}/${OVERLAY}/${OVERLAY}.hwh
-      # - designs/${BOARD}/${OVERLAY}/${OVERLAY}.xsa
+      - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}.bit
+      - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}.hwh
+      # - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}.xsa
       - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
       - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:

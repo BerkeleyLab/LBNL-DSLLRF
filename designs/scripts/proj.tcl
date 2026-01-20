@@ -1,45 +1,234 @@
-if { $argc < 6 } {
-    puts "Not enough arguments"
-    puts "Usage: vivado -mode batch -nojou -nolog -source proj.tcl -tclargs <board_id> <proj_name> <bd_script.tcl> <project_xdc> [opt.tcl] [REFCLK_FREQ] <source_files...> "
-    exit
+#------------------------------------------------------------------------------
+# Vivado Synthesis Script with Command Line Argument Parsing
+#------------------------------------------------------------------------------
+
+proc parse_args {argv} {
+    # Initialize argument dictionary with defaults
+    set args_dict [dict create \
+        board_id    "" \
+        proj_name   "" \
+        bd_script   "" \
+        proj_xdc    "" \
+        rtl_files   {} \
+        ip_scripts  {} \
+        output_dir  "./_xilinx" \
+        num_jobs    4 \
+    ]
+
+    set i 0
+    set argc [llength $argv]
+
+    while {$i < $argc} {
+        set arg [lindex $argv $i]
+
+        switch -exact -- $arg {
+            "-board_id" {
+                incr i
+                if {$i >= $argc} {
+                    error "Missing value for -board_id"
+                }
+                dict set args_dict board_id [lindex $argv $i]
+            }
+            "-proj_name" {
+                incr i
+                if {$i >= $argc} {
+                    error "Missing value for -proj_name"
+                }
+                dict set args_dict proj_name [lindex $argv $i]
+            }
+            "-bd_script" {
+                incr i
+                if {$i >= $argc} {
+                    error "Missing value for -bd_script"
+                }
+                dict set args_dict bd_script [lindex $argv $i]
+            }
+            "-proj_xdc" {
+                incr i
+                if {$i >= $argc} {
+                    error "Missing value for -proj_xdc"
+                }
+                dict set args_dict proj_xdc [lindex $argv $i]
+            }
+            "-rtl_files" {
+                incr i
+                if {$i >= $argc} {
+                    error "Missing value for -rtl_files"
+                }
+                # Parse comma-separated or space-separated list
+                set file_list [split [lindex $argv $i] ","]
+                set clean_list {}
+                foreach f $file_list {
+                    set f [string trim $f]
+                    if {$f ne ""} {
+                        lappend clean_list $f
+                    }
+                }
+                dict set args_dict rtl_files $clean_list
+            }
+            "-ip_scripts" {
+                incr i
+                if {$i >= $argc} {
+                    error "Missing value for -ip_scripts"
+                }
+                # Parse comma-separated or space-separated list (optional)
+                set script_list [split [lindex $argv $i] ","]
+                set clean_list {}
+                foreach s $script_list {
+                    set s [string trim $s]
+                    if {$s ne ""} {
+                        lappend clean_list $s
+                    }
+                }
+                dict set args_dict ip_scripts $clean_list
+            }
+            "-output_dir" {
+                incr i
+                if {$i >= $argc} {
+                    error "Missing value for -output_dir"
+                }
+                dict set args_dict output_dir [lindex $argv $i]
+            }
+            "-num_jobs" {
+                incr i
+                if {$i >= $argc} {
+                    error "Missing value for -num_jobs"
+                }
+                dict set args_dict num_jobs [lindex $argv $i]
+            }
+            "-help" {
+                print_usage
+                exit 0
+            }
+            default {
+                puts "WARNING: Unknown argument '$arg', ignoring."
+            }
+        }
+        incr i
+    }
+
+    return $args_dict
 }
 
-# Set the required arguments
-set board_id [lindex $argv 0]
-puts "Board ID: $board_id"
-
-set proj_name [lindex $argv 1]
-puts "Project Name: $proj_name"
-
-set bd_script [lindex $argv 2]
-puts "Block Design Script: $bd_script"
-
-set proj_xdc [lindex $argv 3]
-puts "Project XDC: $proj_xdc"
-
-set proj_src [lrange $argv 4 end]
-
-if {[llength $proj_src] > 0 && [string match *.tcl [lindex $proj_src 0]]} {
-    set opt_tcl [lindex $proj_src 0]
-    set proj_src [lrange $proj_src 1 end]
-    if {[llength $proj_src] == 0 || ![string is double [lindex $proj_src 0]]} {
-        puts "Error: REFCLK_FREQ must be provided with opt_tcl"
-        exit
-    }
-    set REFCLK_FREQ [lindex $proj_src 0]
-    set proj_src [lrange $proj_src 1 end]
-    puts "Optional TCL script $opt_tcl"
-    puts "REFCLK_FREQ: $REFCLK_FREQ MHz"
-} else {
-    set opt_tcl ""
-    set REFCLK_FREQ ""
-    if {[llength $proj_src] > 0 && [string is double [lindex $proj_src 0]]} {
-        puts "Error: REFCLK_FREQ must be provided with opt_tcl"
-        exit
-    }
+#------------------------------------------------------------------------------
+# Procedure: print_usage
+# Description: Prints help message
+#------------------------------------------------------------------------------
+proc print_usage {} {
+    puts ""
+    puts "Usage: vivado -mode batch -source synth_script.tcl -tclargs \[options\]"
+    puts ""
+    puts "Required Arguments:"
+    puts "  -board_id <id>        Target board/part identifier (e.g., xc7a100tcsg324-1)"
+    puts "  -proj_name <name>     Project name"
+    puts "  -bd_script <file>     Block design Tcl script path"
+    puts "  -proj_xdc <file>      Constraints file (.xdc) path"
+    puts "  -rtl_files <list>     Comma-separated list of RTL source files"
+    puts ""
+    puts "Optional Arguments:"
+    puts "  -ip_scripts <list>    Comma-separated list of IP generation Tcl scripts"
+    puts "  -output_dir <dir>     Output directory (default: ./output)"
+    puts "  -num_jobs <n>         Number of parallel jobs (default: 4)"
+    puts "  -help                 Print this help message"
+    puts ""
+    puts "Example:"
+    puts "  vivado -mode batch -source synth_script.tcl -tclargs \\"
+    puts "    -board_id zcu_208 \\"
+    puts "    -proj_name my_project \\"
+    puts "    -bd_script ./scripts/bd_design.tcl \\"
+    puts "    -proj_xdc ./constraints/top.xdc \\"
+    puts "    -rtl_files \"src/top.v,src/module_a.v,src/module_b.sv\" \\"
+    puts "    -ip_scripts \"ip/clk_wiz.tcl,ip/fifo_gen.tcl\""
+    puts ""
 }
 
-puts "Source Files: $proj_src"
+#------------------------------------------------------------------------------
+# Procedure: validate_args
+# Description: Validates required arguments and file existence
+#------------------------------------------------------------------------------
+proc validate_args {args_dict} {
+    set required_args {board_id proj_name bd_script proj_xdc rtl_files}
+
+    # Define valid board IDs
+    set valid_board_ids {zcu208 lbl208 zcu216}
+    foreach arg $required_args {
+        set val [dict get $args_dict $arg]
+        if {$val eq "" || ($arg eq "rtl_files" && [llength $val] == 0)} {
+            puts "ERROR: Required argument '-$arg' is missing or empty."
+            print_usage
+            exit 1
+        }
+    }
+
+    # Validate board_id against allowed list
+    set board_id [dict get $args_dict board_id]
+    if {[lsearch -exact $valid_board_ids $board_id] == -1} {
+        puts "ERROR: Invalid board_id '$board_id'."
+        puts "       Valid options are: [join $valid_board_ids {, }]"
+        exit 1
+    }
+
+    # Validate file existence
+    set bd_script [dict get $args_dict bd_script]
+    if {![file exists $bd_script]} {
+        puts "ERROR: Block design script not found: $bd_script"
+        exit 1
+    }
+
+    set proj_xdc [dict get $args_dict proj_xdc]
+    if {![file exists $proj_xdc]} {
+        puts "ERROR: Constraints file not found: $proj_xdc"
+        exit 1
+    }
+
+    foreach rtl_file [dict get $args_dict rtl_files] {
+        if {![file exists $rtl_file]} {
+            puts "ERROR: RTL source file not found: $rtl_file"
+            exit 1
+        }
+    }
+
+    foreach ip_script [dict get $args_dict ip_scripts] {
+        if {![file exists $ip_script]} {
+            puts "ERROR: IP script file not found: $ip_script"
+            exit 1
+        }
+    }
+
+    puts "INFO: All arguments validated successfully."
+}
+
+#------------------------------------------------------------------------------
+# Procedure: make_project
+# Description: Main synthesis flow
+#------------------------------------------------------------------------------
+proc make_project {args_dict} {
+    # Extract arguments
+    set board_id   [dict get $args_dict board_id]
+    set proj_name  [dict get $args_dict proj_name]
+    set bd_script  [dict get $args_dict bd_script]
+    set proj_xdc   [dict get $args_dict proj_xdc]
+    set rtl_files  [dict get $args_dict rtl_files]
+    set ip_scripts [dict get $args_dict ip_scripts]
+    set output_dir [dict get $args_dict output_dir]
+    set num_jobs   [dict get $args_dict num_jobs]
+
+    puts "============================================================"
+    puts "Starting Vivado Synthesis Flow"
+    puts "============================================================"
+    puts "Board/Part:    $board_id"
+    puts "Project Name:  $proj_name"
+    puts "BD Script:     $bd_script"
+    puts "XDC File:      $proj_xdc"
+    puts "RTL Files:     $rtl_files"
+    puts "IP Scripts:    $ip_scripts"
+    puts "Output Dir:    $output_dir"
+    puts "Parallel Jobs: $num_jobs"
+    puts "============================================================"
+
+    # Create output directory
+    file mkdir $output_dir
+
 set bd_name $proj_name.bd
 set wrapper_name ${proj_name}_wrapper
 # Get IP repos from the environment
@@ -52,12 +241,6 @@ set_param board.repoPaths [list $board_repo_path]
 ################################################################
 # Check supported platforms
 ################################################################
-set platforms [list "zcu208" "zcu216" "lbl208"]
-if {[lsearch -exact $platforms $board_id] == -1} {
-  puts "The specified board_id '$board_id' is not supported."
-  return 1
-}
-
 switch $board_id {
   "zcu208" {
     set board_part "xilinx.com:zcu208:part0:2.0"
@@ -76,23 +259,11 @@ switch $board_id {
 }
 
 ################################################################
-# Check if script is running in correct Vivado version.
-################################################################
-set scripts_vivado_version 2022.1
-set current_vivado_version [version -short]
-
-if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
-   puts ""
-   catch {common::send_gid_msg -ssname BD::TCL -id 2041 -severity "ERROR" "This script was generated using Vivado <$scripts_vivado_version> and is being run in <$current_vivado_version> of Vivado. Please run the script in Vivado <$scripts_vivado_version> then open the design in Vivado <$current_vivado_version>. Upgrade the design by running \"Tools => Report => Report IP Status...\", then run write_bd_tcl to create an updated script."}
-   return 1
-}
-
-################################################################
 # START
 ################################################################
 
 # Create project
-create_project ${proj_name} ./_xilinx/${proj_name} -part $project_part
+create_project ${proj_name} ${output_dir}/${proj_name} -part $project_part
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
@@ -128,17 +299,11 @@ if { $obj != {} } {
 }
 
 set files [list]
-foreach src $proj_src {
+foreach src $rtl_files {
   lappend files [file normalize $src]
 }
 set obj [get_filesets sources_1]
 add_files -norecurse -fileset $obj $files
-
-# Set 'sources_1' fileset file properties for remote files
-# None
-
-# Set 'sources_1' fileset file properties for local files
-# None
 
 # Set 'sources_1' fileset properties
 # Set 'top' module without auto_set in fileset properties
@@ -170,13 +335,14 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 ################################################################
 # START
 ################################################################
-# Source optional TCL if provided
-if { $opt_tcl != "" } {
-    puts "Sourcing optional TCL script: $opt_tcl"
-    source $opt_tcl
-} else {
-    puts "No optional TCL script provided."
-}
+  # Source IP generation scripts (if any)
+  if {[llength $ip_scripts] > 0} {
+      puts "INFO: Generating IPs from scripts..."
+      foreach ip_script $ip_scripts {
+          puts "INFO:   Sourcing: $ip_script"
+          source $ip_script
+      }
+  }
 
 puts "Sourcing block design script: $bd_script"
 source -quiet $bd_script
@@ -186,9 +352,20 @@ source -quiet $bd_script
 set_property REGISTERED_WITH_MANAGER "1" [get_files $bd_name]
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files $bd_name]
 
-# call make_wrapper to create wrapper files
-set wrapper_path [make_wrapper -fileset sources_1 -files [ get_files -norecurse $bd_name] -top]
-add_files -norecurse -fileset sources_1 $wrapper_path
+# Generate block design output products
+set bd_name [get_bd_designs]
+if {$bd_name ne ""} {
+    puts "INFO: Generating block design output products..."
+    generate_target all [get_files *.bd]
+    make_wrapper -files [get_files -norecurse $bd_name] -top
+
+    # Add the wrapper to the project
+    set bd_wrapper_file [glob -nocomplain $output_dir/$proj_name/$proj_name.gen/sources_1/bd/$proj_name/hdl/${proj_name}_wrapper.v]
+    if {[llength $bd_wrapper_file] > 0} {
+        add_files -norecurse [lindex $bd_wrapper_file 0]
+    }
+}
+set_property top ${proj_name}_wrapper [current_fileset]
 
 update_compile_order -fileset sources_1
 
@@ -509,3 +686,79 @@ move_dashboard_gadget -name {drc_1} -row 2 -col 0
 move_dashboard_gadget -name {timing_1} -row 0 -col 1
 move_dashboard_gadget -name {utilization_2} -row 1 -col 1
 move_dashboard_gadget -name {methodology_1} -row 2 -col 1
+}
+
+################################################################
+# Check if script is running in correct Vivado version.
+################################################################
+proc validate_vivado_version {required_version {mode "exact"}} {
+    set current_version [version -short]
+
+    # Extract major.minor from current version
+    if {![regexp {^(\d+)\.(\d+)} $current_version match curr_major curr_minor]} {
+        puts "ERROR: Unable to parse Vivado version: $current_version"
+        exit 1
+    }
+
+    # Extract major.minor from required version
+    if {![regexp {^(\d+)\.(\d+)} $required_version match req_major req_minor]} {
+        puts "ERROR: Invalid required version format: $required_version"
+        exit 1
+    }
+
+    set version_ok 0
+
+    switch -exact -- $mode {
+        "exact" {
+            if {$curr_major == $req_major && $curr_minor == $req_minor} {
+                set version_ok 1
+            }
+        }
+        "minimum" {
+            if {$curr_major > $req_major} {
+                set version_ok 1
+            } elseif {$curr_major == $req_major && $curr_minor >= $req_minor} {
+                set version_ok 1
+            }
+        }
+        default {
+            puts "ERROR: Invalid version check mode: $mode (use 'exact' or 'minimum')"
+            exit 1
+        }
+    }
+
+    if {!$version_ok} {
+        puts "============================================================"
+        puts "ERROR: Vivado version mismatch!"
+        if {$mode eq "exact"} {
+            puts "       Required version: $required_version (exact)"
+        } else {
+            puts "       Minimum version:  $required_version"
+        }
+        puts "       Current version:  $current_version"
+        puts "============================================================"
+        exit 1
+    }
+
+    puts "INFO: Vivado version $current_version verified (required: $required_version, mode: $mode)"
+}
+
+validate_vivado_version "2022.1"
+
+#------------------------------------------------------------------------------
+# Main Entry Point
+#------------------------------------------------------------------------------
+puts "INFO: Vivado Synthesis Script Started"
+puts "INFO: Vivado Version: [version -short]"
+
+# Parse command line arguments
+set args_dict [parse_args $argv]
+
+# Validate arguments
+validate_args $args_dict
+
+# Make a vivado project
+make_project $args_dict
+
+puts "INFO: Script completed."
+exit 0

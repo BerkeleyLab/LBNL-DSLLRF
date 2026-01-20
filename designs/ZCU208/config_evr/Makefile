@@ -13,7 +13,6 @@ RTL_SRC += $(BEDROCK_DIR)/dsp/freq_count.v $(BEDROCK_DIR)/dsp/freq_gcount.v
 RTL_SRC += $(BEDROCK_DIR)/serial_io/EVG_EVR/tinyEVR.v $(BEDROCK_DIR)/serial_io/EVG_EVR/evr_ts_cdc.v
 RTL_SRC += $(BEDROCK_DIR)/dsp/data_xdomain.v $(BEDROCK_DIR)/dsp/flag_xdomain.v $(BEDROCK_DIR)/dsp/reg_tech_cdc.v
 
-GT_SRC = $(BEDROCK_DIR)/serial_io/EVG_EVR/gt_tcl/evr_gty.tcl
-REFCLK_FREQ = 156.1375
+IP_SCRIPTS = create_evr_gty.tcl
 
 include $(SCRIPT_DIR)/common.mk
