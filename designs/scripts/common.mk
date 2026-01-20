@@ -4,33 +4,70 @@ OVERLAY ?= base
 JOBS    ?= 4
 BOARD	?= zcu208
 
-TCL_SRC += $(OVERLAY).tcl
-PROJECT  = _xilinx/$(OVERLAY)/$(OVERLAY).xpr
+BD_SRC     = $(OVERLAY).tcl
+OUTPUT_DIR = _xilinx
+PROJECT    = $(OUTPUT_DIR)/$(OVERLAY)/$(OVERLAY).xpr
 
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  all           - Build the bitstream, HWH file, and check timing"
+	@echo "  all           - Build the overlay, and check timing"
 	@echo "  block_design  - Create the block design"
-	@echo "  bitstream     - Build the bitstream"
-	@echo "  handoff       - Generate the HWH file"
+	@echo "  overlay.      - Build the overlay"
 	@echo "  check_timing  - Check the timing of the design"
 	@echo "  clean         - Remove generated files"
 	@echo "  help          - Display this help message"
 
 .PHONY: all
-all: $(OVERLAY).bit $(OVERLAY).hwh check_timing
+all: $(OUTPUT_DIR)/$(OVERLAY).bit check_timing
 	echo "Built $(OVERLAY) successfully!";
 
-$(PROJECT): $(OVERLAY).xdc $(RTL_SRC)
-	XILINX_IP_REPO_PATH="$(IP_DIR)" XILINX_BOARD_REPO_PATH="$(BOARD_FILES_DIR)" $(VIVADO) -source $(SCRIPT_DIR)/proj.tcl -tclargs \
-	$(BOARD) $(OVERLAY) $(TCL_SRC) $(OVERLAY).xdc $(GT_SRC) $(REFCLK_FREQ) $(RTL_SRC)
+#------------------------------------------------------------------------------
+# Convert space-separated list to comma-separated
+# Usage: $(call to_comma_list,$(VAR))
+#------------------------------------------------------------------------------
+null  :=
+space := $(null) $(null)
+comma := ,
 
-$(OVERLAY).bit: $(PROJECT)
-	$(VIVADO) -source $(SCRIPT_DIR)/build_bitstream.tcl -tclargs $(OVERLAY) $(OVERLAY) $(JOBS)
+to_comma_list = $(subst $(space),$(comma),$(strip $(1)))
 
-$(OVERLAY).hwh: $(PROJECT)
-	$(VIVADO) -source $(SCRIPT_DIR)/handoff.tcl -tclargs $(OVERLAY) $(OVERLAY)
+# Handle optional IP_SCRIPTS (only add argument if not empty)
+ifneq ($(strip $(IP_SCRIPTS)),)
+    IP_SCRIPTS_ARG := -ip_scripts "$(call to_comma_list,$(IP_SCRIPTS))"
+else
+    IP_SCRIPTS_ARG :=
+endif
+
+#------------------------------------------------------------------------------
+# Build comma-separated argument strings
+#------------------------------------------------------------------------------
+RTL_FILES_ARG := $(call to_comma_list,$(RTL_SRC))
+# Handle optional IP_SCRIPTS (only add argument if not empty)
+ifneq ($(strip $(IP_SCRIPTS)),)
+    IP_SCRIPTS_ARG := -ip_scripts "$(call to_comma_list,$(IP_SCRIPTS))"
+else
+    IP_SCRIPTS_ARG :=
+endif
+
+$(PROJECT): $(OVERLAY).xdc $(RTL_SRC) $(IP_SCRIPTS)
+	XILINX_IP_REPO_PATH="$(IP_DIR)" XILINX_BOARD_REPO_PATH="$(BOARD_FILES_DIR)" \
+	$(VIVADO) -source $(SCRIPT_DIR)/proj.tcl -tclargs \
+		-board_id $(BOARD) \
+		-proj_name $(OVERLAY) \
+		-bd_script $(BD_SRC) \
+		-proj_xdc $(OVERLAY).xdc \
+		-rtl_files $(RTL_FILES_ARG) \
+		$(IP_SCRIPTS_ARG) \
+		-output_dir $(OUTPUT_DIR) \
+		-num_jobs $(JOBS)
+
+$(OUTPUT_DIR)/$(OVERLAY).bit: $(PROJECT)
+	$(VIVADO) -source $(SCRIPT_DIR)/build_overlay.tcl -tclargs \
+		-proj_name $(OVERLAY) \
+		-output_dir $(OUTPUT_DIR) \
+		-num_jobs $(JOBS) \
+		-handoff
 
 .PHONY: check_timing
 check_timing:
@@ -39,13 +76,9 @@ check_timing:
 .PHONY: block_design
 block_design: $(PROJECT)
 
-.PHONY: bitstream
-bitstream: $(OVERLAY).bit
-
-.PHONY: handoff
-handoff: $(OVERLAY).hwh
+.PHONY: overlay
+overlay: $(OUTPUT_DIR)/$(OVERLAY).bit
 
 .PHONY: clean
 clean::
-	rm -rf _xilinx .Xil
-	rm -f $(OVERLAY).xsa $(OVERLAY).hwh $(OVERLAY).bit
+	rm -rf $(OUTPUT_DIR) .Xil

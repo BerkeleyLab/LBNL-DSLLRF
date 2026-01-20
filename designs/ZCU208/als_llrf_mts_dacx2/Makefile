@@ -22,8 +22,7 @@ RTL_SRC += $(BEDROCK_DIR)/dsp/data_xdomain.v $(BEDROCK_DIR)/dsp/flag_xdomain.v $
 RTL_SRC += cordicg_b22.v
 RTL_SRC += $(BEDROCK_DIR)/cordic/addsubg.v $(BEDROCK_DIR)/cordic/cstageg.v
 
-GT_SRC = $(BEDROCK_DIR)/serial_io/EVG_EVR/gt_tcl/evr_gty.tcl
-REFCLK_FREQ = 156.1375
+IP_SCRIPTS = create_evr_gty.tcl
 
 include $(SCRIPT_DIR)/common.mk
 
