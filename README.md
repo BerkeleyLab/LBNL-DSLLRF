@@ -46,10 +46,25 @@ This work was presented as in the [Low Level 2025 Radio Frequency Workshop](http
    ```
 
     See [details](https://pynq.readthedocs.io/en/latest/appendix/sdcard.html).
+    The SD card provides the firware for the on-board microcontroller running Linux and facilitating acess to the RFSoC. 
 
 3. Boot. Clone this repo and run `install.sh`.
+   ```bash
+    ./install.sh
+   ```
 
     This includes overlay drivers and EPICS IOCs installation.
+
+    SSH into the Linux machine running on the microcontroller by accessing the Xilinx account (username = password = 'xilinx' at the default ip address:
+    ```bash
+    ssh xilinx@192.168.2.99
+    ```
+    This step requires that the board has an open connection to the internet to clone a copy of PYNQ compatible with this firmware. 
+    Clone the repository into the jupyter_notebooks directory. 
+
+    In this repository, click the green check mark at the top right to see the latest jobs for each hardware target. 
+    Download the artifact of interest and copy the bitfile and hardware description file into the board in: 
+    /home/xilinx/jupyter_notebooks/pynq_llrf/mimo_mts/overlays/
 
 4. [Optional] Change hostname. Example:
 
