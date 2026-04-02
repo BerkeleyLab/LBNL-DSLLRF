@@ -19,11 +19,10 @@ sudo bash qemu.sh
 popd
 cd ..
 
-# Create a device-tree overlay to access PL-DRAM
-# sudo apt-get update -y
-# sudo apt-get install -y device-tree-compiler
-# make -C designs/dts ddr4.dtbo
-# cp designs/dts/ddr4.dtbo mimo_mts/
+# Compile device-tree overlays, which can be referred to in config.py
+sudo apt-get update -y
+sudo apt-get install -y device-tree-compiler
+make -C designs/dts install
 
 # Update pynqmetadata to allow custom overlay drivers
 # see https://discuss.pynq.io/t/how-to-bind-driver-to-rtl-in-pynq3/4890/4
