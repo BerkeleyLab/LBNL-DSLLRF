@@ -97,6 +97,9 @@ ol_configs = {
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
         },
+        # The CLK104 needs an overlay because the SPI CS-signals and hence the chip
+        # addressing indices changed in the current hardware revision
+        'device_tree_overlays': [files(overlays).joinpath('lmxadc.dtbo')],
         'si570_freq_mhz': 156.1375,
         'rfdc': {
             'adc_decimation_factor': 8,

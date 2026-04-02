@@ -23,3 +23,5 @@ results.xml
 *.egg-info/
 *_test.ipynb/
 build/
+designs/dts/main-overlay.dts
+mimo_mts/overlays/

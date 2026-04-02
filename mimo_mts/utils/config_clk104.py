@@ -6,7 +6,7 @@ from .config_tics import LMKConfig, LMXConfig
 
 class CLK104Config:
     def __init__(self,
-                 lmk_tcs='LMK04828.tcs',
+                 lmk_tcs='LMK04828_500M_CLKin0_DIST.tcs',
                  lmxadc_tcs='LMX2594.tcs',
                  lmxdac_tcs='LMX2594.tcs',
                  write=True):

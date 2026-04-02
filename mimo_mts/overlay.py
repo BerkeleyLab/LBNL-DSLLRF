@@ -1,4 +1,4 @@
-from pynq import Overlay, MMIO, PL
+from pynq import Overlay, MMIO, PL, DeviceTreeSegment
 from mimo_mts.utils.config_clk104 import CLK104Config
 from mimo_mts.utils.config_si570 import SI570
 from mimo_mts.drivers.evr import EVR
@@ -23,6 +23,20 @@ class MimoMtsOverlay(Overlay):
         self.ol_info = ol_info = ol_configs[config]
         assert Path(ol_info['bitfile_name']).exists(), f"File {ol_info['bitfile_name']} not found."
         self.board = ol_info['board']
+
+        # Load device-tree overlays before the kernel-modules and drivers get loaded
+        if 'device_tree_overlays' in ol_info:
+            for dtsb_file in ol_info['device_tree_overlays']:
+                dts = DeviceTreeSegment(str(dtsb_file))
+                if dts.is_dtbo_applied():
+                    print("Device-tree overlay is already applied:", dtsb_file)
+                else:
+                    print("Inserting device-tree overlay:", dtsb_file)
+                    dts.insert()
+
+        PL.reset()
+        super().__init__(str(ol_info['bitfile_name']), **kwargs)
+
         if 'si570_freq_mhz' in ol_info:
             with SI570() as si570:
                 si570.set_freq(ol_info['si570_freq_mhz'])
@@ -30,8 +44,6 @@ class MimoMtsOverlay(Overlay):
         if 'clk104_tcs' in ol_info:
             self.clk104 = CLK104Config(**ol_info['clk104_tcs'])
 
-        PL.reset()
-        super().__init__(str(ol_info['bitfile_name']), **kwargs)
         if "rfdc" in self.ip_dict and "rfdc" in ol_info:
             self.mixer_cfg = ol_info['rfdc']['mixer']
             self.mts_cfg = ol_info['rfdc']['mts']
