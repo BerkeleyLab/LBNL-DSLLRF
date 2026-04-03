@@ -1,3 +1,17 @@
+// Enable support for CLK104A board
+// Attach lmx2594 driver (ADC clock) to chip-select output 0 instead of 3
+//
+// CLK104 uses SC18IS602, an obsolete I2C to SPI translator with 4 CS outputs.
+// SPI CS mapping is:
+// 1 = LMK04828
+// 2 = LMX2594 (DAC clock)
+// 3 = LMX2594 (ADC clock)
+//
+// CKL104A uses the mostly pin compatible SC18IS606, with only 3 CS outputs.
+// SPI CS mapping is:
+// 0 = LMX2594 (ADC clock)
+// 1 = LMK04828
+// 2 = LMX2594 (DAC clock)
 /dts-v1/;
 /plugin/;
 / {

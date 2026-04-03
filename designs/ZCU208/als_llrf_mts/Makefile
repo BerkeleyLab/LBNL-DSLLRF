@@ -13,6 +13,7 @@ RTL_SRC	+= $(RTL_DIR)/dsp_core.v $(RTL_DIR)/pi_scalar.v
 RTL_SRC	+= $(RTL_DIR)/axil_csr.v
 RTL_SRC	+= $(RTL_DIR)/axil_evr.v
 RTL_SRC += $(RTL_DIR)/pulse_gen.v
+RTL_SRC += $(RTL_DIR)/frontend_control_axi.v
 RTL_SRC += $(BEDROCK_DIR)/serial_io/EVG_EVR/evr_gt_wrapper.v
 RTL_SRC += $(BEDROCK_DIR)/serial_io/EVG_EVR/evrSROC.v
 RTL_SRC += $(BEDROCK_DIR)/serial_io/EVG_EVR/timing_core.v

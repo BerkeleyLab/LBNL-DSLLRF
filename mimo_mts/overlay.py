@@ -4,13 +4,14 @@ from mimo_mts.utils.config_si570 import SI570
 from mimo_mts.drivers.evr import EVR
 from mimo_mts.drivers.rf_control import RfControl
 from mimo_mts.drivers.clocktreeMTS import ClockTreeMTS
+from mimo_mts.drivers.frontend_control import FrontendControl
 from mimo_mts.config import ol_configs
 
 import xrfdc
 import numpy as np
 from pathlib import Path
 from pprint import pformat
-__all__ = ('EVR', 'RfControl', 'ClockTreeMTS')
+__all__ = ('EVR', 'RfControl', 'ClockTreeMTS', 'FrontendControl')
 
 
 class MimoMtsOverlay(Overlay):
@@ -69,6 +70,9 @@ class MimoMtsOverlay(Overlay):
 
         if 'axil_evr_0' in self.ip_dict:
             self.evr = self.axil_evr_0
+
+        if 'frontend_control_axi_0' in self.ip_dict:
+            self.ffe = self.frontend_control_axi_0
 
         if self.board.converters_per_tile == 2:
             self.dac_blocks = np.array([
