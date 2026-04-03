@@ -1,0 +1,454 @@
+{
+    "csr_bases": {
+        "spi0": 0,
+        "spi1": 1024,
+        "spi2": 2048,
+        "spi3": 3072,
+        "spi4": 4096,
+        "spi5": 5120,
+        "spi6": 6144,
+        "spi7": 7168
+    },
+    "csr_registers": {
+        "spi0_control": {
+            "address_offset": 0,
+            "size": 4,
+            "access": "read-write",
+            "fields": {
+                "cs": {
+                    "access": "read-write",
+                    "bit_offset": 0,
+                    "bit_width": 1,
+                    "description": "Inverted value of the CS_N pin"
+                },
+                "loopback": {
+                    "access": "read-write",
+                    "bit_offset": 3,
+                    "bit_width": 1,
+                    "description": "Enable loopback mode"
+                },
+                "mode": {
+                    "access": "read-write",
+                    "bit_offset": 4,
+                    "bit_width": 2,
+                    "description": "SPI mode, bit 1 is CPOL, bit 0 is CPHA"
+                },
+                "length": {
+                    "access": "read-write",
+                    "bit_offset": 8,
+                    "bit_width": 8,
+                    "description": "Number of bits to transfer"
+                },
+                "clk_divider": {
+                    "access": "read-write",
+                    "bit_offset": 16,
+                    "bit_width": 16,
+                    "description": "Clock divider, min: 2, even!"
+                }
+            }
+        },
+        "spi0_status": {
+            "address_offset": 4,
+            "size": 4,
+            "access": "read-only",
+            "description": "1 when the transfer is finished"
+        },
+        "spi0_sdo": {
+            "address_offset": 8,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write to start transfer"
+        },
+        "spi0_sdi": {
+            "address_offset": 12,
+            "size": 4,
+            "access": "read-only",
+            "description": "Contains received word after a transfer"
+        },
+        "spi1_control": {
+            "address_offset": 1024,
+            "size": 4,
+            "access": "read-write",
+            "fields": {
+                "cs": {
+                    "access": "read-write",
+                    "bit_offset": 0,
+                    "bit_width": 1,
+                    "description": "Inverted value of the CS_N pin"
+                },
+                "loopback": {
+                    "access": "read-write",
+                    "bit_offset": 3,
+                    "bit_width": 1,
+                    "description": "Enable loopback mode"
+                },
+                "mode": {
+                    "access": "read-write",
+                    "bit_offset": 4,
+                    "bit_width": 2,
+                    "description": "SPI mode, bit 1 is CPOL, bit 0 is CPHA"
+                },
+                "length": {
+                    "access": "read-write",
+                    "bit_offset": 8,
+                    "bit_width": 8,
+                    "description": "Number of bits to transfer"
+                },
+                "clk_divider": {
+                    "access": "read-write",
+                    "bit_offset": 16,
+                    "bit_width": 16,
+                    "description": "Clock divider, min: 2, even!"
+                }
+            }
+        },
+        "spi1_status": {
+            "address_offset": 1028,
+            "size": 4,
+            "access": "read-only",
+            "description": "1 when the transfer is finished"
+        },
+        "spi1_sdo": {
+            "address_offset": 1032,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write to start transfer"
+        },
+        "spi1_sdi": {
+            "address_offset": 1036,
+            "size": 4,
+            "access": "read-only",
+            "description": "Contains received word after a transfer"
+        },
+        "spi2_control": {
+            "address_offset": 2048,
+            "size": 4,
+            "access": "read-write",
+            "fields": {
+                "cs": {
+                    "access": "read-write",
+                    "bit_offset": 0,
+                    "bit_width": 1,
+                    "description": "Inverted value of the CS_N pin"
+                },
+                "loopback": {
+                    "access": "read-write",
+                    "bit_offset": 3,
+                    "bit_width": 1,
+                    "description": "Enable loopback mode"
+                },
+                "mode": {
+                    "access": "read-write",
+                    "bit_offset": 4,
+                    "bit_width": 2,
+                    "description": "SPI mode, bit 1 is CPOL, bit 0 is CPHA"
+                },
+                "length": {
+                    "access": "read-write",
+                    "bit_offset": 8,
+                    "bit_width": 8,
+                    "description": "Number of bits to transfer"
+                },
+                "clk_divider": {
+                    "access": "read-write",
+                    "bit_offset": 16,
+                    "bit_width": 16,
+                    "description": "Clock divider, min: 2, even!"
+                }
+            }
+        },
+        "spi2_status": {
+            "address_offset": 2052,
+            "size": 4,
+            "access": "read-only",
+            "description": "1 when the transfer is finished"
+        },
+        "spi2_sdo": {
+            "address_offset": 2056,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write to start transfer"
+        },
+        "spi2_sdi": {
+            "address_offset": 2060,
+            "size": 4,
+            "access": "read-only",
+            "description": "Contains received word after a transfer"
+        },
+        "spi3_control": {
+            "address_offset": 3072,
+            "size": 4,
+            "access": "read-write",
+            "fields": {
+                "cs": {
+                    "access": "read-write",
+                    "bit_offset": 0,
+                    "bit_width": 1,
+                    "description": "Inverted value of the CS_N pin"
+                },
+                "loopback": {
+                    "access": "read-write",
+                    "bit_offset": 3,
+                    "bit_width": 1,
+                    "description": "Enable loopback mode"
+                },
+                "mode": {
+                    "access": "read-write",
+                    "bit_offset": 4,
+                    "bit_width": 2,
+                    "description": "SPI mode, bit 1 is CPOL, bit 0 is CPHA"
+                },
+                "length": {
+                    "access": "read-write",
+                    "bit_offset": 8,
+                    "bit_width": 8,
+                    "description": "Number of bits to transfer"
+                },
+                "clk_divider": {
+                    "access": "read-write",
+                    "bit_offset": 16,
+                    "bit_width": 16,
+                    "description": "Clock divider, min: 2, even!"
+                }
+            }
+        },
+        "spi3_status": {
+            "address_offset": 3076,
+            "size": 4,
+            "access": "read-only",
+            "description": "1 when the transfer is finished"
+        },
+        "spi3_sdo": {
+            "address_offset": 3080,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write to start transfer"
+        },
+        "spi3_sdi": {
+            "address_offset": 3084,
+            "size": 4,
+            "access": "read-only",
+            "description": "Contains received word after a transfer"
+        },
+        "spi4_control": {
+            "address_offset": 4096,
+            "size": 4,
+            "access": "read-write",
+            "fields": {
+                "cs": {
+                    "access": "read-write",
+                    "bit_offset": 0,
+                    "bit_width": 1,
+                    "description": "Inverted value of the CS_N pin"
+                },
+                "loopback": {
+                    "access": "read-write",
+                    "bit_offset": 3,
+                    "bit_width": 1,
+                    "description": "Enable loopback mode"
+                },
+                "mode": {
+                    "access": "read-write",
+                    "bit_offset": 4,
+                    "bit_width": 2,
+                    "description": "SPI mode, bit 1 is CPOL, bit 0 is CPHA"
+                },
+                "length": {
+                    "access": "read-write",
+                    "bit_offset": 8,
+                    "bit_width": 8,
+                    "description": "Number of bits to transfer"
+                },
+                "clk_divider": {
+                    "access": "read-write",
+                    "bit_offset": 16,
+                    "bit_width": 16,
+                    "description": "Clock divider, min: 2, even!"
+                }
+            }
+        },
+        "spi4_status": {
+            "address_offset": 4100,
+            "size": 4,
+            "access": "read-only",
+            "description": "1 when the transfer is finished"
+        },
+        "spi4_sdo": {
+            "address_offset": 4104,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write to start transfer"
+        },
+        "spi4_sdi": {
+            "address_offset": 4108,
+            "size": 4,
+            "access": "read-only",
+            "description": "Contains received word after a transfer"
+        },
+        "spi5_control": {
+            "address_offset": 5120,
+            "size": 4,
+            "access": "read-write",
+            "fields": {
+                "cs": {
+                    "access": "read-write",
+                    "bit_offset": 0,
+                    "bit_width": 1,
+                    "description": "Inverted value of the CS_N pin"
+                },
+                "loopback": {
+                    "access": "read-write",
+                    "bit_offset": 3,
+                    "bit_width": 1,
+                    "description": "Enable loopback mode"
+                },
+                "mode": {
+                    "access": "read-write",
+                    "bit_offset": 4,
+                    "bit_width": 2,
+                    "description": "SPI mode, bit 1 is CPOL, bit 0 is CPHA"
+                },
+                "length": {
+                    "access": "read-write",
+                    "bit_offset": 8,
+                    "bit_width": 8,
+                    "description": "Number of bits to transfer"
+                },
+                "clk_divider": {
+                    "access": "read-write",
+                    "bit_offset": 16,
+                    "bit_width": 16,
+                    "description": "Clock divider, min: 2, even!"
+                }
+            }
+        },
+        "spi5_status": {
+            "address_offset": 5124,
+            "size": 4,
+            "access": "read-only",
+            "description": "1 when the transfer is finished"
+        },
+        "spi5_sdo": {
+            "address_offset": 5128,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write to start transfer"
+        },
+        "spi5_sdi": {
+            "address_offset": 5132,
+            "size": 4,
+            "access": "read-only",
+            "description": "Contains received word after a transfer"
+        },
+        "spi6_control": {
+            "address_offset": 6144,
+            "size": 4,
+            "access": "read-write",
+            "fields": {
+                "cs": {
+                    "access": "read-write",
+                    "bit_offset": 0,
+                    "bit_width": 1,
+                    "description": "Inverted value of the CS_N pin"
+                },
+                "loopback": {
+                    "access": "read-write",
+                    "bit_offset": 3,
+                    "bit_width": 1,
+                    "description": "Enable loopback mode"
+                },
+                "mode": {
+                    "access": "read-write",
+                    "bit_offset": 4,
+                    "bit_width": 2,
+                    "description": "SPI mode, bit 1 is CPOL, bit 0 is CPHA"
+                },
+                "length": {
+                    "access": "read-write",
+                    "bit_offset": 8,
+                    "bit_width": 8,
+                    "description": "Number of bits to transfer"
+                },
+                "clk_divider": {
+                    "access": "read-write",
+                    "bit_offset": 16,
+                    "bit_width": 16,
+                    "description": "Clock divider, min: 2, even!"
+                }
+            }
+        },
+        "spi6_status": {
+            "address_offset": 6148,
+            "size": 4,
+            "access": "read-only",
+            "description": "1 when the transfer is finished"
+        },
+        "spi6_sdo": {
+            "address_offset": 6152,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write to start transfer"
+        },
+        "spi6_sdi": {
+            "address_offset": 6156,
+            "size": 4,
+            "access": "read-only",
+            "description": "Contains received word after a transfer"
+        },
+        "spi7_control": {
+            "address_offset": 7168,
+            "size": 4,
+            "access": "read-write",
+            "fields": {
+                "cs": {
+                    "access": "read-write",
+                    "bit_offset": 0,
+                    "bit_width": 1,
+                    "description": "Inverted value of the CS_N pin"
+                },
+                "loopback": {
+                    "access": "read-write",
+                    "bit_offset": 3,
+                    "bit_width": 1,
+                    "description": "Enable loopback mode"
+                },
+                "mode": {
+                    "access": "read-write",
+                    "bit_offset": 4,
+                    "bit_width": 2,
+                    "description": "SPI mode, bit 1 is CPOL, bit 0 is CPHA"
+                },
+                "length": {
+                    "access": "read-write",
+                    "bit_offset": 8,
+                    "bit_width": 8,
+                    "description": "Number of bits to transfer"
+                },
+                "clk_divider": {
+                    "access": "read-write",
+                    "bit_offset": 16,
+                    "bit_width": 16,
+                    "description": "Clock divider, min: 2, even!"
+                }
+            }
+        },
+        "spi7_status": {
+            "address_offset": 7172,
+            "size": 4,
+            "access": "read-only",
+            "description": "1 when the transfer is finished"
+        },
+        "spi7_sdo": {
+            "address_offset": 7176,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write to start transfer"
+        },
+        "spi7_sdi": {
+            "address_offset": 7180,
+            "size": 4,
+            "access": "read-only",
+            "description": "Contains received word after a transfer"
+        }
+    }
+}

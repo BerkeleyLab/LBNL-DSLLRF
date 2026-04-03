@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following
 # module references:
-# axil_evr, axil_llrf, pulse_gen, freq_count, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, axis_adder, dac_streamer
+# axil_evr, axil_llrf, frontend_control_axi, pulse_gen, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, adc_capture, axis_adder, dac_streamer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -173,6 +173,7 @@ if { $bCheckModules == 1 } {
    set list_check_mods "\
 axil_evr\
 axil_llrf\
+frontend_control_axi\
 pulse_gen\
 adc_capture\
 adc_capture\
@@ -2884,13 +2885,13 @@ proc create_hier_cell_clocktreeMTS { parentCell nameHier } {
    CONFIG.JITTER_OPTIONS {PS} \
    CONFIG.JITTER_SEL {Min_O_Jitter} \
    CONFIG.MMCM_BANDWIDTH {HIGH} \
-   CONFIG.MMCM_CLKFBOUT_MULT_F {3.000} \
+   CONFIG.MMCM_CLKFBOUT_MULT_F {6.000} \
    CONFIG.MMCM_CLKIN1_PERIOD {2.000} \
    CONFIG.MMCM_CLKIN2_PERIOD {10.0} \
    CONFIG.MMCM_CLKOUT0_DIVIDE_F {3.000} \
    CONFIG.MMCM_CLKOUT1_DIVIDE {6} \
    CONFIG.MMCM_COMPENSATION {AUTO} \
-   CONFIG.MMCM_DIVCLK_DIVIDE {1} \
+   CONFIG.MMCM_DIVCLK_DIVIDE {2} \
    CONFIG.MMCM_REF_JITTER1 {0.000} \
    CONFIG.MMCM_REF_JITTER2 {0.010} \
    CONFIG.NUM_OUT_CLKS {2} \
@@ -3076,6 +3077,38 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
+  set ADCIO_00 [ create_bd_port -dir O ADCIO_00 ]
+  set ADCIO_01 [ create_bd_port -dir O ADCIO_01 ]
+  set ADCIO_02 [ create_bd_port -dir I ADCIO_02 ]
+  set ADCIO_03 [ create_bd_port -dir O ADCIO_03 ]
+  set ADCIO_04 [ create_bd_port -dir O ADCIO_04 ]
+  set ADCIO_05 [ create_bd_port -dir O ADCIO_05 ]
+  set ADCIO_06 [ create_bd_port -dir I ADCIO_06 ]
+  set ADCIO_07 [ create_bd_port -dir O ADCIO_07 ]
+  set ADCIO_08 [ create_bd_port -dir O ADCIO_08 ]
+  set ADCIO_09 [ create_bd_port -dir O ADCIO_09 ]
+  set ADCIO_10 [ create_bd_port -dir I ADCIO_10 ]
+  set ADCIO_11 [ create_bd_port -dir O ADCIO_11 ]
+  set ADCIO_12 [ create_bd_port -dir O ADCIO_12 ]
+  set ADCIO_13 [ create_bd_port -dir O ADCIO_13 ]
+  set ADCIO_14 [ create_bd_port -dir I ADCIO_14 ]
+  set ADCIO_15 [ create_bd_port -dir O ADCIO_15 ]
+  set DACIO_00 [ create_bd_port -dir O DACIO_00 ]
+  set DACIO_01 [ create_bd_port -dir O DACIO_01 ]
+  set DACIO_02 [ create_bd_port -dir I DACIO_02 ]
+  set DACIO_03 [ create_bd_port -dir O DACIO_03 ]
+  set DACIO_04 [ create_bd_port -dir O DACIO_04 ]
+  set DACIO_05 [ create_bd_port -dir O DACIO_05 ]
+  set DACIO_06 [ create_bd_port -dir I DACIO_06 ]
+  set DACIO_07 [ create_bd_port -dir O DACIO_07 ]
+  set DACIO_08 [ create_bd_port -dir O DACIO_08 ]
+  set DACIO_09 [ create_bd_port -dir O DACIO_09 ]
+  set DACIO_10 [ create_bd_port -dir I DACIO_10 ]
+  set DACIO_11 [ create_bd_port -dir O DACIO_11 ]
+  set DACIO_12 [ create_bd_port -dir O DACIO_12 ]
+  set DACIO_13 [ create_bd_port -dir O DACIO_13 ]
+  set DACIO_14 [ create_bd_port -dir I DACIO_14 ]
+  set DACIO_15 [ create_bd_port -dir O DACIO_15 ]
   set GPIO_LED_0_LS [ create_bd_port -dir O GPIO_LED_0_LS ]
   set TRIG_IN [ create_bd_port -dir I TRIG_IN ]
 
@@ -3111,11 +3144,22 @@ proc create_root_design { parentCell } {
   # Create instance: control_interconnect, and set properties
   set control_interconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 control_interconnect ]
   set_property -dict [ list \
-   CONFIG.NUM_MI {3} \
+   CONFIG.NUM_MI {4} \
    CONFIG.S00_HAS_DATA_FIFO {0} \
    CONFIG.S00_HAS_REGSLICE {3} \
    CONFIG.STRATEGY {1} \
  ] $control_interconnect
+
+  # Create instance: frontend_control_axi_0, and set properties
+  set block_name frontend_control_axi
+  set block_cell_name frontend_control_axi_0
+  if { [catch {set frontend_control_axi_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $frontend_control_axi_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
 
   # Create instance: pulse_gen_0, and set properties
   set block_name pulse_gen
@@ -5062,6 +5106,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net axil_evr_0_gt_rx [get_bd_intf_ports sfp2_1x] [get_bd_intf_pins axil_evr_0/gt_rx]
   connect_bd_intf_net -intf_net axil_llrf_0_m_axis [get_bd_intf_pins axil_llrf_0/m_axis] [get_bd_intf_pins transmitter/s1_axis]
   connect_bd_intf_net -intf_net control_interconnect_M02_AXI [get_bd_intf_pins axil_evr_0/s_axi] [get_bd_intf_pins control_interconnect/M02_AXI]
+  connect_bd_intf_net -intf_net control_interconnect_M03_AXI [get_bd_intf_pins control_interconnect/M03_AXI] [get_bd_intf_pins frontend_control_axi_0/s0_axi]
   connect_bd_intf_net -intf_net dac2_clk_0_1 [get_bd_intf_ports dac2_clk] [get_bd_intf_pins rfdc/dac2_clk]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M00_AXI [get_bd_intf_pins control_interconnect/M00_AXI] [get_bd_intf_pins rfdc/s_axi]
   connect_bd_intf_net -intf_net receiver_M00_AXIS [get_bd_intf_pins axil_llrf_0/s0_axis] [get_bd_intf_pins receiver/M00_AXIS]
@@ -5112,6 +5157,14 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_LPD [get_bd_intf_pins control_interconnect/S00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_LPD]
 
   # Create port connections
+  connect_bd_net -net ADCIO_02_1 [get_bd_ports ADCIO_02] [get_bd_pins frontend_control_axi_0/spi4_miso]
+  connect_bd_net -net ADCIO_06_1 [get_bd_ports ADCIO_06] [get_bd_pins frontend_control_axi_0/spi5_miso]
+  connect_bd_net -net ADCIO_10_1 [get_bd_ports ADCIO_10] [get_bd_pins frontend_control_axi_0/spi6_miso]
+  connect_bd_net -net ADCIO_14_1 [get_bd_ports ADCIO_14] [get_bd_pins frontend_control_axi_0/spi7_miso]
+  connect_bd_net -net DACIO_02_1 [get_bd_ports DACIO_02] [get_bd_pins frontend_control_axi_0/spi0_miso]
+  connect_bd_net -net DACIO_06_1 [get_bd_ports DACIO_06] [get_bd_pins frontend_control_axi_0/spi1_miso]
+  connect_bd_net -net DACIO_10_1 [get_bd_ports DACIO_10] [get_bd_pins frontend_control_axi_0/spi2_miso]
+  connect_bd_net -net DACIO_14_1 [get_bd_ports DACIO_14] [get_bd_pins frontend_control_axi_0/spi3_miso]
   connect_bd_net -net RFegressReset_peripheral_aresetn [get_bd_pins axil_llrf_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/egress_aresetn] [get_bd_pins receiver/s_axi_aresetn] [get_bd_pins rf_interconnect/ARESETN] [get_bd_pins rf_interconnect/M00_ARESETN] [get_bd_pins rf_interconnect/M01_ARESETN] [get_bd_pins rf_interconnect/M02_ARESETN] [get_bd_pins rf_interconnect/S00_ARESETN] [get_bd_pins transmitter/S_AXI_RESETN]
   connect_bd_net -net RFingressReset_peripheral_aresetn [get_bd_pins clocktreeMTS/ingress_aresetn] [get_bd_pins rfdc/m0_axis_aresetn] [get_bd_pins rfdc/m1_axis_aresetn] [get_bd_pins rfdc/m2_axis_aresetn] [get_bd_pins rfdc/m3_axis_aresetn] [get_bd_pins rfdc/s0_axis_aresetn] [get_bd_pins rfdc/s1_axis_aresetn] [get_bd_pins rfdc/s2_axis_aresetn] [get_bd_pins rfdc/s3_axis_aresetn]
   connect_bd_net -net TRIG_IN_1 [get_bd_ports TRIG_IN] [get_bd_pins axil_llrf_0/ext_trigger_in]
@@ -5122,7 +5175,31 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clocktreeMTS/clkRF] [get_bd_pins receiver/aclk] [get_bd_pins rfdc/m0_axis_aclk] [get_bd_pins rfdc/m1_axis_aclk] [get_bd_pins rfdc/m2_axis_aclk] [get_bd_pins rfdc/m3_axis_aclk] [get_bd_pins rfdc/s0_axis_aclk] [get_bd_pins rfdc/s1_axis_aclk] [get_bd_pins rfdc/s2_axis_aclk] [get_bd_pins rfdc/s3_axis_aclk] [get_bd_pins transmitter/aclk]
   connect_bd_net -net clocktreeMTS_clkRFdiv2 [get_bd_pins axil_evr_0/dsp_clk] [get_bd_pins axil_llrf_0/clk] [get_bd_pins clocktreeMTS/clkRFdiv2] [get_bd_pins pulse_gen_0/clk] [get_bd_pins receiver/S_AXI_CLK] [get_bd_pins rf_interconnect/ACLK] [get_bd_pins rf_interconnect/M00_ACLK] [get_bd_pins rf_interconnect/M01_ACLK] [get_bd_pins rf_interconnect/M02_ACLK] [get_bd_pins rf_interconnect/S00_ACLK] [get_bd_pins transmitter/S_AXI_CLK] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
   connect_bd_net -net clocktreeMTS_interrupt [get_bd_pins clocktreeMTS/interrupt] [get_bd_pins xlconcat_0/In0]
-  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins axil_evr_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/s_axi_aresetn] [get_bd_pins control_interconnect/ARESETN] [get_bd_pins control_interconnect/M00_ARESETN] [get_bd_pins control_interconnect/M01_ARESETN] [get_bd_pins control_interconnect/M02_ARESETN] [get_bd_pins control_interconnect/S00_ARESETN] [get_bd_pins rfdc/s_axi_aresetn]
+  connect_bd_net -net frontend_control_axi_0_spi0_clk [get_bd_ports DACIO_01] [get_bd_pins frontend_control_axi_0/spi0_clk]
+  connect_bd_net -net frontend_control_axi_0_spi0_cs_n [get_bd_ports DACIO_03] [get_bd_pins frontend_control_axi_0/spi0_cs_n]
+  connect_bd_net -net frontend_control_axi_0_spi0_mosi [get_bd_ports DACIO_00] [get_bd_pins frontend_control_axi_0/spi0_mosi]
+  connect_bd_net -net frontend_control_axi_0_spi1_clk [get_bd_ports DACIO_05] [get_bd_pins frontend_control_axi_0/spi1_clk]
+  connect_bd_net -net frontend_control_axi_0_spi1_cs_n [get_bd_ports DACIO_07] [get_bd_pins frontend_control_axi_0/spi1_cs_n]
+  connect_bd_net -net frontend_control_axi_0_spi1_mosi [get_bd_ports DACIO_04] [get_bd_pins frontend_control_axi_0/spi1_mosi]
+  connect_bd_net -net frontend_control_axi_0_spi2_clk [get_bd_ports DACIO_09] [get_bd_pins frontend_control_axi_0/spi2_clk]
+  connect_bd_net -net frontend_control_axi_0_spi2_cs_n [get_bd_ports DACIO_11] [get_bd_pins frontend_control_axi_0/spi2_cs_n]
+  connect_bd_net -net frontend_control_axi_0_spi2_mosi [get_bd_ports DACIO_08] [get_bd_pins frontend_control_axi_0/spi2_mosi]
+  connect_bd_net -net frontend_control_axi_0_spi3_clk [get_bd_ports DACIO_13] [get_bd_pins frontend_control_axi_0/spi3_clk]
+  connect_bd_net -net frontend_control_axi_0_spi3_cs_n [get_bd_ports DACIO_15] [get_bd_pins frontend_control_axi_0/spi3_cs_n]
+  connect_bd_net -net frontend_control_axi_0_spi3_mosi [get_bd_ports DACIO_12] [get_bd_pins frontend_control_axi_0/spi3_mosi]
+  connect_bd_net -net frontend_control_axi_0_spi4_clk [get_bd_ports ADCIO_01] [get_bd_pins frontend_control_axi_0/spi4_clk]
+  connect_bd_net -net frontend_control_axi_0_spi4_cs_n [get_bd_ports ADCIO_03] [get_bd_pins frontend_control_axi_0/spi4_cs_n]
+  connect_bd_net -net frontend_control_axi_0_spi4_mosi [get_bd_ports ADCIO_00] [get_bd_pins frontend_control_axi_0/spi4_mosi]
+  connect_bd_net -net frontend_control_axi_0_spi5_clk [get_bd_ports ADCIO_05] [get_bd_pins frontend_control_axi_0/spi5_clk]
+  connect_bd_net -net frontend_control_axi_0_spi5_cs_n [get_bd_ports ADCIO_07] [get_bd_pins frontend_control_axi_0/spi5_cs_n]
+  connect_bd_net -net frontend_control_axi_0_spi5_mosi [get_bd_ports ADCIO_04] [get_bd_pins frontend_control_axi_0/spi5_mosi]
+  connect_bd_net -net frontend_control_axi_0_spi6_clk [get_bd_ports ADCIO_09] [get_bd_pins frontend_control_axi_0/spi6_clk]
+  connect_bd_net -net frontend_control_axi_0_spi6_cs_n [get_bd_ports ADCIO_11] [get_bd_pins frontend_control_axi_0/spi6_cs_n]
+  connect_bd_net -net frontend_control_axi_0_spi6_mosi [get_bd_ports ADCIO_08] [get_bd_pins frontend_control_axi_0/spi6_mosi]
+  connect_bd_net -net frontend_control_axi_0_spi7_clk [get_bd_ports ADCIO_13] [get_bd_pins frontend_control_axi_0/spi7_clk]
+  connect_bd_net -net frontend_control_axi_0_spi7_cs_n [get_bd_ports ADCIO_15] [get_bd_pins frontend_control_axi_0/spi7_cs_n]
+  connect_bd_net -net frontend_control_axi_0_spi7_mosi [get_bd_ports ADCIO_12] [get_bd_pins frontend_control_axi_0/spi7_mosi]
+  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins axil_evr_0/s_axi_aresetn] [get_bd_pins clocktreeMTS/s_axi_aresetn] [get_bd_pins control_interconnect/ARESETN] [get_bd_pins control_interconnect/M00_ARESETN] [get_bd_pins control_interconnect/M01_ARESETN] [get_bd_pins control_interconnect/M02_ARESETN] [get_bd_pins control_interconnect/M03_ARESETN] [get_bd_pins control_interconnect/S00_ARESETN] [get_bd_pins frontend_control_axi_0/axi_aresetn] [get_bd_pins rfdc/s_axi_aresetn]
   connect_bd_net -net pulse_gen_0_pulse_out [get_bd_ports GPIO_LED_0_LS] [get_bd_pins pulse_gen_0/pulse_out]
   connect_bd_net -net synchronizeSYSREF_dest_out [get_bd_pins clocktreeMTS/UserSYSREF] [get_bd_pins rfdc/user_sysref_adc] [get_bd_pins rfdc/user_sysref_dac]
   connect_bd_net -net usp_rf_data_converter_1_irq [get_bd_pins rfdc/irq] [get_bd_pins xlconcat_0/In1]
@@ -5130,7 +5207,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_net -net xlconstant_0_dout [get_bd_pins axil_llrf_0/rf_permit_in] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlconstant_1_dout [get_bd_pins pulse_gen_0/high_len] [get_bd_pins xlconstant_1/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins receiver/pulse_length] [get_bd_pins xlconstant_2/dout]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axil_evr_0/s_axi_aclk] [get_bd_pins clocktreeMTS/s_axi_aclk] [get_bd_pins control_interconnect/ACLK] [get_bd_pins control_interconnect/M00_ACLK] [get_bd_pins control_interconnect/M01_ACLK] [get_bd_pins control_interconnect/M02_ACLK] [get_bd_pins control_interconnect/S00_ACLK] [get_bd_pins rfdc/s_axi_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_lpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axil_evr_0/s_axi_aclk] [get_bd_pins clocktreeMTS/s_axi_aclk] [get_bd_pins control_interconnect/ACLK] [get_bd_pins control_interconnect/M00_ACLK] [get_bd_pins control_interconnect/M01_ACLK] [get_bd_pins control_interconnect/M02_ACLK] [get_bd_pins control_interconnect/M03_ACLK] [get_bd_pins control_interconnect/S00_ACLK] [get_bd_pins frontend_control_axi_0/axi_aclk] [get_bd_pins rfdc/s_axi_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_lpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins clocktreeMTS/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments
@@ -5156,6 +5233,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   assign_bd_address -offset 0x80060000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axil_evr_0/s_axi/reg0] -force
   assign_bd_address -offset 0xA0240000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axil_llrf_0/s_axi/reg0] -force
   assign_bd_address -offset 0x80040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs clocktreeMTS/freqcnt_gpio/S_AXI/Reg] -force
+  assign_bd_address -offset 0x80070000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs frontend_control_axi_0/s0_axi/reg0] -force
   assign_bd_address -offset 0x80000000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs rfdc/s_axi/Reg] -force
 
 
