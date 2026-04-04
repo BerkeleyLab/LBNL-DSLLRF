@@ -35,15 +35,16 @@ class MimoMtsOverlay(Overlay):
                     print("Inserting device-tree overlay:", dtsb_file)
                     dts.insert()
 
-        PL.reset()
-        super().__init__(str(ol_info['bitfile_name']), **kwargs)
-
         if 'si570_freq_mhz' in ol_info:
             with SI570() as si570:
                 si570.set_freq(ol_info['si570_freq_mhz'])
 
         if 'clk104_tcs' in ol_info:
             self.clk104 = CLK104Config(**ol_info['clk104_tcs'])
+
+        # download overlay after external clocks are configured
+        PL.reset()
+        super().__init__(str(ol_info['bitfile_name']), **kwargs)
 
         if "rfdc" in self.ip_dict and "rfdc" in ol_info:
             self.mixer_cfg = ol_info['rfdc']['mixer']
