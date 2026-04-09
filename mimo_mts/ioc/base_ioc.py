@@ -122,7 +122,7 @@ class MimoMtsIoc:
                 prefix + name, initial_value=value, on_update_name=self.on_update_name)
 
     def start_ioc(self):
-        dispatcher = asyncio_dispatcher.AsyncioDispatcher()
+        self.dispatcher = dispatcher = asyncio_dispatcher.AsyncioDispatcher()
         builder.LoadDatabase()
         softioc.devIocStats(self.ioc_name)
         # builder.dbLoadDatabase('ioc.db', substitutions=f'P={self.prefix}:')

@@ -1,0 +1,31 @@
+// Device tree overlay for the ALS_LLRF_LBL208 chassis to attach the Intel
+// M-CRPS power supply to the kernel PMBUS subsystem.
+//
+// Currently this is not used in favor of a Python based PMBUS interface in
+// mimo_mts/drivers/telemetry/mcrps_device.py
+//
+// Input / Output Temperatures, Voltages and Currents are available.
+// Use the `sensors` tool from the `lm-sensors` package to read them.
+//
+// Or, from python, use the PYNQ provided PMBUS library, which can also record time-series:
+//     from pynq.pmbus import get_rails
+//     get_rails()
+//         {'vin': Rail {name=vin, voltage=Sensor {name=vin_voltage, value=122.75V}}, ... }
+//
+// Note that for the vout, iout and pout entries, only the first index is valid.
+// Index 2 - 32 are copies of index 1. This is because the generic PMBUS driver doesn't
+// know that this is a single channel power supply.
+/dts-v1/;
+/plugin/;
+
+/ {
+    fragment@3 {
+        target = <&i2c4>;
+        __overlay__ {
+            power-supply@58 {
+                compatible = "pmbus";
+                reg = <0x58>;
+            };
+        };
+    };
+};
