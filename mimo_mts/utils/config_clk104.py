@@ -2,7 +2,7 @@ from pathlib import Path
 import struct
 import xrfclk
 from .config_tics import LMKConfig, LMXConfig
-import spidev  # not used by xrfclk, but needed for register _reads_
+import spidev # not used by xrfclk, but needed for register _reads_
 
 
 class CLK104Config:
