@@ -2,7 +2,6 @@ from pathlib import Path
 import struct
 import xrfclk
 from .config_tics import LMKConfig, LMXConfig
-import spidev # not used by xrfclk, but needed for register _reads_
 
 
 class CLK104Config:
@@ -57,13 +56,3 @@ class CLK104Config:
             self.lmxadc_cfg.reg_vals, self.devinfo['lmxadc'])
         xrfclk._write_LMX_regs(
             self.lmxdac_cfg.reg_vals, self.devinfo['lmxdac'])
-
-    def verify_regs(self, key='lmxadc'):
-        spi = spidev.SpiDev()
-        spi.open_path(self.devinfo[key]['spi_device'])
-        read_regs = []
-        for i in range(0x80):
-            dat_o = bytes((0x8 | i, 0, 0))
-            dat_i = spi.xfer(dat_o)
-            read_regs.append(int.from_bytes(dat_i[1:], 'big'))
-        return read_regs
