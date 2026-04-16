@@ -18,7 +18,7 @@ set_property PACKAGE_PIN M31        [get_ports user_mgt_si570_clock_clk_p];  # B
 # GPIO User LED
 set_property -dict {PACKAGE_PIN AR19  IOSTANDARD  LVCMOS12} [get_ports GPIO_LED_0_LS];  # Bank 66, DS61
 
-# USER I/O  (flexible frontend SPI bus)
+# USER I/O
 set_property PACKAGE_PIN A9       [get_ports "DACIO_00"]; # Bank  87 VCCO - VCC1V8   - IO_L12N_AD8N_87
 set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_00"]; # Bank  87 VCCO - VCC1V8   - IO_L12N_AD8N_87
 set_property PACKAGE_PIN A10      [get_ports "DACIO_01"]; # Bank  87 VCCO - VCC1V8   - IO_L12P_AD8P_87
@@ -83,13 +83,6 @@ set_property PACKAGE_PIN AV2      [get_ports "ADCIO_14"]; # Bank  84 VCCO - VCC1
 set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_14"]; # Bank  84 VCCO - VCC1V8   - IO_L3N_AD9N_84
 set_property PACKAGE_PIN AV3      [get_ports "ADCIO_15"]; # Bank  84 VCCO - VCC1V8   - IO_L3P_AD9P_84
 set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_15"]; # Bank  84 VCCO - VCC1V8   - IO_L3P_AD9P_84
-
-# USER I/O  (CLK104 SPI multiplexer for readback)
-set_property PACKAGE_PIN C11      [get_ports "CLK104_CLK_SPI_MUX_SEL[0]"] ;# Bank  68 VCCO - VCC1V2   - IO_T3U_N12_68
-set_property IOSTANDARD  LVCMOS12 [get_ports "CLK104_CLK_SPI_MUX_SEL[0]"] ;# Bank  68 VCCO - VCC1V2   - IO_T3U_N12_68
-set_property PACKAGE_PIN B12      [get_ports "CLK104_CLK_SPI_MUX_SEL[1]"] ;# Bank  68 VCCO - VCC1V2   - IO_L19N_T3L_N1_DBC_AD9N_68
-set_property IOSTANDARD  POD12_DCI [get_ports "CLK104_CLK_SPI_MUX_SEL[1]"] ;# Bank  68 VCCO - VCC1V2   - IO_L19N_T3L_N1_DBC_AD9N_68
-
 
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
 # Synthesis Guidance
