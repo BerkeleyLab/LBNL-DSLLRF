@@ -42,6 +42,24 @@ class MimoMtsIoc:
         self.dsp_fs_ghz = self.fs_ghz / self.dsp_decimation_factor
         self.update_adc_bufs()
         self.init_rf_control()
+        self._init_per_channel_mixer_cfg()
+
+    def _init_per_channel_mixer_cfg(self):
+        """Initialize per-channel mixer config from the global defaults."""
+        self.adc_mixer_cfg = {}
+        for ch in range(self.ol.board.n_adcs):
+            self.adc_mixer_cfg[ch] = {
+                'freq_mhz': self.ol.mixer_cfg['adc_mixer_nco_freq_mhz'],
+                'nyquist': self.ol.mixer_cfg['adc_mixer_nco_nyquist'],
+                'phase': self.ol.mixer_cfg['adc_mixer_nco_phase'],
+            }
+        self.dac_mixer_cfg = {}
+        for ch in range(self.ol.board.n_dacs):
+            self.dac_mixer_cfg[ch] = {
+                'freq_mhz': self.ol.mixer_cfg['dac_mixer_nco_freq_mhz'],
+                'nyquist': self.ol.mixer_cfg['dac_mixer_nco_nyquist'],
+                'phase': self.ol.mixer_cfg['dac_mixer_nco_phase'],
+            }
 
     def __repr__(self):
         str = f"< {self.__class__.__name__} >:\n"
@@ -81,12 +99,14 @@ class MimoMtsIoc:
         builder.SetDeviceName(self.prefix)
         self.pvs_in = {}
         self.pvs_out = {}
+
         name = 'ADC:TWF'  # in ns
         self.pvs_in[name] = builder.WaveformIn(
             name, np.arange(0, self.n_samples/self.fs_ghz, 1/self.fs_ghz))
         name = 'DSP:TWF'  # in ns, after decimation
         self.pvs_in[name] = builder.WaveformIn(
             name, np.arange(0, self.n_dsp_samples/self.dsp_fs_ghz, 1/self.dsp_fs_ghz))
+
         for ix in range(self.n_adc):
             name = f'ADC{ix}:IWF'
             self.pvs_in[name] = builder.WaveformIn(name, self.adc_bufs_i[ix])
@@ -102,13 +122,56 @@ class MimoMtsIoc:
 
     def add_mixer_pvs(self, prefix='rfdc_mixer:'):
         """
-        Add RFDC related PVs to the IOC.
+        Add per-channel and global RFDC mixer PVs to the IOC.
+        Per-channel PVs:
+            rfdc_mixer:ADC{ch}:nco_freq_mhz
+            rfdc_mixer:ADC{ch}:nco_nyquist
+            rfdc_mixer:ADC{ch}:nco_phase
+            rfdc_mixer:DAC{ch}:nco_freq_mhz
+            rfdc_mixer:DAC{ch}:nco_nyquist
+            rfdc_mixer:DAC{ch}:nco_phase
+        Global PVs (set all channels at once):
+            rfdc_mixer:adc_mixer_nco_freq_mhz
+            rfdc_mixer:adc_mixer_nco_nyquist
+            rfdc_mixer:adc_mixer_nco_phase
+            rfdc_mixer:dac_mixer_nco_freq_mhz
+            rfdc_mixer:dac_mixer_nco_nyquist
+            rfdc_mixer:dac_mixer_nco_phase
         """
+        # Global PVs (apply to all channels at once)
         for name, value in self.ol.mixer_cfg.items():
             self.pvs_in[prefix + name + ':RBV'] = builder.aIn(
                 prefix + name + ':RBV', initial_value=value)
             self.pvs_out[prefix + name] = builder.aOut(
                 prefix + name, initial_value=value, on_update_name=self.on_update_name)
+
+        # Per-channel ADC mixer PVs
+        for ch in range(self.ol.board.n_adcs):
+            for param, cfg_key in [
+                ('nco_freq_mhz', 'freq_mhz'),
+                ('nco_nyquist', 'nyquist'),
+                ('nco_phase', 'phase'),
+            ]:
+                name = f'ADC{ch}:{param}'
+                value = self.adc_mixer_cfg[ch][cfg_key]
+                self.pvs_in[prefix + name + ':RBV'] = builder.aIn(
+                    prefix + name + ':RBV', initial_value=value)
+                self.pvs_out[prefix + name] = builder.aOut(
+                    prefix + name, initial_value=value, on_update_name=self.on_update_name)
+
+        # Per-channel DAC mixer PVs
+        for ch in range(self.ol.board.n_dacs):
+            for param, cfg_key in [
+                ('nco_freq_mhz', 'freq_mhz'),
+                ('nco_nyquist', 'nyquist'),
+                ('nco_phase', 'phase'),
+            ]:
+                name = f'DAC{ch}:{param}'
+                value = self.dac_mixer_cfg[ch][cfg_key]
+                self.pvs_in[prefix + name + ':RBV'] = builder.aIn(
+                    prefix + name + ':RBV', initial_value=value)
+                self.pvs_out[prefix + name] = builder.aOut(
+                    prefix + name, initial_value=value, on_update_name=self.on_update_name)
 
     def add_rf_control_pvs(self, prefix='rf_control:'):
         """
@@ -133,19 +196,32 @@ class MimoMtsIoc:
         while True:
             self.update_adc_bufs()
             for ix in range(self.n_adc):
-                name = f'ADC{ix}:IWF'
-                self.pvs_in[name].set(self.adc_bufs_i[ix])
-                name = f'ADC{ix}:QWF'
-                self.pvs_in[name].set(self.adc_bufs_q[ix])
-                name = f'DSP:ADC{ix}:AWF'
-                self.pvs_in[name].set(np.abs(self.adc_bufs_mean[ix]))
-                name = f'DSP:ADC{ix}:PWF'
-                self.pvs_in[name].set(np.angle(self.adc_bufs_mean[ix], deg=True))
+                self.pvs_in[f'ADC{ix}:IWF'].set(self.adc_bufs_i[ix])
+                self.pvs_in[f'ADC{ix}:QWF'].set(self.adc_bufs_q[ix])
+                self.pvs_in[f'DSP:ADC{ix}:AWF'].set(np.abs(self.adc_bufs_mean[ix]))
+                self.pvs_in[f'DSP:ADC{ix}:PWF'].set(np.angle(self.adc_bufs_mean[ix], deg=True))
+
             for name in self.ol.rf_control._registers.keys():
                 value = getattr(self.llrf_register_map, name)
                 self.pvs_in[f'rf_control:{name}:RBV'].set(value)
+
+            # Update global mixer RBVs
             for name, value in self.ol.mixer_cfg.items():
                 self.pvs_in[f'rfdc_mixer:{name}:RBV'].set(value)
+
+            # Update per-channel mixer RBVs
+            for ch in range(self.ol.board.n_adcs):
+                cfg = self.adc_mixer_cfg[ch]
+                self.pvs_in[f'rfdc_mixer:ADC{ch}:nco_freq_mhz:RBV'].set(cfg['freq_mhz'])
+                self.pvs_in[f'rfdc_mixer:ADC{ch}:nco_nyquist:RBV'].set(cfg['nyquist'])
+                self.pvs_in[f'rfdc_mixer:ADC{ch}:nco_phase:RBV'].set(cfg['phase'])
+
+            for ch in range(self.ol.board.n_dacs):
+                cfg = self.dac_mixer_cfg[ch]
+                self.pvs_in[f'rfdc_mixer:DAC{ch}:nco_freq_mhz:RBV'].set(cfg['freq_mhz'])
+                self.pvs_in[f'rfdc_mixer:DAC{ch}:nco_nyquist:RBV'].set(cfg['nyquist'])
+                self.pvs_in[f'rfdc_mixer:DAC{ch}:nco_phase:RBV'].set(cfg['phase'])
+
             await asyncio.sleep(0.5)
 
     def on_update_name(self, value, pv_name):
@@ -160,21 +236,78 @@ class MimoMtsIoc:
                 setattr(self.llrf_register_map, name, signed_value)
             else:
                 print(f"Warning: {name} not found in llrf_register_map.")
+
         elif pv_name.startswith(f'{self.prefix}:rfdc_mixer:'):
-            name = pv_name.split(':')[-1]
-            if name == 'dac_mixer_nco_freq_mhz':
-                nyquist = self.ol.mixer_cfg['dac_mixer_nco_nyquist']
-                phase = self.ol.mixer_cfg['dac_mixer_nco_phase']
-                print(f"Setting DAC mixer NCO frequency: {value} MHz, Nyquist: {nyquist}, Phase: {phase}")
-                self.ol.set_dac_mixer(value, nyquist, phase)
-            elif name == 'adc_mixer_nco_freq_mhz':
+            field = pv_name.removeprefix(f'{self.prefix}:rfdc_mixer:')
+
+            # Per-channel ADC: "ADC{ch}:nco_freq_mhz", "ADC{ch}:nco_nyquist", "ADC{ch}:nco_phase"
+            if field.startswith('ADC') and ':nco_' in field:
+                ch_str, param_name = field.split(':', 1)
+                ch = int(ch_str.removeprefix('ADC'))
+                cfg = self.adc_mixer_cfg[ch]
+
+                if param_name == 'nco_freq_mhz':
+                    cfg['freq_mhz'] = value
+                elif param_name == 'nco_nyquist':
+                    cfg['nyquist'] = int(value)
+                elif param_name == 'nco_phase':
+                    cfg['phase'] = value
+
+                print(f"Setting ADC ch{ch} mixer: freq={cfg['freq_mhz']} MHz, "
+                      f"nyquist={cfg['nyquist']}, phase={cfg['phase']}")
+                self.ol.set_adc_mixer_ch(ch, cfg['freq_mhz'], cfg['nyquist'], cfg['phase'])
+
+            # Per-channel DAC: "DAC{ch}:nco_freq_mhz", "DAC{ch}:nco_nyquist", "DAC{ch}:nco_phase"
+            elif field.startswith('DAC') and ':nco_' in field:
+                ch_str, param_name = field.split(':', 1)
+                ch = int(ch_str.removeprefix('DAC'))
+                cfg = self.dac_mixer_cfg[ch]
+
+                if param_name == 'nco_freq_mhz':
+                    cfg['freq_mhz'] = value
+                elif param_name == 'nco_nyquist':
+                    cfg['nyquist'] = int(value)
+                elif param_name == 'nco_phase':
+                    cfg['phase'] = value
+
+                print(f"Setting DAC ch{ch} mixer: freq={cfg['freq_mhz']} MHz, "
+                      f"nyquist={cfg['nyquist']}, phase={cfg['phase']}")
+                self.ol.set_dac_mixer_ch(ch, cfg['freq_mhz'], cfg['nyquist'], cfg['phase'])
+
+            # Global ADC: use set_adc_mixer() — all channels, synchronized
+            elif field.startswith('adc_mixer_nco_'):
+                self.ol.mixer_cfg[field] = value
+                freq = self.ol.mixer_cfg['adc_mixer_nco_freq_mhz']
                 nyquist = self.ol.mixer_cfg['adc_mixer_nco_nyquist']
                 phase = self.ol.mixer_cfg['adc_mixer_nco_phase']
-                print(f"Setting ADC mixer NCO frequency: {value} MHz, Nyquist: {nyquist}, Phase: {phase}")
-                self.ol.set_adc_mixer(value, nyquist, phase)
+                print(f"Setting ALL ADC mixers: freq={freq} MHz, nyquist={nyquist}, phase={phase}")
+                self.ol.set_adc_mixer(freq, nyquist, phase)
+                for ch in range(self.ol.board.n_adcs):
+                    self.adc_mixer_cfg[ch] = {
+                        'freq_mhz': freq, 'nyquist': nyquist, 'phase': phase
+                    }
+                    self.pvs_out[f'rfdc_mixer:ADC{ch}:nco_freq_mhz'].set(freq)
+                    self.pvs_out[f'rfdc_mixer:ADC{ch}:nco_nyquist'].set(nyquist)
+                    self.pvs_out[f'rfdc_mixer:ADC{ch}:nco_phase'].set(phase)
+
+            # Global DAC: use set_dac_mixer() — all channels, synchronized
+            elif field.startswith('dac_mixer_nco_'):
+                self.ol.mixer_cfg[field] = value
+                freq = self.ol.mixer_cfg['dac_mixer_nco_freq_mhz']
+                nyquist = self.ol.mixer_cfg['dac_mixer_nco_nyquist']
+                phase = self.ol.mixer_cfg['dac_mixer_nco_phase']
+                print(f"Setting ALL DAC mixers: freq={freq} MHz, nyquist={nyquist}, phase={phase}")
+                self.ol.set_dac_mixer(freq, nyquist, phase)
+                for ch in range(self.ol.board.n_dacs):
+                    self.dac_mixer_cfg[ch] = {
+                        'freq_mhz': freq, 'nyquist': nyquist, 'phase': phase
+                    }
+                    self.pvs_out[f'rfdc_mixer:DAC{ch}:nco_freq_mhz'].set(freq)
+                    self.pvs_out[f'rfdc_mixer:DAC{ch}:nco_nyquist'].set(nyquist)
+                    self.pvs_out[f'rfdc_mixer:DAC{ch}:nco_phase'].set(phase)
 
     def drive_test_awg(self):
-        # Drive DAC with a test arbitrary waveform
+        """ Drive DAC with a test arbitrary waveform """
         Fc = self.fs_ghz / 16  # 250 MHz
         t = np.arange(self.ol.dac_player.size) / self.fs_ghz  # ns
         amp = 2**14 - 1
@@ -183,6 +316,12 @@ class MimoMtsIoc:
         dac_wfm = dac_wfm[::2]  # decimate by 2
         dac_i = (dac_wfm.real).astype(np.int16)
         dac_q = (dac_wfm.imag).astype(np.int16)
+        self.ol.write_dac_iq_buf(dac_i, dac_q)
+
+    def drive_ones_awg(self):
+        """ Drive DAC with all ones, for testing purposes. """
+        dac_i = np.ones(self.ol.dac_player.size//2, dtype=np.int16) * 32767
+        dac_q = np.zeros_like(dac_i)
         self.ol.write_dac_iq_buf(dac_i, dac_q)
 
 
@@ -196,7 +335,8 @@ def main():
     parser = argparse.ArgumentParser(description="soft IOC")
     parser.add_argument('--prefix', default="MIMO", help="$(P)")
     parser.add_argument('--ol_name', default="MIMO", help="overlay config",
-                        choices=['MIMO_ZCU208', 'MIMO_ZCU216', 'ALS_LLRF_ZCU208', 'ALS_LLRF_LBL208'])
+                        choices=['MIMO_ZCU208', 'MIMO_ZCU216', 'ALS_LLRF_ZCU208',
+                                 'ALS_LLRF_LBL208'])
     args = parser.parse_args()
     ioc = MimoMtsIoc(**vars(args))
     ioc.run_ioc()

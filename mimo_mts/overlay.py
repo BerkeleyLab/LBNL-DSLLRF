@@ -331,3 +331,55 @@ class MimoMtsOverlay(Overlay):
         self.mixer_cfg['adc_mixer_nco_nyquist'] = nyquist
         self.mixer_cfg['adc_mixer_nco_phase'] = phase
         print(f"Set ADC mixer: freq={freq_mhz} MHz, nyquist={nyquist}, phase={phase} degrees")
+
+    def set_dac_mixer_ch(self, ch, freq_mhz=0, nyquist=1, phase=0):
+        """Configure a single DAC channel's mixer, all channels should
+        have same phase due to rfdc.mts_dac() """
+        tile, block = divmod(ch, self.board.converters_per_tile)
+        if self.board.converters_per_tile == 2:
+            block = [0, 2][block]
+
+        self.rfdc.mts_dac_config.SysRef_Enable = 1
+
+        dac_block = self.rfdc.dac_tiles[tile].blocks[block]
+        dac_block.NyquistZone = nyquist
+        dac_block.MixerSettings = {
+            'Freq': freq_mhz, 'PhaseOffset': phase,
+            'EventSource': xrfdc.EVNT_SRC_SYSREF,
+            'MixerType': xrfdc.MIXER_TYPE_FINE,
+            'CoarseMixFreq': xrfdc.COARSE_MIX_OFF,
+            'MixerMode': xrfdc.MIXER_MODE_C2R,
+            'FineMixerScale': xrfdc.MIXER_SCALE_1P0
+        }
+        dac_block.InterpolationFactor = \
+            self.ol_info['rfdc']['dac_interplation_factor']
+        dac_block.ResetNCOPhase()
+        self.rfdc.mts_dac()
+
+        self.rfdc.mts_dac_config.SysRef_Enable = 0
+        print(f"DAC ch{ch}: freq={freq_mhz} MHz, "
+              f"nyquist={nyquist}, phase={phase} deg")
+
+    def set_adc_mixer_ch(self, ch, freq_mhz=0, nyquist=1, phase=0):
+        """Configure a single ADC channel's mixer, all channels should
+        have same phase due to rfdc.mts_adc() """
+        tile, block = divmod(ch, self.board.converters_per_tile)
+
+        self.rfdc.mts_adc_config.SysRef_Enable = 1
+
+        adc_block = self.rfdc.adc_tiles[tile].blocks[block]
+        adc_block.NyquistZone = nyquist
+        adc_block.MixerSettings = {
+            'Freq': freq_mhz, 'PhaseOffset': phase,
+            'EventSource': xrfdc.EVNT_SRC_SYSREF,
+            'MixerType': xrfdc.MIXER_TYPE_FINE,
+            'CoarseMixFreq': xrfdc.COARSE_MIX_OFF,
+            'MixerMode': xrfdc.MIXER_MODE_R2C,
+            'FineMixerScale': xrfdc.MIXER_SCALE_1P0
+        }
+        adc_block.ResetNCOPhase()
+        self.rfdc.mts_adc()
+
+        self.rfdc.mts_adc_config.SysRef_Enable = 0
+        print(f"ADC ch{ch}: freq={freq_mhz} MHz, "
+              f"nyquist={nyquist}, phase={phase} deg")

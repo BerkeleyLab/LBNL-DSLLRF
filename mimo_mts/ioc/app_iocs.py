@@ -155,7 +155,8 @@ class MimoZCU208(MimoMtsIoc):
 
     def init_rf_control(self):
         super().init_rf_control()
-        self.drive_test_awg()
+        self.drive_ones_awg()
+        # self.drive_test_awg()
 
 
 class MimoLBL208(MimoMtsIoc):
@@ -173,7 +174,8 @@ class MimoZCU216(MimoMtsIoc):
 
     def init_rf_control(self):
         super().init_rf_control()
-        self.drive_test_awg()
+        self.drive_ones_awg()
+        # self.drive_test_awg()
 
 
 def llrf_zcu208_ioc():
