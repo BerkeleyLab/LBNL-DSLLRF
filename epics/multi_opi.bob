@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--Saved on 2025-11-03 10:11:08 by du-->
+<!--Saved on 2026-04-24 17:44:41 by sdmurthy-->
 <display version="2.0.0">
   <name>MIMO_RFSOC</name>
   <width>1200</width>
@@ -10,7 +10,7 @@
     <text>MIMO RFSoC Demo</text>
     <x use_class="true">0</x>
     <y use_class="true">0</y>
-    <width>550</width>
+    <width>890</width>
     <height>31</height>
     <font use_class="true">
       <font name="Header 1" family="Liberation Sans" style="BOLD" size="22.0">
@@ -65,10 +65,18 @@
         </macros>
         <group_name>zcu216</group_name>
       </tab>
+      <tab>
+        <name>FLEX MIMO ZCU208</name>
+        <file>waveforms_sep_nco.bob</file>
+        <macros>
+          <P>FLEX_MIMO_ZCU208</P>
+        </macros>
+        <group_name>zcu208</group_name>
+      </tab>
     </tabs>
     <x>10</x>
     <y>30</y>
-    <width>1180</width>
+    <width>1520</width>
     <height>1060</height>
     <direction>0</direction>
   </widget>

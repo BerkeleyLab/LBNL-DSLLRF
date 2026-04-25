@@ -46,7 +46,7 @@ This work was presented as in the [Low Level 2025 Radio Frequency Workshop](http
    ```
 
     See [details](https://pynq.readthedocs.io/en/latest/appendix/sdcard.html).
-    The SD card provides the firware for the on-board microcontroller running Linux and facilitating access to the RFSoC.
+    The SD card provides the boot image for the on-board processor, which runs Linux to facilitate access to the RFSoC.
 
 3. Boot. Clone this repo and run:
    ```bash
