@@ -26,8 +26,8 @@ class MimoMtsOverlay(Overlay):
         self.board = ol_info['board']
 
         # Load device-tree overlays before the kernel-modules and drivers get loaded
-        if 'device_tree_overlays' in ol_info:
-            for dtsb_file in ol_info['device_tree_overlays']:
+        if 'device_tree_segments' in ol_info:
+            for dtsb_file in ol_info['device_tree_segments']:
                 dts = DeviceTreeSegment(str(dtsb_file))
                 if dts.is_dtbo_applied():
                     print("Device-tree overlay is already applied:", dtsb_file)
