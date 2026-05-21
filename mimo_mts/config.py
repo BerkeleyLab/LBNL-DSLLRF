@@ -97,9 +97,8 @@ ol_configs = {
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
         },
-        # Enable support for CLK104A with a device-tree overlay:
-        # Attach lmx2594 driver (ADC clock) to chip-select output 0 instead of 3
-        'device_tree_overlays': [files(overlays).joinpath('lmxadc.dtbo')],
+        # Enable CLK104A:
+        'device_tree_segments': [files(overlays).joinpath('lmxadc.dtbo')],
         'si570_freq_mhz': 156.1375,
         'rfdc': {
             'adc_decimation_factor': 8,
@@ -125,10 +124,12 @@ ol_configs = {
         'bitfile_name': files(overlays).joinpath('als_llrf_mts.bit'),
         'board': zcu208,
         'clk104_tcs': {
-            'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
+            'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0_DIST.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
         },
+        # Enable CLK104A:
+        'device_tree_segments': [files(overlays).joinpath('lmxadc.dtbo')],
         'si570_freq_mhz': 156.1375,
         'rfdc': {
             'adc_decimation_factor': 8,
