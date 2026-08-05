@@ -1,60 +1,110 @@
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, ClockCycles
+from cocotb.triggers import RisingEdge
 from cocotbext.axi import AxiStreamBus, AxiStreamSource, AxiStreamSink
 import logging
-import itertools
-import numpy as np
+import random
 
 
-class TB:
+class AXISAdderTB:
     def __init__(self, dut):
         dut._log.setLevel(logging.WARNING)
         self.dut = dut
-        self.source0 = AxiStreamSource(
+        self.samp_dw = samp_dw = dut.SAMP_DW.value.to_unsigned()
+        self.samp_num = samp_num = dut.SAMP_NUM.value.to_unsigned()
+        self.data_width = samp_dw * samp_num
+        self.s0_source = AxiStreamSource(
             AxiStreamBus.from_prefix(dut, "s0_axis"),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
-        self.source1 = AxiStreamSource(
+            dut.axis_aclk, dut.axis_aresetn,
+            reset_active_level=False,
+            byte_size=samp_dw)
+        self.s1_source = AxiStreamSource(
             AxiStreamBus.from_prefix(dut, "s1_axis"),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.axis_aresetn,
+            reset_active_level=False,
+            byte_size=samp_dw)
 
-        self.sink = AxiStreamSink(
+        self.m_sink = AxiStreamSink(
             AxiStreamBus.from_prefix(dut, "m_axis"),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.axis_aresetn,
+            reset_active_level=False,
+            byte_size=samp_dw)
 
-        cocotb.start_soon(Clock(dut.axis_aclk, 4, units="ns").start())
+        cocotb.start_soon(Clock(dut.axis_aclk, 4, unit="ns").start())
 
-    async def cycle_reset(self):
-        self.dut.axis_aresetn.setimmediatevalue(1)
-        await ClockCycles(self.dut.axis_aclk, 2)
-        self.dut.axis_aresetn.value = 0
-        await RisingEdge(self.dut.axis_aclk)
-        self.dut.axis_aresetn.value = 1
-        await RisingEdge(self.dut.axis_aclk)
+    async def reset(self):
+        for v in [1, 0, 1]:
+            self.dut.axis_aresetn.value = v
+            await RisingEdge(self.dut.axis_aclk)
+
+    async def send_parallel_transactions(self, s0_samples, s1_samples):
+        """Send transactions on both input streams in parallel"""
+        # Send both frames (they will be sent in parallel)
+        await self.s0_source.write(s0_samples)
+        await self.s1_source.write(s1_samples)
+
+    async def receive_result(self):
+        """Receive and return the output frame"""
+        return await self.m_sink.read()
+
+    def validate_samples(self, s0_samples, s1_samples, output_samples):
+        for s0, s1, out in zip(s0_samples, s1_samples, output_samples):
+            expected = (s0 + s1) & (2**self.samp_dw - 1)
+            assert out == expected, f"Unexpected result: expected {expected}, got {out}"
 
 
-def gen_payload(length):
-    return bytearray(itertools.islice(itertools.cycle(range(256)), length))
+@cocotb.test()
+async def test_basic_addition(dut):
+    """Test basic addition functionality"""
+    tb = AXISAdderTB(dut)
+    await tb.reset()
+
+    s0_samples = [i for i in range(tb.samp_num)]
+    s1_samples = [i * 2 for i in range(tb.samp_num)]
+
+    await tb.send_parallel_transactions(s0_samples, s1_samples)
+    output_samples = await tb.receive_result()
+    tb.validate_samples(s0_samples, s1_samples, output_samples)
+
+    cocotb.log.info("✓ Basic addition test passed")
 
 
-@cocotb.test(timeout_time=1, timeout_unit='us')
-async def test_axis_adder(dut, length=8, DATA_WIDTH=256):
-    tb = TB(dut)
-    await tb.cycle_reset()
+@cocotb.test()
+async def test_random_data(dut):
+    """Test with random data"""
+    tb = AXISAdderTB(dut)
+    await tb.reset()
 
-    test_data = gen_payload(DATA_WIDTH // 8)
-    test_frames = [test_data for _ in range(length)]
+    # Run multiple random tests
+    for test_num in range(10):
+        s0_samples = [random.randint(-0x7FFF, 0x7FFF) for _ in range(tb.samp_num)]
+        s1_samples = [random.randint(-0x7FFF, 0x7FFF) for _ in range(tb.samp_num)]
 
-    for frame in test_frames:
-        await tb.source0.write(frame)
-        await tb.source1.write(frame)
+        await tb.send_parallel_transactions(s0_samples, s1_samples)
+        output_samples = await tb.receive_result()
+        tb.validate_samples(s0_samples, s1_samples, output_samples)
 
-    for frame in test_frames:
-        rx_frame = await tb.sink.read()
-        tx_arr = np.frombuffer(bytes(frame), dtype=np.uint16)
-        rx_arr = np.frombuffer(bytes(rx_frame), dtype=np.uint16)
-        for t_val, r_val in zip(tx_arr, rx_arr):
-            tb.dut._log.warning(f"t_val: {hex(t_val)}, r_val: {hex(r_val)}")
-            assert r_val == 2 * t_val, \
-                f"Data mismatch: {hex(t_val)} != {hex(r_val)}"
-    assert tb.sink.empty()
+    cocotb.log.info("✓ Random data test passed (10 iterations)")
+
+
+@cocotb.test()
+async def test_continuous_stream(dut):
+    """Test continuous streaming of data"""
+    tb = AXISAdderTB(dut)
+    await tb.reset()
+
+    # Send multiple consecutive transactions
+    test_data = []
+    for transaction in range(5):
+        s0_samples = [transaction * 16 + i for i in range(tb.samp_num)]
+        s1_samples = [(transaction + 1) * 16 + i for i in range(tb.samp_num)]
+        test_data.append((s0_samples, s1_samples))
+
+        await tb.send_parallel_transactions(s0_samples, s1_samples)
+
+    # Verify all outputs
+    for transaction, (s0_samples, s1_samples) in enumerate(test_data):
+        output_samples = await tb.receive_result()
+        tb.validate_samples(s0_samples, s1_samples, output_samples)
+
+    cocotb.log.info("✓ Continuous stream test passed (5 transactions)")

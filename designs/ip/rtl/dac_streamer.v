@@ -1,11 +1,15 @@
 `timescale 1ns / 1ns
 
 // Streams data from a BRAM to an AXIS interface.
+// number of rows:          N_ROWS = 2**AW
+// number of columns (byte):N_COLS = SAMP_DW * SAMP_NUM / 8
+// total number of bytes:   N_BYTES = N_ROWS * N_COLS
+// total number of samples: N_BYTES / (SAMP_DW / 8)
 
 module dac_streamer #(
-    parameter integer SAMP_DW = 16,     // 16 bits data
-    parameter integer SAMP_NUM = 16,    // 16 samples
-    parameter integer AW = 16,          // 2**AW number of rows, total number of samples: 2**AW * DW/16
+    parameter integer SAMP_DW = 16,
+    parameter integer SAMP_NUM = 16,
+    parameter integer AW = 16,
     parameter integer READ_LATENCY = 3           // Number of read cycles
 ) (
     (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE READ_ONLY" *)
@@ -41,40 +45,37 @@ module dac_streamer #(
     output wire              m_axis_tvalid,
 
     // Control Input Parameters
-    input wire [AW-1:0]     n_rows,
-    input wire enable,
-    input wire trigger  // single clock cycle pulse
+    input wire [AW-1:0]     n_rows,  // pulse length
+    input wire              enable,
+    input wire              trigger  // single clock cycle pulse
 );
+    localparam integer NBPIPE = READ_LATENCY - 1;   // Number of pipeline Registers
     localparam integer DW = SAMP_DW * SAMP_NUM;
-    localparam integer NBPIPE = READ_LATENCY-1;   // Number of pipeline Registers
-    localparam integer NUM_COL = SAMP_DW*SAMP_NUM/8; // increment address by DW/8 bytes, or 16 samples
+    localparam integer N_COLS = DW / 8; // increment address by DW/8 bytes
 
     wire pulse_valid;
-    pulse_gen #(
-        .AW(AW)
-    ) pulse_gen_inst (
-        .clk(axis_clk),
-        .trigger(trigger),
-        .high_len(n_rows),
-        .pulse_out(pulse_valid)
+    pulse_gen #(.AW(AW)) pulse_gen_inst (
+        .clk        (axis_clk),
+        .trigger    (trigger),
+        .high_len   (n_rows),
+        .pulse_out  (pulse_valid)
     );
 
     // Assign BRAM interface signals
-    assign bram_wdata = 0;
+    assign bram_wdata = {DW{1'b0}};
     assign bram_clk = axis_clk;
     assign bram_rst = ~axis_aresetn;
-    assign bram_we = {NUM_COL{1'b0}};
+    assign bram_we = {N_COLS{1'b0}};
     assign bram_en = pulse_valid & enable;
 
     // Pipeline delay for warting BRAM read latency
     reg [NBPIPE:0] tvalid_pipe = 0;
     always @(posedge axis_clk) begin
         tvalid_pipe <= {tvalid_pipe[NBPIPE-1:0], bram_en};
-        bram_addr <= pulse_valid ? bram_addr + NUM_COL : 0;
+        bram_addr <= pulse_valid ? bram_addr + N_COLS : 0;
     end
 
-    // zeros are also valid data
-    assign m_axis_tvalid = 1'b1;
+    assign m_axis_tvalid = m_axis_tready;
     wire pulse_valid_pipe = tvalid_pipe[NBPIPE];
     assign m_axis_tdata  = pulse_valid_pipe ? bram_rdata : {DW{1'b0}};
 

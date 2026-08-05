@@ -4,6 +4,12 @@ import mimo_mts.overlays as overlays
 from importlib.resources import files
 
 
+# Conventions:
+#   * ALS_ prefix: requires a special version of CLK104 board
+#   * MIMO_ : direct sampling without decimation
+#   * LLRF_ : decimate by 8 at RFDC, LLRF loop control DSP included
+
+
 ol_configs = {
     'MIMO_ZCU208': {
         'bitfile_name': files(overlays).joinpath('mimo_mts.bit'),
@@ -13,9 +19,13 @@ ol_configs = {
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
         },
+        'sampling_rate_hz': {
+            'adc': 4.0e9,
+            'dac': 4.0e9,
+        },
         'rfdc': {
             'adc_decimation_factor': 1,
-            'dac_interplation_factor': 2,
+            'dac_interpolation_factor': 2,
             'mixer': {
                 'adc_mixer_nco_freq_mhz': 0,
                 'adc_mixer_nco_nyquist': 1,
@@ -33,9 +43,77 @@ ol_configs = {
             'decimation': 16
         }
     },
+    'ALS_MIMO5G_ZCU208': {
+        'bitfile_name': files(overlays).joinpath('mimo_mts_5g.bit'),
+        'board': zcu208,
+        'sampling_rate_hz': {
+            'adc': 5.0e9,
+            'dac': 5.0e9,
+        },
+        'clk104_tcs': {
+            'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
+            'lmxadc_tcs': files(clk104).joinpath('LMX2594_5G.tcs'),
+            'lmxdac_tcs': files(clk104).joinpath('LMX2594_5G.tcs'),
+        },
+        'rfdc': {
+            'adc_decimation_factor': 1,
+            'dac_interpolation_factor': 2,
+            'mixer': {
+                'adc_mixer_nco_freq_mhz': 0,
+                'adc_mixer_nco_nyquist': 1,
+                'adc_mixer_nco_phase': 0,
+                'dac_mixer_nco_freq_mhz': 0,
+                'dac_mixer_nco_nyquist': 1,
+                'dac_mixer_nco_phase': 0,
+            },
+            'mts': {
+                'mts_adc_target_latency': 106,
+                'mts_dac_target_latency': 320,
+            }
+        },
+        'ioc': {
+            'decimation': 20
+        }
+    },
+    'MIMO_ZCU208_MAX': {
+        'bitfile_name': files(overlays).joinpath('mimo_mts_max.bit'),
+        'board': zcu208,
+        'sampling_rate_hz': {
+            'adc': 5.0e9,
+            'dac': 7.0e9,
+        },
+        'clk104_tcs': {
+            'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
+            'lmxadc_tcs': files(clk104).joinpath('LMX2594_5G.tcs'),
+            'lmxdac_tcs': files(clk104).joinpath('LMX2594_7G.tcs'),
+        },
+        'rfdc': {
+            'adc_decimation_factor': 1,
+            'dac_interpolation_factor': 2,
+            'mixer': {
+                'adc_mixer_nco_freq_mhz': 0,
+                'adc_mixer_nco_nyquist': 1,
+                'adc_mixer_nco_phase': 0,
+                'dac_mixer_nco_freq_mhz': 0,
+                'dac_mixer_nco_nyquist': 1,
+                'dac_mixer_nco_phase': 0,
+            },
+            'mts': {
+                'mts_adc_target_latency': 106,
+                'mts_dac_target_latency': 476,
+            }
+        },
+        'ioc': {
+            'decimation': 20
+        }
+    },
     'MIMO_LBL208': {
         'bitfile_name': files(overlays).joinpath('mimo_mts.bit'),
         'board': lbl208,
+        'sampling_rate_hz': {
+            'adc': 4.0e9,
+            'dac': 4.0e9,
+        },
         'clk104_tcs': {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0_DIST.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
@@ -43,7 +121,7 @@ ol_configs = {
         },
         'rfdc': {
             'adc_decimation_factor': 1,
-            'dac_interplation_factor': 2,
+            'dac_interpolation_factor': 2,
             'mixer': {
                 'adc_mixer_nco_freq_mhz': 0,
                 'adc_mixer_nco_nyquist': 1,
@@ -64,6 +142,10 @@ ol_configs = {
     'MIMO_ZCU216': {
         'bitfile_name': files(overlays).joinpath('mimo_mts.bit'),
         'board': zcu216,
+        'sampling_rate_hz': {
+            'adc': 2.0e9,
+            'dac': 4.0e9,
+        },
         'clk104_tcs': {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_2G.tcs'),
@@ -71,7 +153,7 @@ ol_configs = {
         },
         'rfdc': {
             'adc_decimation_factor': 1,
-            'dac_interplation_factor': 2,
+            'dac_interpolation_factor': 2,
             'mixer': {
                 'adc_mixer_nco_freq_mhz': 0,
                 'adc_mixer_nco_nyquist': 1,
@@ -92,17 +174,19 @@ ol_configs = {
     'ALS_LLRF_LBL208': {
         'bitfile_name': files(overlays).joinpath('als_llrf_mts.bit'),
         'board': lbl208,
+        'sampling_rate_hz': {
+            'adc': 4.0e9,
+            'dac': 4.0e9,
+        },
         'clk104_tcs': {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0_DIST.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
         },
-        # Enable CLK104A:
-        'device_tree_segments': [files(overlays).joinpath('lmxadc.dtbo')],
         'si570_freq_mhz': 156.1375,
         'rfdc': {
             'adc_decimation_factor': 8,
-            'dac_interplation_factor': 8,
+            'dac_interpolation_factor': 8,
             'mixer': {
                 'adc_mixer_nco_freq_mhz': 3000,
                 'adc_mixer_nco_nyquist': 2,
@@ -123,17 +207,19 @@ ol_configs = {
     'ALS_LLRF_ZCU208': {
         'bitfile_name': files(overlays).joinpath('als_llrf_mts.bit'),
         'board': zcu208,
+        'sampling_rate_hz': {
+            'adc': 4.0e9,
+            'dac': 4.0e9,
+        },
         'clk104_tcs': {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0_DIST.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
         },
-        # Enable CLK104A:
-        'device_tree_segments': [files(overlays).joinpath('lmxadc.dtbo')],
         'si570_freq_mhz': 156.1375,
         'rfdc': {
             'adc_decimation_factor': 8,
-            'dac_interplation_factor': 8,
+            'dac_interpolation_factor': 8,
             'mixer': {
                 'adc_mixer_nco_freq_mhz': 3000,
                 'adc_mixer_nco_phase': 0,

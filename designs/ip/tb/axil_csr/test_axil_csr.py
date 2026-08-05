@@ -1,32 +1,41 @@
 import logging
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge
+from cocotb.triggers import RisingEdge, ClockCycles
 from cocotbext.axi import AxiLiteBus, AxiLiteMaster
+from cocotb.handle import Immediate
 
 
 class TB:
     def __init__(self, dut):
         dut._log.setLevel(logging.WARNING)
+        self.log = dut._log
         self.dut = dut
-        self.n_regs_out = dut.N_REGS_OUT.value
-        self.n_regs_inp = dut.N_REGS_INP.value
+        self.n_regs_out = self._get_param('N_REGS_OUT')
+        self.n_regs_inp = self._get_param('N_REGS_INP')
+        self.addr_width = self._get_param('ADDR_WIDTH')
+        self.reg_aw = self._get_param('REG_AW')
         dut._log.info(f"Found {self.n_regs_out} control registers and "
                       f"{self.n_regs_inp} status registers.")
         assert self.n_regs_out > 0, "N_REGS_OUT must be > 0"
         assert self.n_regs_inp > 0, "N_REGS_INP must be > 0"
-        assert (dut.ADDR_WIDTH.value >= (dut.REG_AW.value + 2)), \
-            (f"ADDR_WIDTH:{dut.ADDR_WIDTH.value} must be "
-             f"at least REG_AW:{dut.REG_AW} + 2")
-        cocotb.start_soon(Clock(dut.s_axi_aclk, 4, units="ns").start())
+        assert (self.addr_width >= (self.reg_aw + 2)), \
+            (f"ADDR_WIDTH:{self.addr_width} must be "
+             f"at least REG_AW:{self.reg_aw} + 2")
+        cocotb.start_soon(Clock(dut.s_axi_aclk, 4, unit="ns").start())
 
         self.axil_master = AxiLiteMaster(
             AxiLiteBus.from_prefix(dut, "s_axi"),
             dut.s_axi_aclk, dut.s_axi_aresetn,
             reset_active_level=False)
 
+    def _get_param(self, name):
+        return int(getattr(self.dut, name).value)
+
     async def cycle_reset(self):
-        for v in [1, 0, 1]:
+        self.dut.s_axi_aresetn.set(Immediate(1))
+        await ClockCycles(self.dut.s_axi_aclk, 2)
+        for v in [0, 1]:
             self.dut.s_axi_aresetn.value = v
             await RisingEdge(self.dut.s_axi_aclk)
 
@@ -46,8 +55,7 @@ async def test_write(dut):
         assert read_val == data, \
             f"Control reg {i}: expected 0x{data:08X}, got 0x{read_val:08X}"
 
-    # Check that the flattened output bus 'csr_out' reflects the
-    # written values.
+    # Check that the flattened output bus 'csr_out' reflects the written values.
     # csr_out is 16 x 32-bit wide, with register 0 in bits [31:0],
     # register 1 in bits [63:32], etc.
     control_flat = int(dut.csr_out.value)
@@ -73,7 +81,6 @@ async def test_read(dut):
 
     # Wait one clock cycle for the new status to propagate.
     await RisingEdge(dut.s_axi_aclk)
-
     # Status registers are mapped from N_REGS to 2*N_REGS.
     for i in range(tb.n_regs_inp):
         addr = (tb.n_regs_out + i) * 4

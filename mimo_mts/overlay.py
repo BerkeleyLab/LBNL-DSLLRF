@@ -5,13 +5,15 @@ from mimo_mts.drivers.evr import EVR
 from mimo_mts.drivers.rf_control import RfControl
 from mimo_mts.drivers.clocktreeMTS import ClockTreeMTS
 from mimo_mts.drivers.frontend_control import FrontendControl
+from mimo_mts.drivers.wave_gen import WaveGen
 from mimo_mts.config import ol_configs
 
 import xrfdc
 import numpy as np
+import pandas as pd
 from pathlib import Path
 from pprint import pformat
-__all__ = ('EVR', 'RfControl', 'ClockTreeMTS', 'FrontendControl')
+__all__ = ('EVR', 'RfControl', 'ClockTreeMTS', 'FrontendControl', 'WaveGen')
 
 
 class MimoMtsOverlay(Overlay):
@@ -24,15 +26,21 @@ class MimoMtsOverlay(Overlay):
         self.ol_info = ol_info = ol_configs[config]
         assert Path(ol_info['bitfile_name']).exists(), f"File {ol_info['bitfile_name']} not found."
         self.board = ol_info['board']
+        self.adc_sampling_rate = ol_info['sampling_rate_hz']['adc']
+        self.dac_sampling_rate = ol_info['sampling_rate_hz']['dac']
+        assert self.adc_sampling_rate <= self.board.max_adc_sampling_rate, \
+            f"ADC sampling rate {self.adc_sampling_rate / 1e9} GHz too high"
+        assert self.dac_sampling_rate <= self.board.max_dac_sampling_rate, \
+            f"DAC sampling rate {self.dac_sampling_rate / 1e9} GHz too high"
 
-        # Load device-tree overlays before the kernel-modules and drivers get loaded
+        # Load device-tree segments before the kernel-modules and drivers get loaded
         if 'device_tree_segments' in ol_info:
             for dtsb_file in ol_info['device_tree_segments']:
                 dts = DeviceTreeSegment(str(dtsb_file))
                 if dts.is_dtbo_applied():
-                    print("Device-tree overlay is already applied:", dtsb_file)
+                    print("Found device-tree segment:", dts.sysfs_dir)
                 else:
-                    print("Inserting device-tree overlay:", dtsb_file)
+                    print("Inserting device-tree segment:", dts.sysfs_dir)
                     dts.insert()
 
         if 'si570_freq_mhz' in ol_info:
@@ -55,12 +63,12 @@ class MimoMtsOverlay(Overlay):
             self._initialize_mixers()
 
     def __repr__(self):
-        str = f"< {self.__class__.__name__} >:\n"
-        str += pformat(self.ol_info, indent=2)
-        str += "\n"
+        description = f"< {self.__class__.__name__} >:\n"
+        description += pformat(self.ol_info, indent=2)
+        description += "\n"
         if "rfdc" in self.ip_dict:
-            str += self.report_mts_latency()
-        return str
+            description += self.report_mts_latency()
+        return description
 
     def _initialize_dev(self):
         """Alias xrfdc, rf_control and evr, enumurate rfdc blocks."""
@@ -74,6 +82,9 @@ class MimoMtsOverlay(Overlay):
 
         if 'frontend_control_axi_0' in self.ip_dict:
             self.ffe = self.frontend_control_axi_0
+
+        if 'transmitter/hier_dac_play/axil_wave_gen_0' in self.ip_dict:
+            self.wave_gen = self.transmitter.hier_dac_play.axil_wave_gen_0
 
         if self.board.converters_per_tile == 2:
             self.dac_blocks = np.array([
@@ -91,18 +102,25 @@ class MimoMtsOverlay(Overlay):
                 for i in range(4)])
 
     def _initialize_memories(self):
-        """ Initialize adc / dac waveform buffers. """
-        self.dac_player = self.memdict_to_view(
-            "transmitter/hier_dac_play/axi_bram_ctrl_0")
+        """Initialize ADC/DAC waveform buffers."""
+        self.dac_player = None
+        self.dac_capture = None
+
+        if 'transmitter/hier_dac_play/axi_bram_ctrl_0' in self.mem_dict:
+            self.dac_player = self._memdict_to_view(
+                "transmitter/hier_dac_play/axi_bram_ctrl_0")
+        elif hasattr(self, 'wave_gen'):
+            self.dac_player = self.wave_gen.wave_mem
+
         if 'transmitter/hier_dac_cap/axi_bram_ctrl_0' in self.mem_dict:
-            self.dac_capture = self.memdict_to_view(
+            self.dac_capture = self._memdict_to_view(
                 "transmitter/hier_dac_cap/axi_bram_ctrl_0")
 
         self.adc_bufs = []
         for tile in range(self.board.num_adc_tiles):
             for i in range(4):
                 self.adc_bufs.append(
-                    self.memdict_to_view(
+                    self._memdict_to_view(
                         f"receiver/m{tile}{i}/axi_bram_ctrl_0"))
 
     def _initialize_mts(self):
@@ -131,12 +149,17 @@ class MimoMtsOverlay(Overlay):
             self.mixer_cfg['adc_mixer_nco_nyquist'],
             self.mixer_cfg['adc_mixer_nco_phase'])
 
-    def memdict_to_view(self, ip, dtype="int16"):
-        """Configures access to internal memory via MMIO"""
-        baseAddress = self.mem_dict[ip]["phys_addr"]
-        mem_range = self.mem_dict[ip]["addr_range"]
-        ipmmio = MMIO(baseAddress, mem_range)
-        return ipmmio.array[0:ipmmio.length].view(dtype)
+    def _memdict_to_view(self, ip, dtype="int16"):
+        """Configures access to internal memory via MMIO."""
+        try:
+            info = self.mem_dict[ip]
+        except KeyError as exc:
+            raise KeyError(f"Memory IP '{ip}' not found in overlay mem_dict.") from exc
+
+        base_address = info["phys_addr"]
+        addr_range = info["addr_range"]
+        ipmmio = MMIO(base_address, addr_range)
+        return ipmmio.array[:ipmmio.length].view(dtype)
 
     def init_mts_clocks(self):
         """
@@ -248,6 +271,20 @@ class MimoMtsOverlay(Overlay):
                 np.copyto(q_buffer[i], self.adc_bufs[2*i+1])
         return i_buffer, q_buffer
 
+    def capture_adc_iq_df(self):
+        fs_ghz = self.adc_sampling_rate / 1e9
+        adc_cap_i, adc_cap_q = self.capture_adc_iq_buf()
+        n_ch, n_samples = adc_cap_i.shape
+        adc_data = {
+            'Time [ns]': np.arange(n_samples) / fs_ghz
+        }
+        for ch in range(n_ch):
+            adc_data[f'adc{ch}_i'] = adc_cap_i[ch]
+            adc_data[f'adc{ch}_q'] = adc_cap_q[ch]
+        df = pd.DataFrame(data=adc_data)
+        df.set_index('Time [ns]', inplace=True)
+        return df
+
     def write_dac_iq_buf(self, i_buffer, q_buffer):
         """Writes DAC samples to all channels
         Follow PG269, DAC I/Q input to Real output (Figure 101/110):
@@ -260,26 +297,41 @@ class MimoMtsOverlay(Overlay):
             s02_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
             s03_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
         """
-        assert np.issubdtype(i_buffer.dtype, np.int16), \
-            "i_buffer dtype of np.int16 required."
-        assert np.issubdtype(q_buffer.dtype, np.int16), \
-            "q_buffer dtype of np.int16 required."
         assert i_buffer.size == self.dac_player.size // 2, \
             "i_buffer size must be half of the DAC player buffer size."
         assert q_buffer.size == self.dac_player.size // 2, \
             "q_buffer size must be half of the DAC player buffer size."
-        self.dac_player[0::2] = i_buffer
-        self.dac_player[1::2] = q_buffer
+        self.dac_player[0::2] = i_buffer.astype(np.int16)
+        self.dac_player[1::2] = q_buffer.astype(np.int16)
 
-    def capture_dac_iq_buf(ol, i_buffer=None, q_buffer=None):
-        length = ol.dac_capture.size // 2
+        if hasattr(self, 'wave_gen'):
+            self.wave_gen.flush()
+
+    def write_dac_complex(self, c_buffer):
+        """Writes complex DAC samples to all channels"""
+        self.write_dac_iq_buf(c_buffer.real, c_buffer.imag)
+
+    def capture_dac_iq_buf(self, i_buffer=None, q_buffer=None):
+        length = self.dac_capture.size // 2
         if i_buffer is None:
             i_buffer = np.empty((length,), dtype=np.int16)
         if q_buffer is None:
             q_buffer = np.empty((length,), dtype=np.int16)
-        np.copyto(i_buffer, ol.dac_capture[0::2])
-        np.copyto(q_buffer, ol.dac_capture[1::2])
+        np.copyto(i_buffer, self.dac_capture[0::2])
+        np.copyto(q_buffer, self.dac_capture[1::2])
         return i_buffer, q_buffer
+
+    def capture_dac_iq_df(self):
+        fs_ghz = self.dac_sampling_rate / 1e9
+        dac_cap_i, dac_cap_q = self.capture_dac_iq_buf()
+        dac_data = {
+            'dac_i': dac_cap_i,
+            'dac_q': dac_cap_q,
+            'Time [ns]': np.arange(len(dac_cap_i)) / fs_ghz * 2
+        }
+        df = pd.DataFrame(data=dac_data)
+        df.set_index('Time [ns]', inplace=True)
+        return df
 
     def set_dac_mixer(self, freq_mhz=0, nyquist=1, phase=0):
         self.rfdc.mts_dac_config.SysRef_Enable = 1
@@ -297,7 +349,7 @@ class MimoMtsOverlay(Overlay):
         for dac_block in self.dac_blocks.ravel():
             dac_block.NyquistZone = nyquist
             dac_block.MixerSettings = mixer_settings_dac
-            dac_block.InterpolationFactor = self.ol_info['rfdc']['dac_interplation_factor']
+            dac_block.InterpolationFactor = self.ol_info['rfdc']['dac_interpolation_factor']
             dac_block.ResetNCOPhase()
 
         self.rfdc.mts_dac_config.SysRef_Enable = 0
@@ -352,7 +404,7 @@ class MimoMtsOverlay(Overlay):
             'FineMixerScale': xrfdc.MIXER_SCALE_1P0
         }
         dac_block.InterpolationFactor = \
-            self.ol_info['rfdc']['dac_interplation_factor']
+            self.ol_info['rfdc']['dac_interpolation_factor']
         dac_block.ResetNCOPhase()
         self.rfdc.mts_dac()
 

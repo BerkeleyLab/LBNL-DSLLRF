@@ -4,19 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mimo_mts"
-version = "0.1.0"
-authors = [
-  {name = "Qiang Du", email = "QDu@lbl.gov"},
-  {name = "Shreeharshini Murthy", email = "SDMurthy@lbl.gov"},
-  {name = "Keith Penney", email = "kpenney@lbl.gov"},
-]
-description = "RFSoC based Many-In-Many-Output control with Multi-Tile Synchronization"
+version = "0.2.0"
+description = "RFSoC based Many-In-Many-Output Controller"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "pynq==3.0.1",
     "smbus2==0.4.3",
-    "softioc==4.6.1"
+    "softioc==4.7.1",
+    "cocotb==2.0.1",
+    "numpy>=2.2.4",
+    "cocotbext-axi>=0.1.28"
 ]
 license = "LicenseRef-Government-Use"
 license-files = ["LICEN[CS]E*"]
@@ -34,6 +32,7 @@ exclude = ["mimo_mts.tests"]
 
 [project.scripts]
 mimo-zcu208-ioc = "mimo_mts.ioc.app_iocs:mimo_zcu208_ioc"
+mimo5g-zcu208-ioc = "mimo_mts.ioc.app_iocs:mimo5g_zcu208_ioc"
 mimo-lbl208-ioc = "mimo_mts.ioc.app_iocs:mimo_lbl208_ioc"
 mimo-zcu216-ioc = "mimo_mts.ioc.app_iocs:mimo_zcu216_ioc"
 llrf-zcu208-ioc = "mimo_mts.ioc.app_iocs:llrf_zcu208_ioc"

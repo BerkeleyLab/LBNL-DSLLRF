@@ -36,42 +36,71 @@ This work was presented as in the [Low Level 2025 Radio Frequency Workshop](http
 
 ## 🚀 Quick Start
 
-1. Download board image from [pynq.io](https://www.pynq.io/boards.html), e.g. `ZCU208-3.0.1.img`.
+1. Download board image from [pynq.io](https://www.pynq.io/boards.html), [`ZCU208-3.0.1.img`](https://bit.ly/zcu208_v3_0_1). Unzip and get `zcu208_v3.0.1.img`.
 
 2. Flash SD card:
 
    ```bash
    sudo umount /dev/sdb1
-   sudo dd bs=4M if=ZCU208-3.0.1.img of=/dev/sdb status=progress
+   sudo dd bs=4M if=zcu208_v3.0.1.img of=/dev/sdb status=progress
    ```
 
     See [details](https://pynq.readthedocs.io/en/latest/appendix/sdcard.html).
-    The SD card provides the boot image for the on-board processor, which runs Linux to facilitate access to the RFSoC.
 
-3. Boot. Clone this repo and run:
-   ```bash
-    ./install.sh
-   ```
+3. Boot. Prepare environment on the board:
 
-    This includes overlay drivers and EPICS IOCs installation. This step requires that the board has an open connection to the internet to clone repository and install the required Python packages.
-
-    SSH into the Linux machine running on the microcontroller by accessing the Xilinx account (username = password = 'xilinx' at the default ip address:
+    SSH into the Linux:
     ```bash
     ssh xilinx@192.168.2.99
     ```
 
-    Clone the repository into the `/home/xilinx/jupyter_notebooks` directory.
-
-    <!-- In this repository, click the green check mark at the top right to see the latest jobs for each hardware target. -->
-    Download the artifact of interest from [GitLab artifacts](https://gitlab.lbl.gov/llrf-projects/pynq_llrf/-/artifacts) and copy the bitfile (.bit) and hardware description file (.hwh) into the board in `/home/xilinx/jupyter_notebooks/pynq_llrf/mimo_mts/overlays/`
-
-4. [Optional] Change hostname. Example:
+    Clone the repository into the `/home/xilinx/jupyter_notebooks` directory, then run install script:
 
    ```bash
-   sudo -E pynq_hostname.sh lbl208
+    cd ~/jupyter_notebooks
+    git clone --recursive https://github.com/BerkeleyLab/LBNL-DSLLRF.git dsllrf
+    cd dsllrf
+    ./install.sh
    ```
 
-5. Connect a 500MHz, 0dBm clock to CLK104 J11. Connect SSMP cables for ADC/DAC sampling clocks.
+   LBNL has an updated version of CLK104 board, which requires a device tree update by this step:
+
+   ```bash
+    sudo cp mimo_mts/boot.py /boot/
+   ```
+
+4. Prepare Overlay:
+
+    * Synthesize overlay image on a computer with Vivado 2022.1 installed. Clone this repo and:
+
+      ```bash
+      git clone --recursive https://github.com/BerkeleyLab/LBNL-DSLLRF.git dsllrf
+      cd dsllrf/designs/<board>/<design>
+      make
+      ```
+      where:
+      * `<board>` is one of `[zcu208, lbl208, zcu216]`
+      * `<design>` is one of the available directory names like `mimo_mts`.
+      
+      Copy over the overlay files (both bitstream file and hardware descripton file) on the SD card:
+
+      ```bash
+      scp _xilinx/mimo_mts.{bit,hwh} xilinx@192.168.2.99:~/jupyter_notebooks/pynq_llrf/mimo_mts/overlays/
+      ```
+
+    * Alternatively, download the CI generated overlay from [GitLab artifacts](https://gitlab.lbl.gov/llrf-projects/pynq_llrf/-/artifacts). This option is not available on github.
+
+5. [Optional] Change hostname and/or IP address. ssh on the board, then:
+
+  * Change hostname
+
+    ```bash
+    sudo -E pynq_hostname.sh lbl208
+    ```
+
+  * Change static IP address. Update `192.168.2.99` in `/etc/network/interfaces.d/eth0`.
+
+6. Connect a 500MHz, 0dBm clock to CLK104 J11. Connect SSMP cables for ADC/DAC sampling clocks.
 
 6. Run:
     * For testing, run jupyter notebooks in `doc/`, see [details](https://pynq.readthedocs.io/en/v2.4/getting_started.html#connecting-to-jupyter-notebook).
@@ -121,7 +150,7 @@ If you use this design in your research or projects, please cite our papers.
 
 1. [RFSoC based LLRF system design at ALS](https://arxiv.org/abs/2510.13192)
 
-    ```bibtex
+    <!-- ```bibtex
     @misc{du2025rfsocbasedllrfdesign,
           title={RFSoC Based LLRF System Design at ALS},
           author={Qiang Du and Shreeharshini Murthy and Victoria Moore and Angel Jurado Lopez and Michael Chin and Shree Subhasish Basak and David Nett and Benjamin Flugstad},
@@ -131,13 +160,13 @@ If you use this design in your research or projects, please cite our papers.
           primaryClass={physics.acc-ph},
           url={https://arxiv.org/abs/2510.13192},
     }
-    ```
+    ``` -->
 
-    [Talk slides](https://indico.jlab.org/event/939/contributions/17436/)
+    [Presentation slides](https://indico.jlab.org/event/939/contributions/17436/)
 
 2. [Comparative Evaluation of Xilinx RFSoC Platform for Low-Level RF Systems](https://arxiv.org/abs/2510.13711)
 
-    ```bibtex
+    <!-- ```bibtex
     @misc{murthy2025comparativeevaluationxilinxrfsoc,
           title={Comparative Evaluation of Xilinx RFSoC Platform for Low-Level RF Systems},
           author={Shreeharshini Dharanesh Murthy and Victoria Moore and Qiang Du and Angel Jurado and Michael Chin and Keith Penney and David Nett and Benjamin Flugstad},
@@ -147,4 +176,4 @@ If you use this design in your research or projects, please cite our papers.
           primaryClass={physics.acc-ph},
           url={https://arxiv.org/abs/2510.13711},
     }
-    ```
+    ``` -->

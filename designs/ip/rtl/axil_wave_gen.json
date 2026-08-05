@@ -1,0 +1,52 @@
+{
+    "ctrl": {
+        "address_offset": 0,
+        "access": "read-write",
+        "size": 64,
+        "fields": {
+            "trigger": {
+                "bit_offset": 0,
+                "bit_width": 1,
+                "access": "read-write",
+                "description": "Trigger waveform output"
+            },
+            "flush": {
+                "bit_offset": 1,
+                "bit_width": 1,
+                "access": "read-write",
+                "description": "Flush write accumulator"
+            },
+            "trigger_mode": {
+                "bit_offset": 2,
+                "bit_width": 1,
+                "access": "read-write",
+                "description": "Trigger mode (0=internal, 1=external)"
+            }
+        }
+    },
+    "wave_length": {
+        "address_offset": 8,
+        "access": "read-write",
+        "size": 64,
+        "description": "Number of samples to output on trigger"
+    },
+    "status": {
+        "address_offset": 16,
+        "access": "read-only",
+        "size": 64,
+        "fields": {
+            "busy": {
+                "bit_offset": 0,
+                "bit_width": 1,
+                "access": "read-only",
+                "description": "Generator is busy (reading or writing)"
+            }
+        }
+    },
+    "waveform_data": {
+        "address_offset": 24,
+        "size": 64,
+        "access": "write-only",
+        "description": "Base address for waveform memory writes"
+    }
+}

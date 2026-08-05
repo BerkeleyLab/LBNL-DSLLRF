@@ -36,10 +36,11 @@ class MimoMtsIoc:
         self.decimation = self.ol.ol_info['ioc']['decimation']
         self.adc_bufs_i, self.adc_bufs_q = self.ol.capture_adc_iq_buf()
         self.n_adc, self.n_samples = self.adc_bufs_i.shape
-        self.fs_ghz = self.ol.board.adc_sampling_rate / 1e9
+        self.adc_fs_ghz = self.ol.adc_sampling_rate / 1e9
+        self.dac_fs_ghz = self.ol.dac_sampling_rate / 1e9
         self.dsp_decimation_factor = self.ol.ol_info['rfdc']['adc_decimation_factor'] * self.decimation
         self.n_dsp_samples = self.n_samples / self.decimation
-        self.dsp_fs_ghz = self.fs_ghz / self.dsp_decimation_factor
+        self.dsp_fs_ghz = self.adc_fs_ghz / self.dsp_decimation_factor
         self.update_adc_bufs()
         self.init_rf_control()
         self._init_per_channel_mixer_cfg()
@@ -67,7 +68,8 @@ class MimoMtsIoc:
         str += f"  ioc_name:    {self.ioc_name}\n"
         str += f"  n_adc:       {self.n_adc}\n"
         str += f"  n_samples:   {self.n_samples}\n"
-        str += f"  fs_ghz:      {self.fs_ghz}\n"
+        str += f"  adc_fs_ghz:  {self.adc_fs_ghz}\n"
+        str += f"  dac_fs_ghz:  {self.dac_fs_ghz}\n"
         str += f"  n_dsp_samples: {self.n_dsp_samples}\n"
         str += f"  dsp_fs_ghz:  {self.dsp_fs_ghz}\n"
         str += f"  decimation:  {self.decimation}\n"
@@ -102,7 +104,7 @@ class MimoMtsIoc:
 
         name = 'ADC:TWF'  # in ns
         self.pvs_in[name] = builder.WaveformIn(
-            name, np.arange(0, self.n_samples/self.fs_ghz, 1/self.fs_ghz))
+            name, np.arange(0, self.n_samples/self.adc_fs_ghz, 1/self.adc_fs_ghz))
         name = 'DSP:TWF'  # in ns, after decimation
         self.pvs_in[name] = builder.WaveformIn(
             name, np.arange(0, self.n_dsp_samples/self.dsp_fs_ghz, 1/self.dsp_fs_ghz))
@@ -308,10 +310,11 @@ class MimoMtsIoc:
 
     def drive_test_awg(self):
         """ Drive DAC with a test arbitrary waveform """
-        Fc = self.fs_ghz / 16  # 250 MHz
+        f_c = self.fs_ghz / 16  # 250 MHz
         t = np.arange(self.ol.dac_player.size) / self.fs_ghz  # ns
         amp = 2**14 - 1
-        dac_wfm = np.exp(1j * 2 * np.pi * Fc * t) * amp
+        # interp_factor = ol.ol_info['rfdc']['dac_interpolation_factor']
+        dac_wfm = np.exp(1j * 2 * np.pi * f_c * t) * amp
         # dac_i = np.ones(self.ol.dac_player.size//2, dtype=np.int16) * 32767
         dac_wfm = dac_wfm[::2]  # decimate by 2
         dac_i = (dac_wfm.real).astype(np.int16)

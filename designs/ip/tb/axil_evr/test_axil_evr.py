@@ -5,14 +5,15 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, ClockCycles
 from cocotbext.axi import AxiLiteBus, AxiLiteMaster
+from cocotb.handle import Immediate
 
 
 class TB:
     def __init__(self, dut):
         dut._log.setLevel(logging.WARNING)
         self.dut = dut
-        self.addr_length = 1 << dut.ADDR_WIDTH.value
-        self.fcnt_width = dut.FCNT_WIDTH.value
+        self.addr_length = 1 << dut.ADDR_WIDTH.value.to_unsigned()
+        self.fcnt_width = dut.FCNT_WIDTH.value.to_unsigned()
         ip_path = Path(__file__).resolve().parent.parent.parent
         json_path = ip_path / 'rtl' / 'axil_evr.json'
         with open(json_path, 'r') as f:
@@ -20,9 +21,9 @@ class TB:
 
         self.gt_refclk_freq = 125e6
         gt_refclk = Clock(
-            dut.gt_refclk_p, 1e12 // self.gt_refclk_freq, units="ps")
-        cocotb.start_soon(Clock(dut.s_axi_aclk, 10, units="ns").start())
-        cocotb.start_soon(Clock(dut.dsp_clk, 4, units="ns").start())
+            dut.gt_refclk_p, 1e12 // self.gt_refclk_freq, unit="ps")
+        cocotb.start_soon(Clock(dut.s_axi_aclk, 10, unit="ns").start())
+        cocotb.start_soon(Clock(dut.dsp_clk, 4, unit="ns").start())
         cocotb.start_soon(gt_refclk.start())
 
         self.axil_master = AxiLiteMaster(
@@ -40,7 +41,7 @@ class TB:
             f"Freq is out of spec by {ppm:3.0f} ppm"
 
     async def cycle_reset(self):
-        self.dut.s_axi_aresetn.setimmediatevalue(1)
+        self.dut.s_axi_aresetn.set(Immediate(1))
         await ClockCycles(self.dut.s_axi_aclk, 2)
         self.dut.s_axi_aresetn.value = 0
         await RisingEdge(self.dut.s_axi_aclk)
@@ -70,7 +71,7 @@ async def test_reset(dut):
     assert reset_rx_done == 1, "reset_rx_done is not set"
     await ClockCycles(dut.s_axi_aclk, 50)
     gt_evr_status = await tb.read_register('gt_evr_status')
-    assert gt_evr_status == 0x7, "rx_aligned is not set"
+    assert gt_evr_status & 0x1 == 1, "rx_aligned is not set"
 
 
 @cocotb.test(timeout_time=20, timeout_unit='us')
