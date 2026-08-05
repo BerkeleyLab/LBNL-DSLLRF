@@ -48,7 +48,7 @@ def plot_adc_psd(wfm, fs=4e9, onsided=True, fullscale=32767, width=8, height=2, 
     fig.suptitle(title, y=1.02)
 
 
-def plot_complex_wfm_stack(cdata, fs=4e9, width=8, height=4, mode='iq', title='', legend=False):
+def plot_complex_wfm_stack(cdata, fs=5e9, width=8, height=4, mode='iq', title='', legend=False):
     fs /= 1e9
     n_ch, n_samples = cdata.shape
     t = np.arange(0, n_samples/fs, 1/fs)

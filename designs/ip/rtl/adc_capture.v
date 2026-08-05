@@ -1,11 +1,14 @@
 `timescale 1ns / 1ns
 
-// Captures data from an AXIS interface to a BRAM.
-
+// Captures data from an AXIS interface to a BRAM, byte addressing.
+// number of rows:          N_ROWS = 2**AW
+// number of columns (byte):N_COLS = SAMP_DW * SAMP_NUM / 8
+// total number of bytes:   N_BYTES = N_ROWS * N_COLS
+// total number of samples: N_BYTES / (SAMP_DW / 8)
 module adc_capture #(
     parameter integer SAMP_DW = 16,
     parameter integer SAMP_NUM = 16,
-    parameter integer AW = 16          // 2**AW number of rows, total number of samples: 2**AW * DW/16
+    parameter integer AW = 16
 ) (
     (* X_INTERFACE_PARAMETER = "MASTER_TYPE BRAM_CTRL, READ_WRITE_MODE WRITE_ONLY" *)
 
@@ -44,28 +47,27 @@ module adc_capture #(
     input wire [AW-1:0]     n_rows,
     input wire              trigger     // single clock cycle pulse
 );
-    localparam integer NUM_COL = SAMP_DW*SAMP_NUM/8; // increment address by DW/8 bytes
-
-    assign bram_clk = axis_clk;
-    assign bram_rst = ~axis_aresetn;
-    assign s_axis_tready = 1'b1;
+    localparam integer DW = SAMP_DW * SAMP_NUM;
+    localparam integer N_COLS = DW / 8; // increment address by DW/8 bytes
 
     wire pulse_valid;
-    pulse_gen #(
-        .AW(AW)
-    ) pulse_gen_inst (
-        .clk(axis_clk),
-        .trigger(trigger),
-        .high_len(n_rows),
-        .pulse_out(pulse_valid)
+    pulse_gen #(.AW(AW)) pulse_gen_inst (
+        .clk        (axis_clk),
+        .trigger    (trigger),
+        .high_len   (n_rows),
+        .pulse_out  (pulse_valid)
     );
 
     // Assign BRAM interface signals
+    assign bram_clk = axis_clk;
+    assign bram_rst = ~axis_aresetn;
     assign bram_wdata = s_axis_tdata;
-    assign bram_we = s_axis_tvalid ? {NUM_COL{1'b1}} : {NUM_COL{1'b0}};
+    assign bram_we = s_axis_tvalid ? {N_COLS{1'b1}} : {N_COLS{1'b0}};
     assign bram_en = pulse_valid;
     always @(posedge axis_clk) begin
-        bram_addr <= pulse_valid ? bram_addr + NUM_COL : 0;
+        bram_addr <= pulse_valid ? bram_addr + N_COLS : 0;
     end
+
+    assign s_axis_tready = 1'b1;
 
 endmodule

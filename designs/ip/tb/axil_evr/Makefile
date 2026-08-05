@@ -1,8 +1,8 @@
 include ../../../../dir_list.mk
 
-DUT      = axil_evr
-TOPLEVEL = $(DUT)
-MODULE   = test_$(DUT)
+DUT                 = axil_evr
+COCOTB_TOPLEVEL     = $(DUT)
+COCOTB_TEST_MODULES = test_$(DUT)
 VERILOG_SOURCES += $(RTL_DIR)/$(DUT).v
 VERILOG_SOURCES += $(RTL_DIR)/axil_csr.v
 VERILOG_SOURCES += $(BEDROCK_DIR)/serial_io/EVG_EVR/evr_gt_wrapper.v

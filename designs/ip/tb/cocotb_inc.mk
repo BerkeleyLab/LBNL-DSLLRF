@@ -1,7 +1,7 @@
 CURR_DIR     := $(dir $(lastword $(MAKEFILE_LIST)))
 TOPLEVEL_LANG = verilog
 
-SIM ?= icarus
+SIM = verilator
 WAVES ?= 0
 
 COCOTB_HDL_TIMEUNIT = 1ns
@@ -9,7 +9,7 @@ COCOTB_HDL_TIMEPRECISION = 1ps
 
 ifeq ($(SIM), icarus)
 	COMPILE_ARGS += -Wall -Wno-timescale
-	COMPILE_ARGS += $(foreach v,$(filter PARAM_%,$(.VARIABLES)),-P $(TOPLEVEL).$(subst PARAM_,,$(v))=$($(v)))
+	COMPILE_ARGS += $(foreach v,$(filter PARAM_%,$(.VARIABLES)),-P $(COCOTB_TOPLEVEL).$(subst PARAM_,,$(v))=$($(v)))
 else ifeq ($(SIM), verilator)
 	COMPILE_ARGS += --timing
 	COMPILE_ARGS += $(foreach v,$(filter PARAM_%,$(.VARIABLES)),-G$(subst PARAM_,,$(v))=$($(v)))

@@ -9,7 +9,7 @@ variables:
   DOCKER_DRIVER: overlay2
   GIT_SUBMODULE_STRATEGY: normal
 
-image: mohs.dhcp.lbl.gov/xilinx_env_trixie
+image: mohs.dhcp.lbl.gov/xilinx_env_trixie_custom_verilator
 
 flake8:
   stage: test
@@ -18,12 +18,11 @@ flake8:
 
 rtl_test:
   before_script:
-    - apt-get install verilator
-    - pip install -r designs/ip/tb/requirements.txt
+    - pip install -e .
     - cd designs/ip/tb
   stage: test
   script:
-    - make RANDOM_SEED=1747031728
+    - make
 
 bitfile_synthesis_zcu216:
   before_script:

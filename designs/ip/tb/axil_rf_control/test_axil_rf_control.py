@@ -6,6 +6,7 @@ import random
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, ClockCycles
 from cocotbext.axi import AxiLiteBus, AxiLiteMaster
+from cocotb.handle import Immediate
 
 
 class TB:
@@ -17,7 +18,7 @@ class TB:
         with open(json_path, 'r') as f:
             self.registers = json.load(f)
 
-        cocotb.start_soon(Clock(dut.s_axi_aclk, 4, units="ns").start())
+        cocotb.start_soon(Clock(dut.s_axi_aclk, 4, unit="ns").start())
 
         self.dut.rf_permit_in.value = 1
         self.dut.ext_trigger_in.value = 0
@@ -29,7 +30,7 @@ class TB:
             reset_active_level=False)
 
     async def cycle_reset(self):
-        self.dut.s_axi_aresetn.setimmediatevalue(1)
+        self.dut.s_axi_aresetn.set(Immediate(1))
         await ClockCycles(self.dut.s_axi_aclk, 2)
         for v in [0, 1]:
             self.dut.s_axi_aresetn.value = v
@@ -62,8 +63,8 @@ async def test_write(dut):
 
     for reg, value in test_regs_dict.items():
         await tb.write_register(reg, value)
-        reg_val = getattr(tb.dut, reg).value.integer
-        tb.dut._log.warning(f"reg: {reg:20s} val: {reg_val:>8d}, expect: {value:>8d}")
+        reg_val = getattr(tb.dut, reg).value
+        cocotb.log.warning(f"reg: {reg:20s} val: {int(reg_val):>8d}, expect: {value:>8d}")
         assert reg_val == value, \
             f"write {reg} mismatch: {reg_val} != {value}"
         reg_val_readback = await tb.read_register(reg)
@@ -91,8 +92,8 @@ async def test_read(dut):
 
     for reg, value in test_regs_dict.items():
         reg_val_readback = await tb.read_register(reg)
-        reg_val = getattr(tb.dut, reg).value.integer
-        tb.dut._log.warning(f"reg: {reg:20s} val: {reg_val:>8d}, expect: {value:>8d}")
+        reg_val = getattr(tb.dut, reg).value
+        cocotb.log.warning(f"reg: {reg:20s} val: {int(reg_val):>8d}, expect: {value:>8d}")
         assert reg_val_readback == reg_val == value, \
             f"{reg} mismatch: {reg_val} != {reg_val}"
 
@@ -117,5 +118,5 @@ async def test_trigger_delay(dut):
     for ix in range(3):
         await RisingEdge(tb.dut.s_axi_aclk)
         v = tb.dut.trigger_out.value
-        tb.dut._log.warning(f"dut.trigger_out: {v}")
+        cocotb.log.warning(f"dut.trigger_out: {v}")
         assert v == (ix == 1), "unexpected trigger output"

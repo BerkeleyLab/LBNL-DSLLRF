@@ -1,4 +1,4 @@
 [submodule "bedrock"]
 	path = bedrock
 	url = https://github.com/BerkeleyLab/Bedrock
-    shallow = true
+	shallow = true

@@ -16,7 +16,7 @@ class AlsLlrfZCU208(MimoMtsIoc):
 
     def init_rf_control(self):
         self.llrf_register_map.trig_sel = 0  # internal trigger
-        self.llrf_register_map.pulse_length = 4096  # * 4ns
+        self.llrf_register_map.pulse_length = 4096  # * 4ns   XXX
         self.llrf_register_map.trig_period = 250e6
         self.llrf_register_map.trig_delay = 0
         self.llrf_register_map.trig_divide = 1
@@ -136,7 +136,7 @@ class AlsLlrfLBL208(MimoMtsIoc):
 
     def init_rf_control(self):
         self.llrf_register_map.trig_sel = 1  # EVR trigger
-        self.llrf_register_map.pulse_length = 4096  # * 4ns
+        self.llrf_register_map.pulse_length = 4096  # * 4ns  XXX
         self.llrf_register_map.trig_period = 250e6
         self.llrf_register_map.trig_delay = 0
         self.llrf_register_map.trig_divide = 1
@@ -157,6 +157,17 @@ class MimoZCU208(MimoMtsIoc):
         super().init_rf_control()
         self.drive_ones_awg()
         # self.drive_test_awg()
+
+
+class AlsMimo5GZCU208(MimoMtsIoc):
+    def __init__(self, **kwargs):
+        assert os.environ['BOARD'] == 'ZCU208', "This IOC is only for ZCU208 board."
+        kwargs.setdefault('ol_name', 'ALS_MIMO5G_ZCU208')
+        super().__init__(**kwargs)
+
+    def init_rf_control(self):
+        super().init_rf_control()
+        self.drive_ones_awg()
 
 
 class MimoLBL208(MimoMtsIoc):
@@ -190,6 +201,11 @@ def llrf_lbl208_ioc():
 
 def mimo_zcu208_ioc():
     ioc = MimoZCU208()
+    ioc.run_ioc()
+
+
+def mimo5g_zcu208_ioc():
+    ioc = AlsMimo5GZCU208()
     ioc.run_ioc()
 
 
