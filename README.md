@@ -81,11 +81,11 @@ This work was presented as in the [Low Level 2025 Radio Frequency Workshop](http
       where:
       * `<board>` is one of `[zcu208, lbl208, zcu216]`
       * `<design>` is one of the available directory names like `mimo_mts`.
-      
+
       Copy over the overlay files (both bitstream file and hardware descripton file) on the SD card:
 
       ```bash
-      scp _xilinx/mimo_mts.{bit,hwh} xilinx@192.168.2.99:~/jupyter_notebooks/pynq_llrf/mimo_mts/overlays/
+      scp _xilinx/mimo_mts.{bit,hwh} xilinx@192.168.2.99:~/jupyter_notebooks/pynq_llrf/mimo_mts/overlays/zcu208/
       ```
 
     * Alternatively, download the CI generated overlay from [GitLab artifacts](https://gitlab.lbl.gov/llrf-projects/pynq_llrf/-/artifacts). This option is not available on github.

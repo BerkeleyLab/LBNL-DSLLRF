@@ -1,4 +1,4 @@
-from pynq import Overlay, MMIO, PL, DeviceTreeSegment
+from pynq import Overlay, MMIO, PL, DeviceTreeSegment, Interrupt
 from mimo_mts.utils.config_clk104 import CLK104Config
 from mimo_mts.utils.config_si570 import SI570
 from mimo_mts.drivers.evr import EVR
@@ -23,15 +23,11 @@ class MimoMtsOverlay(Overlay):
     multiple RF DAC and ADC tiles to achieve latency alignment.
     """
     def __init__(self, config: str = "MIMO_ZCU208", **kwargs):
-        self.ol_info = ol_info = ol_configs[config]
+        self.ol_info = ol_info = ol_configs[config].copy()
+        self.ol_info.update({k: kwargs[k] for k in self.ol_info if k in kwargs})
+        kwargs = {k: kwargs[k] for k in kwargs.keys() - self.ol_info.keys()}
         assert Path(ol_info['bitfile_name']).exists(), f"File {ol_info['bitfile_name']} not found."
         self.board = ol_info['board']
-        self.adc_sampling_rate = ol_info['sampling_rate_hz']['adc']
-        self.dac_sampling_rate = ol_info['sampling_rate_hz']['dac']
-        assert self.adc_sampling_rate <= self.board.max_adc_sampling_rate, \
-            f"ADC sampling rate {self.adc_sampling_rate / 1e9} GHz too high"
-        assert self.dac_sampling_rate <= self.board.max_dac_sampling_rate, \
-            f"DAC sampling rate {self.dac_sampling_rate / 1e9} GHz too high"
 
         # Load device-tree segments before the kernel-modules and drivers get loaded
         if 'device_tree_segments' in ol_info:
@@ -54,10 +50,29 @@ class MimoMtsOverlay(Overlay):
         PL.reset()
         super().__init__(str(ol_info['bitfile_name']), **kwargs)
 
+        self._initialize_dev()
+
         if "rfdc" in self.ip_dict and "rfdc" in ol_info:
-            self.mixer_cfg = ol_info['rfdc']['mixer']
+            self.adc_sampling_rate = ol_info['sampling_rate_hz']['adc']
+            self.dac_sampling_rate = ol_info['sampling_rate_hz']['dac']
+            assert self.adc_sampling_rate <= self.board.max_adc_sampling_rate, \
+                f"ADC sampling rate {self.adc_sampling_rate / 1e9} GHz too high"
+            assert self.dac_sampling_rate <= self.board.max_dac_sampling_rate, \
+                f"DAC sampling rate {self.dac_sampling_rate / 1e9} GHz too high"
+            self._adc_mixer_nco_freq_mhz = ol_info['rfdc']['mixer']['adc_mixer_nco_freq_mhz']
+            self._adc_mixer_nco_nyquist = ol_info['rfdc']['mixer']['adc_mixer_nco_nyquist']
+            self._adc_mixer_nco_phase = ol_info['rfdc']['mixer']['adc_mixer_nco_phase']
+            self._dac_mixer_nco_freq_mhz = ol_info['rfdc']['mixer']['dac_mixer_nco_freq_mhz']
+            self._dac_mixer_nco_nyquist = ol_info['rfdc']['mixer']['dac_mixer_nco_nyquist']
+            self._dac_mixer_nco_phase = ol_info['rfdc']['mixer']['dac_mixer_nco_phase']
             self.mts_cfg = ol_info['rfdc']['mts']
-            self._initialize_dev()
+            self.adc_mixer_mode = self.ol_info['rfdc']['mixer']['adc_mixer_mode']
+            self.dac_mixer_mode = self.ol_info['rfdc']['mixer']['dac_mixer_mode']
+            assert self.adc_mixer_mode in (xrfdc.MIXER_MODE_R2C, xrfdc.MIXER_MODE_C2C), \
+                f"Unsupported ADC mixer mode: {self.adc_mixer_mode}"
+            assert self.dac_mixer_mode in (xrfdc.MIXER_MODE_C2R, xrfdc.MIXER_MODE_C2C), \
+                f"Unsupported DAC mixer mode: {self.dac_mixer_mode}"
+            self._initialize_rfdc_dev()
             self._initialize_memories()
             self._initialize_mts()
             self._initialize_mixers()
@@ -68,12 +83,76 @@ class MimoMtsOverlay(Overlay):
         description += "\n"
         if "rfdc" in self.ip_dict:
             description += self.report_mts_latency()
+            description += self.report_mixers()
+        if hasattr(self, 'write_done_irq'):
+            description += f"< Interrupt:>\n   write_done_irq at {self.write_done_irq.number}\n"
         return description
+
+    @property
+    def dac_mixer_nco_freq_mhz(self):
+        return self._dac_mixer_nco_freq_mhz
+
+    @dac_mixer_nco_freq_mhz.setter
+    def dac_mixer_nco_freq_mhz(self, val):
+        self.set_dac_mixer(freq_mhz=val, nyquist=self.dac_mixer_nco_nyquist, phase=self.dac_mixer_nco_phase)
+
+    @property
+    def dac_mixer_nco_nyquist(self):
+        return self._dac_mixer_nco_nyquist
+
+    @dac_mixer_nco_nyquist.setter
+    def dac_mixer_nco_nyquist(self, val):
+        self.set_dac_mixer(freq_mhz=self.dac_mixer_nco_freq_mhz, nyquist=val, phase=self.dac_mixer_nco_phase)
+
+    @property
+    def dac_mixer_nco_phase(self):
+        return self._dac_mixer_nco_phase
+
+    @dac_mixer_nco_phase.setter
+    def dac_mixer_nco_phase(self, val):
+        self.set_dac_mixer(freq_mhz=self.dac_mixer_nco_freq_mhz, nyquist=self.dac_mixer_nco_nyquist, phase=val)
+
+    @property
+    def adc_mixer_nco_freq_mhz(self):
+        return self._adc_mixer_nco_freq_mhz
+
+    @adc_mixer_nco_freq_mhz.setter
+    def adc_mixer_nco_freq_mhz(self, val):
+        self.set_adc_mixer(freq_mhz=val, nyquist=self.adc_mixer_nco_nyquist, phase=self.adc_mixer_nco_phase)
+
+    @property
+    def adc_mixer_nco_nyquist(self):
+        return self._adc_mixer_nco_nyquist
+
+    @adc_mixer_nco_nyquist.setter
+    def adc_mixer_nco_nyquist(self, val):
+        self.set_adc_mixer(freq_mhz=self.adc_mixer_nco_freq_mhz, nyquist=val, phase=self.adc_mixer_nco_phase)
+
+    @property
+    def adc_mixer_nco_phase(self):
+        return self._adc_mixer_nco_phase
+
+    @adc_mixer_nco_phase.setter
+    def adc_mixer_nco_phase(self, val):
+        self.set_adc_mixer(freq_mhz=self.adc_mixer_nco_freq_mhz, nyquist=self.adc_mixer_nco_nyquist, phase=val)
+
+    @property
+    def mixer_cfg(self):
+        return {
+            'adc_mixer_nco_freq_mhz': self.adc_mixer_nco_freq_mhz,
+            'adc_mixer_nco_nyquist': self.adc_mixer_nco_nyquist,
+            'adc_mixer_nco_phase': self.adc_mixer_nco_phase,
+            'dac_mixer_nco_freq_mhz': self.dac_mixer_nco_freq_mhz,
+            'dac_mixer_nco_nyquist': self.dac_mixer_nco_nyquist,
+            'dac_mixer_nco_phase': self.dac_mixer_nco_phase,
+        }
 
     def _initialize_dev(self):
         """Alias xrfdc, rf_control and evr, enumurate rfdc blocks."""
         if 'axil_rf_control_0' in self.ip_dict:
             self.rf_control = self.axil_rf_control_0
+        elif 'hier_llrf/axil_rf_control_0' in self.ip_dict:
+            self.rf_control = self.hier_llrf.axil_rf_control_0
         elif 'axil_llrf_0' in self.ip_dict:
             self.rf_control = self.axil_llrf_0
 
@@ -86,26 +165,49 @@ class MimoMtsOverlay(Overlay):
         if 'transmitter/hier_dac_play/axil_wave_gen_0' in self.ip_dict:
             self.wave_gen = self.transmitter.hier_dac_play.axil_wave_gen_0
 
+        for path in self.interrupt_pins.keys():
+            if path.endswith('xpm_cdc_irq/dest_pulse') \
+                    or path.endswith('write_done'):
+                self.write_done_irq = Interrupt(path)
+                print(f"Interrupt {path} created with number {self.write_done_irq.number}")
+
+    def _initialize_rfdc_dev(self):
         if self.board.converters_per_tile == 2:
-            self.dac_blocks = np.array([
-                [self.rfdc.dac_tiles[i].blocks[j] for j in [0, 2]]
-                for i in range(4)])
-            self.adc_blocks = np.array([
-                [self.rfdc.adc_tiles[i].blocks[j] for j in [0, 1]]
-                for i in range(4)])
+            # See PG269 Dual RF-ADC Configuration Options, Figure 52-57
+            active_adc_blocks = {
+                xrfdc.MIXER_MODE_R2C: [0, 1],
+                xrfdc.MIXER_MODE_C2C: [0]
+            }
+            # See PG269 Dual RF-DAC Configuration Options, Figure 101-106
+            active_dac_blocks = {
+                xrfdc.MIXER_MODE_C2R: [0, 2],
+                xrfdc.MIXER_MODE_C2C: [0]
+            }
         elif self.board.converters_per_tile == 4:
-            self.dac_blocks = np.array([
-                [self.rfdc.dac_tiles[i].blocks[j] for j in range(4)]
-                for i in range(4)])
-            self.adc_blocks = np.array([
-                [self.rfdc.adc_tiles[i].blocks[j] for j in range(4)]
-                for i in range(4)])
+            # See PG269 Quad RF-ADC Configuration Options, Figure 61-66
+            active_adc_blocks = {
+                xrfdc.MIXER_MODE_R2C: [0, 1, 2, 3],
+                xrfdc.MIXER_MODE_C2C: [0, 2]
+            }
+            # See PG269 Quad RF-DAC Configuration Options, Figure 110-115
+            active_dac_blocks = {
+                xrfdc.MIXER_MODE_C2R: [0, 1, 2, 3],
+                xrfdc.MIXER_MODE_C2C: [0, 2]
+            }
+
+        self.dac_blocks = np.array([
+            [self.rfdc.dac_tiles[i].blocks[j] for j in active_dac_blocks[self.dac_mixer_mode]]
+            for i in range(4)])
+        self.adc_blocks = np.array([
+            [self.rfdc.adc_tiles[i].blocks[j] for j in active_adc_blocks[self.adc_mixer_mode]]
+            for i in range(4)])
 
     def _initialize_memories(self):
         """Initialize ADC/DAC waveform buffers."""
         self.dac_player = None
         self.dac_capture = None
 
+        # DAC player is broadcasted to all DAC tiles, so only one buffer is needed
         if 'transmitter/hier_dac_play/axi_bram_ctrl_0' in self.mem_dict:
             self.dac_player = self._memdict_to_view(
                 "transmitter/hier_dac_play/axi_bram_ctrl_0")
@@ -116,9 +218,14 @@ class MimoMtsOverlay(Overlay):
             self.dac_capture = self._memdict_to_view(
                 "transmitter/hier_dac_cap/axi_bram_ctrl_0")
 
+        adc_streams = {
+            xrfdc.MIXER_MODE_R2C: [0, 1, 2, 3],
+            xrfdc.MIXER_MODE_C2C: [0, 1]
+        }
+
         self.adc_bufs = []
         for tile in range(self.board.num_adc_tiles):
-            for i in range(4):
+            for i in adc_streams[self.adc_mixer_mode]:
                 self.adc_bufs.append(
                     self._memdict_to_view(
                         f"receiver/m{tile}{i}/axi_bram_ctrl_0"))
@@ -141,13 +248,13 @@ class MimoMtsOverlay(Overlay):
 
     def _initialize_mixers(self):
         self.set_dac_mixer(
-            self.mixer_cfg['dac_mixer_nco_freq_mhz'],
-            self.mixer_cfg['dac_mixer_nco_nyquist'],
-            self.mixer_cfg['dac_mixer_nco_phase'])
+            self.dac_mixer_nco_freq_mhz,
+            self.dac_mixer_nco_nyquist,
+            self.dac_mixer_nco_phase)
         self.set_adc_mixer(
-            self.mixer_cfg['adc_mixer_nco_freq_mhz'],
-            self.mixer_cfg['adc_mixer_nco_nyquist'],
-            self.mixer_cfg['adc_mixer_nco_phase'])
+            self.adc_mixer_nco_freq_mhz,
+            self.adc_mixer_nco_nyquist,
+            self.adc_mixer_nco_phase)
 
     def _memdict_to_view(self, ip, dtype="int16"):
         """Configures access to internal memory via MMIO."""
@@ -224,45 +331,69 @@ class MimoMtsOverlay(Overlay):
 
     def report_mts_latency(self):
         """Reports the MTS latency for each tile"""
-        str = "< RFDC MTS Latency Report: >\n"
+        str = "< RFDC MTS Latency: >\n"
         for i in range(self.board.num_dac_tiles):
-            str += (f"DAC Tile {i} Latency: "
+            str += (f"  DAC Tile {i} Latency: "
                     f"{self.rfdc.mts_dac_config.Latency[i]:3d}, "
                     f"Offset: {self.rfdc.mts_dac_config.Offset[i]}\n")
         for i in range(self.board.num_adc_tiles):
-            str += (f"ADC Tile {i} Latency: "
+            str += (f"  ADC Tile {i} Latency: "
                     f"{self.rfdc.mts_adc_config.Latency[i]:3d}, "
                     f"Offset: {self.rfdc.mts_adc_config.Offset[i]}\n")
         return str
 
+    def report_mixers(self):
+        """Reports the mixer settings"""
+        str = "< RFDC Mixer: >\n"
+        str += (f"  DAC mixer: freq={self.dac_mixer_nco_freq_mhz} MHz, "
+                f"nyquist={self.dac_mixer_nco_nyquist}, "
+                f"phase={self.dac_mixer_nco_phase} deg\n")
+        str += (f"  ADC mixer: freq={self.adc_mixer_nco_freq_mhz} MHz, "
+                f"nyquist={self.adc_mixer_nco_nyquist}, "
+                f"phase={self.adc_mixer_nco_phase} deg\n")
+        return str
+
     def capture_adc_iq_buf(self, i_buffer=None, q_buffer=None):
         """Captures ADC samples from all channels
-        Follow PG269, ADC Real input to I/Q output:
-          Dual RF-ADC: Figure 57:
-            m00_axis_data -> Tile0, ADC0: I7, I6, I5, I4, I3, I2, I1, I0
-            m01_axis_data -> Tile0, ADC0: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
-            m02_axis_data -> Tile0, ADC1: I7, I6, I5, I4, I3, I2, I1, I0
-            m03_axis_data -> Tile0, ADC1: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
-          Quad RF-ADC: Figure 63:
-            m00_axis_data -> Tile0, ADC0: Q3, I3, Q2, I2, Q1, I1, Q0, I0
-            m01_axis_data -> Tile0, ADC1: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
-            m02_axis_data -> Tile0, ADC2: Q3, I3, Q2, I2, Q1, I1, Q0, I0
-            m03_axis_data -> Tile0, ADC3: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
+        Follow PG269:
+          Dual RF-ADC Real Input to I/Q Output, Figure 52-54:
+            m00_axis_data -> ADC0: I7, I6, I5, I4, I3, I2, I1, I0
+            m01_axis_data -> ADC0: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
+            m02_axis_data -> ADC1: I7, I6, I5, I4, I3, I2, I1, I0
+            m03_axis_data -> ADC1: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
+          Dual RF-ADC I/Q Input to I/Q Output Figure 55-57:
+            m00_axis_data -> ADC0/1: I7, I6, I5, I4, I3, I2, I1, I0
+            m01_axis_data -> ADC0/1: Q7, Q6, Q5, Q4, Q3, Q2, Q1, Q0
+          Quad RF-ADC Real Input to I/Q Output, Figure 61-63:
+            adc_iq_interleave = True
+            m00_axis_data -> ADC0: Q3, I3, Q2, I2, Q1, I1, Q0, I0
+            m01_axis_data -> ADC1: Q3, I3, Q2, I2, Q1, I1, Q0, I0
+            m02_axis_data -> ADC2: Q3, I3, Q2, I2, Q1, I1, Q0, I0
+            m03_axis_data -> ADC3: Q3, I3, Q2, I2, Q1, I1, Q0, I0
+          Quad RF-ADC I/Q Input to I/Q Output, Figure 64-66:
+            XXX: Figure 66 conflicts with Figure 64!
+            XXX: should be: adc_iq_interleave = True
+            m00_axis_data -> ADC0/1: Q3, I3, Q2, I2, Q1, I1, Q0, I0
+            m02_axis_data -> ADC2/3: Q3, I3, Q2, I2, Q1, I1, Q0, I0
         """
         length = len(self.adc_bufs[0])
         if self.board.adc_iq_interleave:
             length //= 2  # interleave I/Q samples
+        if self.adc_mixer_mode == xrfdc.MIXER_MODE_C2C:
+            n_signals = self.board.n_adcs // 2
+        else:
+            n_signals = self.board.n_adcs
         if i_buffer is None:
-            i_buffer = np.empty((self.board.n_adcs, length), dtype=np.int16)
+            i_buffer = np.empty((n_signals, length), dtype=np.int16)
         if q_buffer is None:
-            q_buffer = np.empty((self.board.n_adcs, length), dtype=np.int16)
+            q_buffer = np.empty((n_signals, length), dtype=np.int16)
 
         assert np.issubdtype(i_buffer.dtype, np.int16), \
             "i_buffer dtype of np.int16 required."
         assert np.issubdtype(q_buffer.dtype, np.int16), \
             "q_buffer dtype of np.int16 required."
 
-        for i in range(self.board.n_adcs):
+        for i in range(n_signals):
             if self.board.adc_iq_interleave:
                 np.copyto(i_buffer[i], self.adc_bufs[i][0::2])
                 np.copyto(q_buffer[i], self.adc_bufs[i][1::2])
@@ -287,15 +418,21 @@ class MimoMtsOverlay(Overlay):
 
     def write_dac_iq_buf(self, i_buffer, q_buffer):
         """Writes DAC samples to all channels
-        Follow PG269, DAC I/Q input to Real output (Figure 101/110):
-          Dual RF-DAC: Figure 103:
-            s00_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
-            s02_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
-          Quad RF-DAC: Figure 112:
-            s00_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
-            s01_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
-            s02_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
-            s03_axis_data: Q7,I7,Q6,I6,Q5,I5,Q4,I4,Q3,I3,Q2,I2,Q1,I1,Q0,I0
+        TBD: currently only supports s00_axis_tdata which is broadcasted to all.
+        Follow PG269:
+          Dual RF-DAC I/Q Input to Real Output, Figure 101-103:
+            s00_axis_data -> DAC0: Q7,I7,Q6,I6,...,Q0,I0
+            s02_axis_data -> DAC1: Q7,I7,Q6,I6,...,Q0,I0
+          Dual RF-DAC I/Q Input to I/Q Output, Figure 104-106:
+            s00_axis_data -> DAC0/1: Q7,I7,Q6,I6,...,Q0,I0
+          Quad RF-DAC I/Q Input to Real Output, Figure 110-112:
+            s00_axis_data -> DAC0: Q7,I7,Q6,I6,...,Q0,I0
+            s01_axis_data -> DAC1: Q7,I7,Q6,I6,...,Q0,I0
+            s02_axis_data -> DAC2: Q7,I7,Q6,I6,...,Q0,I0
+            s03_axis_data -> DAC3: Q7,I7,Q6,I6,...,Q0,I0
+          Quad RF-DAC I/Q Input to I/Q Output, Figure 113-115:
+            s00_axis_data -> DAC0/1: Q7,I7,Q6,I6,...,Q0,I0
+            s02_axis_data -> DAC2/3: Q7,I7,Q6,I6,...,Q0,I0
         """
         assert i_buffer.size == self.dac_player.size // 2, \
             "i_buffer size must be half of the DAC player buffer size."
@@ -343,7 +480,7 @@ class MimoMtsOverlay(Overlay):
             'EventSource': xrfdc.EVNT_SRC_SYSREF,
             'MixerType': xrfdc.MIXER_TYPE_FINE,
             'CoarseMixFreq': xrfdc.COARSE_MIX_OFF,
-            'MixerMode': xrfdc.MIXER_MODE_C2R,
+            'MixerMode': self.dac_mixer_mode,
             'FineMixerScale': xrfdc.MIXER_SCALE_1P0
         }
         for dac_block in self.dac_blocks.ravel():
@@ -354,10 +491,9 @@ class MimoMtsOverlay(Overlay):
 
         self.rfdc.mts_dac_config.SysRef_Enable = 0
         # keep track of mixer settings
-        self.mixer_cfg['dac_mixer_nco_freq_mhz'] = freq_mhz
-        self.mixer_cfg['dac_mixer_nco_nyquist'] = nyquist
-        self.mixer_cfg['dac_mixer_nco_phase'] = phase
-        print(f"Set DAC mixer: freq={freq_mhz} MHz, nyquist={nyquist}, phase={phase} degrees")
+        self._dac_mixer_nco_freq_mhz = freq_mhz
+        self._dac_mixer_nco_nyquist = nyquist
+        self._dac_mixer_nco_phase = phase
 
     def set_adc_mixer(self, freq_mhz=0, nyquist=1, phase=0):
         self.rfdc.mts_adc_config.SysRef_Enable = 1
@@ -369,7 +505,7 @@ class MimoMtsOverlay(Overlay):
             'EventSource': xrfdc.EVNT_SRC_SYSREF,
             'MixerType': xrfdc.MIXER_TYPE_FINE,
             'CoarseMixFreq': xrfdc.COARSE_MIX_OFF,
-            'MixerMode': xrfdc.MIXER_MODE_R2C,
+            'MixerMode': self.adc_mixer_mode,
             'FineMixerScale': xrfdc.MIXER_SCALE_1P0
         }
         for adc_block in self.adc_blocks.ravel():
@@ -379,14 +515,12 @@ class MimoMtsOverlay(Overlay):
 
         self.rfdc.mts_adc_config.SysRef_Enable = 0
         # keep track of mixer settings
-        self.mixer_cfg['adc_mixer_nco_freq_mhz'] = freq_mhz
-        self.mixer_cfg['adc_mixer_nco_nyquist'] = nyquist
-        self.mixer_cfg['adc_mixer_nco_phase'] = phase
-        print(f"Set ADC mixer: freq={freq_mhz} MHz, nyquist={nyquist}, phase={phase} degrees")
+        self._adc_mixer_nco_freq_mhz = freq_mhz
+        self._adc_mixer_nco_nyquist = nyquist
+        self._adc_mixer_nco_phase = phase
 
     def set_dac_mixer_ch(self, ch, freq_mhz=0, nyquist=1, phase=0):
-        """Configure a single DAC channel's mixer, all channels should
-        have same phase due to rfdc.mts_dac() """
+        """ Configure a single DAC channel's mixer """
         tile, block = divmod(ch, self.board.converters_per_tile)
         if self.board.converters_per_tile == 2:
             block = [0, 2][block]
@@ -396,25 +530,22 @@ class MimoMtsOverlay(Overlay):
         dac_block = self.rfdc.dac_tiles[tile].blocks[block]
         dac_block.NyquistZone = nyquist
         dac_block.MixerSettings = {
-            'Freq': freq_mhz, 'PhaseOffset': phase,
+            'Freq': freq_mhz,
+            'PhaseOffset': phase,
             'EventSource': xrfdc.EVNT_SRC_SYSREF,
             'MixerType': xrfdc.MIXER_TYPE_FINE,
             'CoarseMixFreq': xrfdc.COARSE_MIX_OFF,
-            'MixerMode': xrfdc.MIXER_MODE_C2R,
+            'MixerMode': self.dac_mixer_mode,
             'FineMixerScale': xrfdc.MIXER_SCALE_1P0
         }
         dac_block.InterpolationFactor = \
             self.ol_info['rfdc']['dac_interpolation_factor']
         dac_block.ResetNCOPhase()
-        self.rfdc.mts_dac()
 
         self.rfdc.mts_dac_config.SysRef_Enable = 0
-        print(f"DAC ch{ch}: freq={freq_mhz} MHz, "
-              f"nyquist={nyquist}, phase={phase} deg")
 
     def set_adc_mixer_ch(self, ch, freq_mhz=0, nyquist=1, phase=0):
-        """Configure a single ADC channel's mixer, all channels should
-        have same phase due to rfdc.mts_adc() """
+        """ Configure a single ADC channel's mixer """
         tile, block = divmod(ch, self.board.converters_per_tile)
 
         self.rfdc.mts_adc_config.SysRef_Enable = 1
@@ -422,16 +553,14 @@ class MimoMtsOverlay(Overlay):
         adc_block = self.rfdc.adc_tiles[tile].blocks[block]
         adc_block.NyquistZone = nyquist
         adc_block.MixerSettings = {
-            'Freq': freq_mhz, 'PhaseOffset': phase,
+            'Freq': freq_mhz,
+            'PhaseOffset': phase,
             'EventSource': xrfdc.EVNT_SRC_SYSREF,
             'MixerType': xrfdc.MIXER_TYPE_FINE,
             'CoarseMixFreq': xrfdc.COARSE_MIX_OFF,
-            'MixerMode': xrfdc.MIXER_MODE_R2C,
+            'MixerMode': self.adc_mixer_mode,
             'FineMixerScale': xrfdc.MIXER_SCALE_1P0
         }
         adc_block.ResetNCOPhase()
-        self.rfdc.mts_adc()
 
         self.rfdc.mts_adc_config.SysRef_Enable = 0
-        print(f"ADC ch{ch}: freq={freq_mhz} MHz, "
-              f"nyquist={nyquist}, phase={phase} deg")

@@ -6,7 +6,7 @@ Parallel overlay designs are hosted under each board, leveraging a shared set of
 where a version of vivado 2022.1 is expected, to automate the building process, following the AMD PYNQ workflow.
 
 Developers are encouraged to plugin IP cores, and in particular, RTL designs which can be integrated in the block diagram
-through the building process. An example can be found in the `ZCU208/mts_8ch` overlay.
+through the building process. An example can be found in the `ZCU208/mimo_mts` overlay.
 
 ## Overlay source file structure
 

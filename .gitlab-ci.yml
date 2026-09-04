@@ -24,7 +24,7 @@ rtl_test:
   script:
     - make
 
-bitfile_synthesis_zcu216:
+.bitfile_synthesis_zcu216:
   before_script:
     - cd designs/ZCU216/${OVERLAY}
   stage: synthesis
@@ -64,5 +64,5 @@ bitfile_synthesis_208:
       - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
     matrix:
-      - OVERLAY: [config_evr, als_llrf_mts, mimo_mts]
+      - OVERLAY: [mimo_mts, als_llrf_mts]
         BOARD: [ZCU208, LBL208]

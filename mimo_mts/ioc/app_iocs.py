@@ -17,7 +17,7 @@ class AlsLlrfZCU208(MimoMtsIoc):
     def init_rf_control(self):
         self.llrf_register_map.trig_sel = 0  # internal trigger
         self.llrf_register_map.pulse_length = 4096  # * 4ns   XXX
-        self.llrf_register_map.trig_period = 250e6
+        self.llrf_register_map.trig_period = 125e6
         self.llrf_register_map.trig_delay = 0
         self.llrf_register_map.trig_divide = 1
         self.llrf_register_map.dac_enable = 1
@@ -137,7 +137,7 @@ class AlsLlrfLBL208(MimoMtsIoc):
     def init_rf_control(self):
         self.llrf_register_map.trig_sel = 1  # EVR trigger
         self.llrf_register_map.pulse_length = 4096  # * 4ns  XXX
-        self.llrf_register_map.trig_period = 250e6
+        self.llrf_register_map.trig_period = 125e6
         self.llrf_register_map.trig_delay = 0
         self.llrf_register_map.trig_divide = 1
         self.llrf_register_map.dac_enable = 1
