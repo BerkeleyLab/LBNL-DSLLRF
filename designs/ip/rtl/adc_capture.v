@@ -43,6 +43,7 @@ module adc_capture #(
     output wire             s_axis_tready,
     input  wire             s_axis_tvalid,
 
+    output wire             write_done,
     // Control Input Parameters
     input wire [AW-1:0]     n_rows,
     input wire              trigger     // single clock cycle pulse
@@ -64,10 +65,13 @@ module adc_capture #(
     assign bram_wdata = s_axis_tdata;
     assign bram_we = s_axis_tvalid ? {N_COLS{1'b1}} : {N_COLS{1'b0}};
     assign bram_en = pulse_valid;
+    reg pulse_valid_d = 0;
     always @(posedge axis_clk) begin
         bram_addr <= pulse_valid ? bram_addr + N_COLS : 0;
+        pulse_valid_d <= pulse_valid;
     end
 
     assign s_axis_tready = 1'b1;
+    assign write_done = !pulse_valid && pulse_valid_d;
 
 endmodule

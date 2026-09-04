@@ -2,17 +2,15 @@ from mimo_mts.utils.boards import zcu208, zcu216, lbl208
 import mimo_mts.utils.clk104 as clk104
 import mimo_mts.overlays as overlays
 from importlib.resources import files
+import xrfdc
 
-
-# Conventions:
-#   * ALS_ prefix: requires a special version of CLK104 board
 #   * MIMO_ : direct sampling without decimation
 #   * LLRF_ : decimate by 8 at RFDC, LLRF loop control DSP included
 
 
 ol_configs = {
     'MIMO_ZCU208': {
-        'bitfile_name': files(overlays).joinpath('mimo_mts.bit'),
+        'bitfile_name': files(overlays).joinpath('zcu208/mimo_mts.bit'),
         'board': zcu208,
         'clk104_tcs': {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
@@ -30,9 +28,11 @@ ol_configs = {
                 'adc_mixer_nco_freq_mhz': 0,
                 'adc_mixer_nco_nyquist': 1,
                 'adc_mixer_nco_phase': 0,
+                'adc_mixer_mode': xrfdc.MIXER_MODE_R2C,
                 'dac_mixer_nco_freq_mhz': 0,
                 'dac_mixer_nco_nyquist': 1,
                 'dac_mixer_nco_phase': 0,
+                'dac_mixer_mode': xrfdc.MIXER_MODE_C2R,
             },
             'mts': {
                 'mts_adc_target_latency': 96,
@@ -43,8 +43,42 @@ ol_configs = {
             'decimation': 16
         }
     },
-    'ALS_MIMO5G_ZCU208': {
-        'bitfile_name': files(overlays).joinpath('mimo_mts_5g.bit'),
+    'MIMO_IQ_ZCU208': {
+        'bitfile_name': files(overlays).joinpath('zcu208/mimo_mts_iq.bit'),
+        'board': zcu208,
+        'clk104_tcs': {
+            'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
+            'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+            'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+        },
+        'sampling_rate_hz': {
+            'adc': 4.0e9,
+            'dac': 4.0e9,
+        },
+        'rfdc': {
+            'adc_decimation_factor': 1,
+            'dac_interpolation_factor': 2,
+            'mixer': {
+                'adc_mixer_nco_freq_mhz': 0,
+                'adc_mixer_nco_nyquist': 1,
+                'adc_mixer_nco_phase': 0,
+                'adc_mixer_mode': xrfdc.MIXER_MODE_C2C,
+                'dac_mixer_nco_freq_mhz': 0,
+                'dac_mixer_nco_nyquist': 1,
+                'dac_mixer_nco_phase': 0,
+                'dac_mixer_mode': xrfdc.MIXER_MODE_C2C,
+            },
+            'mts': {
+                'mts_adc_target_latency': 96,
+                'mts_dac_target_latency': 240,
+            }
+        },
+        'ioc': {
+            'decimation': 16
+        }
+    },
+    'MIMO5G_ZCU208': {
+        'bitfile_name': files(overlays).joinpath('zcu208/mimo_mts_5g.bit'),
         'board': zcu208,
         'sampling_rate_hz': {
             'adc': 5.0e9,
@@ -62,9 +96,11 @@ ol_configs = {
                 'adc_mixer_nco_freq_mhz': 0,
                 'adc_mixer_nco_nyquist': 1,
                 'adc_mixer_nco_phase': 0,
+                'adc_mixer_mode': xrfdc.MIXER_MODE_R2C,
                 'dac_mixer_nco_freq_mhz': 0,
                 'dac_mixer_nco_nyquist': 1,
                 'dac_mixer_nco_phase': 0,
+                'dac_mixer_mode': xrfdc.MIXER_MODE_C2R,
             },
             'mts': {
                 'mts_adc_target_latency': 106,
@@ -76,7 +112,7 @@ ol_configs = {
         }
     },
     'MIMO_ZCU208_MAX': {
-        'bitfile_name': files(overlays).joinpath('mimo_mts_max.bit'),
+        'bitfile_name': files(overlays).joinpath('zcu208/mimo_mts_max.bit'),
         'board': zcu208,
         'sampling_rate_hz': {
             'adc': 5.0e9,
@@ -94,9 +130,11 @@ ol_configs = {
                 'adc_mixer_nco_freq_mhz': 0,
                 'adc_mixer_nco_nyquist': 1,
                 'adc_mixer_nco_phase': 0,
+                'adc_mixer_mode': xrfdc.MIXER_MODE_R2C,
                 'dac_mixer_nco_freq_mhz': 0,
                 'dac_mixer_nco_nyquist': 1,
                 'dac_mixer_nco_phase': 0,
+                'dac_mixer_mode': xrfdc.MIXER_MODE_C2R,
             },
             'mts': {
                 'mts_adc_target_latency': 106,
@@ -108,7 +146,7 @@ ol_configs = {
         }
     },
     'MIMO_LBL208': {
-        'bitfile_name': files(overlays).joinpath('mimo_mts.bit'),
+        'bitfile_name': files(overlays).joinpath('lbl208/mimo_mts.bit'),
         'board': lbl208,
         'sampling_rate_hz': {
             'adc': 4.0e9,
@@ -126,9 +164,11 @@ ol_configs = {
                 'adc_mixer_nco_freq_mhz': 0,
                 'adc_mixer_nco_nyquist': 1,
                 'adc_mixer_nco_phase': 0,
+                'adc_mixer_mode': xrfdc.MIXER_MODE_R2C,
                 'dac_mixer_nco_freq_mhz': 0,
                 'dac_mixer_nco_nyquist': 1,
                 'dac_mixer_nco_phase': 0,
+                'dac_mixer_mode': xrfdc.MIXER_MODE_C2R,
             },
             'mts': {
                 'mts_adc_target_latency': 96,
@@ -140,7 +180,7 @@ ol_configs = {
         }
     },
     'MIMO_ZCU216': {
-        'bitfile_name': files(overlays).joinpath('mimo_mts.bit'),
+        'bitfile_name': files(overlays).joinpath('zcu216/mimo_mts.bit'),
         'board': zcu216,
         'sampling_rate_hz': {
             'adc': 2.0e9,
@@ -158,9 +198,11 @@ ol_configs = {
                 'adc_mixer_nco_freq_mhz': 0,
                 'adc_mixer_nco_nyquist': 1,
                 'adc_mixer_nco_phase': 0,
+                'adc_mixer_mode': xrfdc.MIXER_MODE_R2C,
                 'dac_mixer_nco_freq_mhz': 0,
                 'dac_mixer_nco_nyquist': 1,
                 'dac_mixer_nco_phase': 0,
+                'dac_mixer_mode': xrfdc.MIXER_MODE_C2R,
             },
             'mts': {
                 'mts_adc_target_latency': 104,
@@ -172,7 +214,7 @@ ol_configs = {
         }
     },
     'ALS_LLRF_LBL208': {
-        'bitfile_name': files(overlays).joinpath('als_llrf_mts.bit'),
+        'bitfile_name': files(overlays).joinpath('lbl208/als_llrf_mts.bit'),
         'board': lbl208,
         'sampling_rate_hz': {
             'adc': 4.0e9,
@@ -191,9 +233,11 @@ ol_configs = {
                 'adc_mixer_nco_freq_mhz': 3000,
                 'adc_mixer_nco_nyquist': 2,
                 'adc_mixer_nco_phase': 0,
+                'adc_mixer_mode': xrfdc.MIXER_MODE_R2C,
                 'dac_mixer_nco_freq_mhz': -3000,
                 'dac_mixer_nco_nyquist': 2,
                 'dac_mixer_nco_phase': 0,
+                'dac_mixer_mode': xrfdc.MIXER_MODE_C2R,
             },
             'mts': {
                 'mts_adc_target_latency': 96,
@@ -205,7 +249,7 @@ ol_configs = {
         }
     },
     'ALS_LLRF_ZCU208': {
-        'bitfile_name': files(overlays).joinpath('als_llrf_mts.bit'),
+        'bitfile_name': files(overlays).joinpath('zcu208/als_llrf_mts.bit'),
         'board': zcu208,
         'sampling_rate_hz': {
             'adc': 4.0e9,
@@ -224,9 +268,11 @@ ol_configs = {
                 'adc_mixer_nco_freq_mhz': 3000,
                 'adc_mixer_nco_phase': 0,
                 'adc_mixer_nco_nyquist': 2,
+                'adc_mixer_mode': xrfdc.MIXER_MODE_R2C,
                 'dac_mixer_nco_freq_mhz': -3000,
                 'dac_mixer_nco_nyquist': 2,
                 'dac_mixer_nco_phase': 0,
+                'dac_mixer_mode': xrfdc.MIXER_MODE_C2R,
             },
             'mts': {
                 'mts_adc_target_latency': 96,
@@ -238,7 +284,7 @@ ol_configs = {
         }
     },
     'CONFIG_EVR_LBL208': {
-        'bitfile_name': files(overlays).joinpath('config_evr.bit'),
+        'bitfile_name': files(overlays).joinpath('lbl208/config_evr.bit'),
         'board': lbl208,
         'clk104_tcs': {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0_DIST.tcs'),
@@ -248,7 +294,7 @@ ol_configs = {
         'si570_freq_mhz': 156.1375,
     },
     'CONFIG_EVR_ZCU208': {
-        'bitfile_name': files(overlays).joinpath('config_evr.bit'),
+        'bitfile_name': files(overlays).joinpath('zcu208/config_evr.bit'),
         'board': zcu208,
         'clk104_tcs': {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
@@ -256,5 +302,9 @@ ol_configs = {
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
         },
         'si570_freq_mhz': 156.25,
+    },
+    'BASE_ZCU208': {
+        'bitfile_name': files(overlays).joinpath('zcu208/base.bit'),
+        'board': zcu208,
     },
 }
