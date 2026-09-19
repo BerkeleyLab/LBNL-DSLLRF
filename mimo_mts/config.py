@@ -224,7 +224,9 @@ ol_configs = {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0_DIST.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+            'verify': True,
         },
+        'device_tree_segments': ['/boot/lmxadc.dtbo'],
         'si570_freq_mhz': 156.1375,
         'rfdc': {
             'adc_decimation_factor': 8,
@@ -259,7 +261,9 @@ ol_configs = {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0_DIST.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+            'verify': True,
         },
+        'device_tree_segments': ['/boot/lmxadc.dtbo'],
         'si570_freq_mhz': 156.1375,
         'rfdc': {
             'adc_decimation_factor': 8,
@@ -306,5 +310,9 @@ ol_configs = {
     'BASE_ZCU208': {
         'bitfile_name': files(overlays).joinpath('zcu208/base.bit'),
         'board': zcu208,
+    },
+    'BASE_LBL208': {
+        'bitfile_name': files(overlays).joinpath('lbl208/base.bit'),
+        'board': lbl208,
     },
 }

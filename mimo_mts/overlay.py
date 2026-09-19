@@ -11,8 +11,11 @@ from mimo_mts.config import ol_configs
 import xrfdc
 import numpy as np
 import pandas as pd
+import logging
 from pathlib import Path
 from pprint import pformat
+
+logger = logging.getLogger(__name__)
 __all__ = ('EVR', 'RfControl', 'ClockTreeMTS', 'FrontendControl', 'WaveGen')
 
 
@@ -23,6 +26,9 @@ class MimoMtsOverlay(Overlay):
     multiple RF DAC and ADC tiles to achieve latency alignment.
     """
     def __init__(self, config: str = "MIMO_ZCU208", **kwargs):
+        self.log_level = kwargs.pop('log_level', logging.INFO)
+        logger.setLevel(self.log_level)
+
         self.ol_info = ol_info = ol_configs[config].copy()
         self.ol_info.update({k: kwargs[k] for k in self.ol_info if k in kwargs})
         kwargs = {k: kwargs[k] for k in kwargs.keys() - self.ol_info.keys()}
@@ -34,22 +40,29 @@ class MimoMtsOverlay(Overlay):
             for dtsb_file in ol_info['device_tree_segments']:
                 dts = DeviceTreeSegment(str(dtsb_file))
                 if dts.is_dtbo_applied():
-                    print("Found device-tree segment:", dts.sysfs_dir)
+                    logger.info(f"device-tree segment: {dts.sysfs_dir} already applied")
                 else:
-                    print("Inserting device-tree segment:", dts.sysfs_dir)
+                    logger.info(f"Inserting device-tree segment: {dts.sysfs_dir}")
                     dts.insert()
+        else:
+            logger.info("No device-tree segments specified in overlay configuration.")
 
         if 'si570_freq_mhz' in ol_info:
             with SI570() as si570:
                 si570.set_freq(ol_info['si570_freq_mhz'])
 
+        # only als_llrf_*208 overlays have clk104 readback support
         if 'clk104_tcs' in ol_info:
-            self.clk104 = CLK104Config(**ol_info['clk104_tcs'])
+            self.clk104 = CLK104Config(**ol_info['clk104_tcs'], log_level=self.log_level)
 
         # download overlay after external clocks are configured
         PL.reset()
         super().__init__(str(ol_info['bitfile_name']), **kwargs)
 
+        if 'clk104_tcs' in ol_info:
+            self.clk104.verify_regs()
+            assert self.clk104.v_lmx_adc.is_locked(), "LMX ADC is not locked after configuration"
+            assert self.clk104.v_lmx_dac.is_locked(), "LMX DAC is not locked after configuration"
         self._initialize_dev()
 
         if "rfdc" in self.ip_dict and "rfdc" in ol_info:
@@ -169,7 +182,7 @@ class MimoMtsOverlay(Overlay):
             if path.endswith('xpm_cdc_irq/dest_pulse') \
                     or path.endswith('write_done'):
                 self.write_done_irq = Interrupt(path)
-                print(f"Interrupt {path} created with number {self.write_done_irq.number}")
+                logger.info(f"Interrupt {path} created with number {self.write_done_irq.number}")
 
     def _initialize_rfdc_dev(self):
         if self.board.converters_per_tile == 2:
@@ -245,6 +258,7 @@ class MimoMtsOverlay(Overlay):
         self.sync_mts()
         self.sync_digital_features()
         self.check_mts_latency()
+        # logger.info("DSP CLK Frequency: %.3f MHz", self.clocktreeMTS.dspclk_freq_hz / 1e6)
 
     def _initialize_mixers(self):
         self.set_dac_mixer(

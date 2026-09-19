@@ -1,4 +1,4 @@
-# ZCU208 Base overlay
+# LBL208 Base overlay
 
 ## Features
 

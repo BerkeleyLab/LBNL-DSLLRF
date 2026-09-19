@@ -32,6 +32,7 @@ sudo -E pip uninstall -y pynqmetadata
 sudo -E pip install pynqmetadata
 
 sudo -E pip install softioc
+sudo -E pip install spidev
 
 # Install python package and notebook
 # The -e makes it in editable mode for development without reinstalling the module

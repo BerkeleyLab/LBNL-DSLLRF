@@ -13,6 +13,7 @@ all: $(DTBO_FILES)
 
 install: all
 	cp $(DTBO_FILES) ../../mimo_mts/overlays
+	sudo cp $(DTBO_FILES) /boot/
 
 clean:
 	rm -f $(DTBO_FILES)
