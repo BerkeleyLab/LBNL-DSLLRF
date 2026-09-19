@@ -86,6 +86,12 @@ set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_14"]; # Bank  84 VCCO - VCC1
 set_property PACKAGE_PIN AV3      [get_ports "ADCIO_15"]; # Bank  84 VCCO - VCC1V8   - IO_L3P_AD9P_84
 set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_15"]; # Bank  84 VCCO - VCC1V8   - IO_L3P_AD9P_84
 
+# CLK104 SPI multiplexer for readback
+set_property PACKAGE_PIN C11      [get_ports "CLK104_CLK_SPI_MUX_SEL[0]"]; # Bank  68 VCCO - VCC1V2   - IO_T3U_N12_68
+set_property IOSTANDARD  LVCMOS12 [get_ports "CLK104_CLK_SPI_MUX_SEL[0]"]; # Bank  68 VCCO - VCC1V2   - IO_T3U_N12_68
+set_property PACKAGE_PIN B12      [get_ports "CLK104_CLK_SPI_MUX_SEL[1]"]; # Bank  68 VCCO - VCC1V2   - IO_L19N_T3L_N1_DBC_AD9N_68
+set_property IOSTANDARD  LVCMOS12 [get_ports "CLK104_CLK_SPI_MUX_SEL[1]"]; # Bank  68 VCCO - VCC1V2   - IO_L19N_T3L_N1_DBC_AD9N_68
+
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
 # Synthesis Guidance
 # -------------- -------------- -------------- -------------- -------------- -------------- -------

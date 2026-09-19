@@ -6,6 +6,8 @@ from softioc import builder
 from smbus2 import SMBus
 import asyncio
 import os
+import argparse
+import logging
 
 
 class AlsLlrfZCU208(MimoMtsIoc):
@@ -50,9 +52,6 @@ class AlsLlrfLBL208(MimoMtsIoc):
         self.n_fans = n_fans
         self.pulse_per_rev = pulse_per_rev
         self.pmbus_poll_delay = pmbus_poll_delay
-
-    def init(self):
-        super().init()
 
         # External fan control and power supply sensors
         if self.with_pmbus:
@@ -189,31 +188,34 @@ class MimoZCU216(MimoMtsIoc):
         # self.drive_test_awg()
 
 
-def llrf_zcu208_ioc():
-    ioc = AlsLlrfZCU208()
+def run_app_ioc(ioc_class, description):
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug logging')
+    args = parser.parse_args()
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    ioc = ioc_class(log_level=log_level)
     ioc.run_ioc()
+
+
+def llrf_zcu208_ioc():
+    run_app_ioc(AlsLlrfZCU208, "ALS LLRF ZCU208 IOC")
 
 
 def llrf_lbl208_ioc():
-    ioc = AlsLlrfLBL208()
-    ioc.run_ioc()
+    run_app_ioc(AlsLlrfLBL208, "ALS LLRF LBL208 IOC")
 
 
 def mimo_zcu208_ioc():
-    ioc = MimoZCU208()
-    ioc.run_ioc()
+    run_app_ioc(MimoZCU208, "MIMO ZCU208 IOC")
 
 
 def mimo5g_zcu208_ioc():
-    ioc = AlsMimo5GZCU208()
-    ioc.run_ioc()
+    run_app_ioc(AlsMimo5GZCU208, "ALS MIMO 5G ZCU208 IOC")
 
 
 def mimo_lbl208_ioc():
-    ioc = MimoLBL208()
-    ioc.run_ioc()
+    run_app_ioc(MimoLBL208, "MIMO LBL208 IOC")
 
 
 def mimo_zcu216_ioc():
-    ioc = MimoZCU216()
-    ioc.run_ioc()
+    run_app_ioc(MimoZCU216, "MIMO ZCU216 IOC")

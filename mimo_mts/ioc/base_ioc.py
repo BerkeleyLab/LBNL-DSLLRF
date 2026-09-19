@@ -11,7 +11,7 @@ import asyncio
 import os
 from contextlib import contextmanager
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +42,7 @@ class MimoMtsIoc:
     def init(self):
         if self.ol is None:
             logger.info("Initializing IOC with overlay: %s", self.ol_name)
-            self.ol = MimoMtsOverlay(config=self.ol_name)
+            self.ol = MimoMtsOverlay(config=self.ol_name, log_level=self.log_level)
         else:
             logger.info("Using provided overlay for IOC: %s", self.ol_name)
 
@@ -351,7 +351,11 @@ def main():
     parser.add_argument('--ol_name', default="MIMO", help="overlay config",
                         choices=['MIMO_ZCU208', 'MIMO_ZCU216', 'ALS_LLRF_ZCU208',
                                  'ALS_LLRF_LBL208'])
+    parser.add_argument('--log-level', default="INFO",
+                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                        help="Set the logging level")
     args = parser.parse_args()
+    args.log_level = getattr(logging, args.log_level.upper(), logging.INFO)
     ioc = MimoMtsIoc(**vars(args))
     ioc.run_ioc()
 

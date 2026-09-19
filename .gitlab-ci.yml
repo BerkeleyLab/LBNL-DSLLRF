@@ -64,5 +64,5 @@ bitfile_synthesis_208:
       - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
   parallel:
     matrix:
-      - OVERLAY: [mimo_mts, als_llrf_mts]
+      - OVERLAY: [base, mimo_mts, als_llrf_mts]
         BOARD: [ZCU208, LBL208]
