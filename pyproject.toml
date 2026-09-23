@@ -13,7 +13,8 @@ dependencies = [
     "smbus2==0.4.3",
     "softioc==4.7.1",
     "cocotb==2.0.1",
-    "numpy>=2.2.4",
+    "numpy<2",
+    "pandas",
     "spidev==3.8",
     "cocotbext-axi>=0.1.28"
 ]
