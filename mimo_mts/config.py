@@ -16,6 +16,7 @@ ol_configs = {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+            'verify': True,
         },
         'sampling_rate_hz': {
             'adc': 4.0e9,
@@ -50,6 +51,7 @@ ol_configs = {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+            'verify': True,
         },
         'sampling_rate_hz': {
             'adc': 4.0e9,
@@ -156,6 +158,7 @@ ol_configs = {
             'lmk_tcs': files(clk104).joinpath('LMK04828_500M_CLKin0_DIST.tcs'),
             'lmxadc_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
             'lmxdac_tcs': files(clk104).joinpath('LMX2594_4G.tcs'),
+            'verify': True,
         },
         'rfdc': {
             'adc_decimation_factor': 1,
