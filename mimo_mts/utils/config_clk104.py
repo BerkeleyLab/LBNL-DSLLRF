@@ -93,6 +93,7 @@ class CLK104Config:
         return devinfo
 
     def write_regs(self):
+        '''Write registers on all 3 chips with values from the loaded .tcs files'''
         xrfclk._write_LMK_regs(
             self.lmk_cfg.reg_vals, self.devinfo['lmk'])
         xrfclk._write_LMX_regs(
@@ -102,19 +103,35 @@ class CLK104Config:
 
     def verify_regs(self):
         """
-        Readback all written registers.
-        requires overlay support, only works after overlay is downloaded
+        Readback and verify the registers of all 3 chips which were written before.
+        Requires overlay support, only works after overlay is downloaded.
+        Returns True on success (or if verification is disabled), False on verification error.
         """
         if not self.verify:
-            return
+            return True
 
         # Make sure that the SPI readback feature is enabled in the chips
         self.v_lmx_adc.enable_sdo()
         self.v_lmx_dac.enable_sdo()
         self.v_lmk.enable_sdo()
-        self.v_lmx_adc.verify_regs()
-        self.v_lmx_dac.verify_regs()
-        self.v_lmk.verify_regs()
+
+        is_pass = self.v_lmx_adc.verify_regs()
+        is_pass &= self.v_lmx_dac.verify_regs()
+        is_pass &= self.v_lmk.verify_regs()
+        return is_pass
+
+    def is_locked(self):
+        '''
+        Read the PLL lock status of all 3 chips. Returns True if all 3 are locked.
+        Also returns True if register verification has been disabled in __init__()
+        '''
+        if not self.verify:
+            return True
+
+        is_pass = self.v_lmx_adc.is_locked()
+        is_pass &= self.v_lmx_dac.is_locked()
+        is_pass &= self.v_lmk.is_locked()
+        return is_pass
 
 
 class LmVerifier:
@@ -239,7 +256,22 @@ class Lmx2594Verifier(LmVerifier):
     def is_locked(self):
         """return true if the chip is locked. False if there is an error."""
         self.mux_select()
-        return ((self.read_reg(110) >> 9) & 3) == 2  # check the rb_LD_VTUNE value
+        reg110 = self.read_reg(110)
+        rb_LD_VTUNE = (reg110 >> 9) & 3
+        rb_VCO_SEL = (reg110 >> 5) & 7
+
+        if rb_LD_VTUNE != 2:
+            logger.error(f"{self.name}: PLL not locked, rb_LD_VTUNE = {rb_LD_VTUNE}")
+            return False
+
+        logger.info(f"{self.name}: PLL locked, rb_LD_VTUNE = {rb_LD_VTUNE}, rb_VCO_SEL = {rb_VCO_SEL}")
+        return True
+
+    def trigger_fcal(self):
+        '''triggers the VCO frequency calibration'''
+        r0 = self.read_reg(0) & ~(1 << 3)
+        self.write_reg(0, r0)  # reset FCAL_EN
+        self.write_reg(0, r0 | (1 << 3))  # set FCAL_EN
 
 
 class Lmk0482Verifier(LmVerifier):
@@ -277,14 +309,42 @@ class Lmk0482Verifier(LmVerifier):
                 f"{self.name}: Changing Reg 0x{t_adr:x} to 0x{t_val:02x} to enable SPI readback"
             )
             self.reg_map[t_adr] = t_val
-            self.write_reg(0, self.reg_map[t_adr])
+            self.write_reg(t_adr, self.reg_map[t_adr])
 
     def is_locked(self):
         """return true if the chip is locked. False if there is an error."""
         self.mux_select()
-        pll1_ld = (self.read_reg(0x182) >> 1) & 1
-        pll2_ld = (self.read_reg(0x183) >> 1) & 1
-        return pll1_ld and pll2_ld
+
+        is_okay = True
+
+        reg140 = self.read_reg(0x140)
+        is_pll1_pd = (reg140 >> 7) & 1
+        if is_pll1_pd:
+            logger.info(f"{self.name}: PLL1 is powered down")
+        else:
+            reg182 = self.read_reg(0x182)
+            pll1_ld = (reg182 >> 1) & 1
+            if not pll1_ld:
+                logger.error(f"{self.name}: PLL1 unlocked, reg182 = {reg182:08b}")
+                is_okay = False
+
+        reg173 = self.read_reg(0x173)
+        is_pll2_pd = (reg173 >> 5) & 1
+        if is_pll2_pd:
+            logger.info(f"{self.name}: PLL2 is powered down")
+        else:
+            logger.warn(f"{self.name}: Can't check PLL2 lock status. Not implemented yet.")
+            # TODO Datasheet footnote: PLL1_LD_MUX or PLL2_LD_MUX must select
+            # setting 2 (PLL2 DLD) for valid reading of this bit.
+            # Right now this is set to 3 (PLL1 and PLL2 DLD)
+            # fix later, by changig .tcs file. We don't use the PLLs for the Linac / SHB LLRF
+            # reg183 = self.read_reg(0x183)
+            # pll2_ld = (reg183 >> 1) & 1
+            # if not pll2_ld:
+            #     logger.error(f"{self.name}: PLL2 unlocked, reg183 = {reg183:08b}")
+            #     is_okay = False
+
+        return is_okay
 
 
 def parse_tcs(config: ConfigParser, data_width=2):

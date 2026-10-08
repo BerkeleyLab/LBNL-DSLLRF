@@ -51,7 +51,6 @@ class MimoMtsOverlay(Overlay):
             with SI570() as si570:
                 si570.set_freq(ol_info['si570_freq_mhz'])
 
-        # only als_llrf_*208 overlays have clk104 readback support
         if 'clk104_tcs' in ol_info:
             self.clk104 = CLK104Config(**ol_info['clk104_tcs'], log_level=self.log_level)
 
@@ -60,9 +59,10 @@ class MimoMtsOverlay(Overlay):
         super().__init__(str(ol_info['bitfile_name']), **kwargs)
 
         if 'clk104_tcs' in ol_info:
+            # only als_llrf_*208 overlays have clk104 readback support
             self.clk104.verify_regs()
-            assert self.clk104.v_lmx_adc.is_locked(), "LMX ADC is not locked after configuration"
-            assert self.clk104.v_lmx_dac.is_locked(), "LMX DAC is not locked after configuration"
+            assert self.clk104.is_locked(), "CLK104 is not locked after configuration"
+
         self._initialize_dev()
 
         if "rfdc" in self.ip_dict and "rfdc" in ol_info:
