@@ -18,6 +18,8 @@ flake8:
 
 rtl_test:
   before_script:
+    - python3 -m venv .venv
+    - source .venv/bin/activate
     - pip install -e .
     - cd designs/ip/tb
   stage: test
