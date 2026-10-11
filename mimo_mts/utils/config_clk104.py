@@ -11,21 +11,23 @@ logger = logging.getLogger(__name__)
 
 
 class CLK104Config:
-    def __init__(self,
-                 lmk_tcs='LMK04828_500M_CLKin0_DIST.tcs',
-                 lmxadc_tcs='LMX2594.tcs',
-                 lmxdac_tcs='LMX2594.tcs',
-                 write=True,
-                 verify=False,
-                 log_level=logging.INFO):
-        '''
+    def __init__(
+        self,
+        lmk_tcs="LMK04828_500M_CLKin0_DIST.tcs",
+        lmxadc_tcs="LMX2594.tcs",
+        lmxdac_tcs="LMX2594.tcs",
+        write=True,
+        verify=False,
+        log_level=logging.INFO,
+    ):
+        """
         lmk_tcs, lmxadc_tcs, lmxdac_tcs: .tcs file-names with register-values for these chips
         write: if True, write register values to the 3 chips on init
         verify: if True, enables verify_regs() method. Not supported by all platforms yet.
             expects that the clk104 SPI readback mux is controlled by PYNQ gpio pin 0 and 1
 
         Note that these arguments are normally sourced from the configuration dict() in config.py
-        '''
+        """
         logger.setLevel(log_level)
         self.lmk_cfg = LMKConfig(lmk_tcs)
         self.lmxadc_cfg = LMXConfig(lmxadc_tcs)
@@ -37,69 +39,69 @@ class CLK104Config:
         self.verify = verify
         if verify:
             # Multiplexer for the SDO signal going from LM* chip to FPGA-IO
-            self.mux_sel = [GPIO(GPIO.get_gpio_pin(i), 'out') for i in range(2)]
+            self.mux_sel = [GPIO(GPIO.get_gpio_pin(i), "out") for i in range(2)]
 
             self.v_lmx_adc = Lmx2594Verifier(
-                path=self.devinfo['lmxadc']['spi_device'],
+                path=self.devinfo["lmxadc"]["spi_device"],
                 config=self.lmxadc_cfg.config,
                 mux_sel=self.mux_sel,
                 mux_val=0,
-                name="LMX2594_ADC"
+                name="LMX2594_ADC",
             )
             self.v_lmx_dac = Lmx2594Verifier(
-                path=self.devinfo['lmxdac']['spi_device'],
+                path=self.devinfo["lmxdac"]["spi_device"],
                 config=self.lmxdac_cfg.config,
                 mux_sel=self.mux_sel,
                 mux_val=1,
-                name="LMX2594_DAC"
+                name="LMX2594_DAC",
             )
             self.v_lmk = Lmk0482Verifier(
-                path=self.devinfo['lmk']['spi_device'],
+                path=self.devinfo["lmk"]["spi_device"],
                 config=self.lmk_cfg.config,
                 mux_sel=self.mux_sel,
                 mux_val=2,
-                name="LMK04828"
+                name="LMK04828",
             )
 
     def __repr__(self):
-        str = (f"< {self.__class__.__name__:12s} >:\n"
-               f"  === LMK04828: ===\n{self.lmk_cfg}\n"
-               f"  === LMX2594 ADC: ===\n{self.lmxadc_cfg}\n"
-               f"  === LMX2594 DAC: ===\n{self.lmxdac_cfg}")
+        str = (
+            f"< {self.__class__.__name__:12s} >:\n"
+            f"  === LMK04828: ===\n{self.lmk_cfg}\n"
+            f"  === LMX2594 ADC: ===\n{self.lmxadc_cfg}\n"
+            f"  === LMX2594 DAC: ===\n{self.lmxdac_cfg}"
+        )
         return str
 
     def find_devices(self):
         devinfo = {}
-        for dev in Path('/sys/bus/spi/devices').glob('*'):
-            node = dev / 'of_node'
-            compatible = (node / 'compatible').read_text().rstrip('\x00')
-            node_name = (node / 'name').read_text().rstrip('\x00')
+        for dev in Path("/sys/bus/spi/devices").glob("*"):
+            node = dev / "of_node"
+            compatible = (node / "compatible").read_text().rstrip("\x00")
+            node_name = (node / "name").read_text().rstrip("\x00")
 
-            if compatible == 'ti,lmk04828' or compatible == 'ti,lmx2594':
+            if compatible == "ti,lmk04828" or compatible == "ti,lmx2594":
                 # call spidev_bind to bind /dev/spidevB.C
-                if (dev / 'driver').exists():
-                    (dev / 'driver' / 'unbind').write_text(dev.name)
+                if (dev / "driver").exists():
+                    (dev / "driver" / "unbind").write_text(dev.name)
                 xrfclk._spidev_bind(dev)
 
-                num_bytes = struct.unpack(
-                    '>I', (node / 'num_bytes').read_bytes())[0]
+                num_bytes = struct.unpack(">I", (node / "num_bytes").read_bytes())[0]
                 devinfo[node_name] = {
-                    'spi_device': xrfclk._get_spidev_path(dev),
-                    'compatible': compatible,
-                    'num_bytes': num_bytes
+                    "spi_device": xrfclk._get_spidev_path(dev),
+                    "compatible": compatible,
+                    "num_bytes": num_bytes,
                 }
-        if not {'lmk', 'lmxadc', 'lmxdac'}.issubset(devinfo):
-            raise KeyError("Missing required device configuration (lmk, lmxadc, or lmxdac)")
+        if not {"lmk", "lmxadc", "lmxdac"}.issubset(devinfo):
+            raise KeyError(
+                "Missing required device configuration (lmk, lmxadc, or lmxdac)"
+            )
         return devinfo
 
     def write_regs(self):
-        '''Write registers on all 3 chips with values from the loaded .tcs files'''
-        xrfclk._write_LMK_regs(
-            self.lmk_cfg.reg_vals, self.devinfo['lmk'])
-        xrfclk._write_LMX_regs(
-            self.lmxadc_cfg.reg_vals, self.devinfo['lmxadc'])
-        xrfclk._write_LMX_regs(
-            self.lmxdac_cfg.reg_vals, self.devinfo['lmxdac'])
+        """Write registers on all 3 chips with values from the loaded .tcs files"""
+        xrfclk._write_LMK_regs(self.lmk_cfg.reg_vals, self.devinfo["lmk"])
+        xrfclk._write_LMX_regs(self.lmxadc_cfg.reg_vals, self.devinfo["lmxadc"])
+        xrfclk._write_LMX_regs(self.lmxdac_cfg.reg_vals, self.devinfo["lmxdac"])
 
     def verify_regs(self):
         """
@@ -110,21 +112,16 @@ class CLK104Config:
         if not self.verify:
             return True
 
-        # Make sure that the SPI readback feature is enabled in the chips
-        self.v_lmx_adc.enable_sdo()
-        self.v_lmx_dac.enable_sdo()
-        self.v_lmk.enable_sdo()
-
         is_pass = self.v_lmx_adc.verify_regs()
         is_pass &= self.v_lmx_dac.verify_regs()
         is_pass &= self.v_lmk.verify_regs()
         return is_pass
 
     def is_locked(self):
-        '''
+        """
         Read the PLL lock status of all 3 chips. Returns True if all 3 are locked.
         Also returns True if register verification has been disabled in __init__()
-        '''
+        """
         if not self.verify:
             return True
 
@@ -178,6 +175,7 @@ class LmVerifier:
         self.mux_sel[1].write((self.mux_val >> 1) & 1)
 
     def enable_sdo(self):
+        """make sure SPI readback and lock detect is enabled in the chip configuration"""
         raise NotImplementedError()
 
     def is_locked(self):
@@ -204,11 +202,12 @@ class LmVerifier:
         n = 0
         for addr, tcs_value in self.reg_map.items():
             read_value = self.read_reg(addr)
-            logger.debug(
-                    f"{self.name}: Register 0x{addr:04x} value 0x{read_value:04x}, expect: 0x{tcs_value:04x}"
-                )
             if addr in self.exclude_regs:
+                logger.debug(f"{self.name}: Register 0x{addr:04x} excluded")
                 continue
+            logger.debug(
+                f"{self.name}: Register 0x{addr:04x} value 0x{read_value:04x}, expect: 0x{tcs_value:04x}"
+            )
             if read_value != tcs_value:
                 logger.error(
                     f"{self.name}: Register 0x{addr:04x} value 0x{read_value:04x} doesn't match .tcs: 0x{tcs_value:04x}"
@@ -220,6 +219,27 @@ class LmVerifier:
         else:
             logger.error(f"{self.name}: Register verification failed")
         return verify_ok
+
+    def change_config(self, reg_addr, por_value, value, mask=0xFFFF):
+        """
+        Sometimes certain register values are needed to enable verification / lock detect features
+        This function checks if the registers are set to the right value in the .tcs
+        If not, the value is written to the chip and a Warning is logged.
+        """
+        # Check if the regs are in the reg_map. If not add the POR value.
+        if reg_addr not in self.reg_map:
+            self.reg_map[reg_addr] = por_value
+
+        # Check if the reg_map value corresponds to the wanted value. If not, change it.
+        old_val = self.reg_map[reg_addr]
+        if old_val & mask != value & mask:
+            self.mux_select()
+            new_val = (old_val & ~mask) | value
+            logger.warning(
+                f"{self.name}: Changing Reg 0x{reg_addr:x} from 0x{old_val:02x} to 0x{new_val:02x}. Fix the .tcs!"
+            )
+            self.write_reg(reg_addr, new_val)
+            self.reg_map[reg_addr] = new_val
 
 
 class Lmx2594Verifier(LmVerifier):
@@ -242,16 +262,11 @@ class Lmx2594Verifier(LmVerifier):
         """
         exclude = {107, 108, 109, 110, 111, 112}
         super().__init__(path, config, 2, mux_sel, mux_val, name, exclude)
+        self.enable_sdo()
 
     def enable_sdo(self):
-        """change the chip configuration (MUX_OUT_LD_SEL = 0) to enable the SPI SDO pin"""
-        if self.reg_map[0] & (1 << 2):
-            self.mux_select()
-            self.reg_map[0] &= ~(1 << 2)
-            logger.debug(
-                f"{self.name}: Changing R0 to 0x{self.reg_map[0]:04x} to enable SPI readback"
-            )
-            self.write_reg(0, self.reg_map[0])
+        """Make sure that MUX_OUT_LD_SEL is 0. To enable the SPI SDO pin"""
+        self.change_config(0, 0b0010010000010000, 0, 1 << 2)
 
     def is_locked(self):
         """return true if the chip is locked. False if there is an error."""
@@ -264,11 +279,13 @@ class Lmx2594Verifier(LmVerifier):
             logger.error(f"{self.name}: PLL not locked, rb_LD_VTUNE = {rb_LD_VTUNE}")
             return False
 
-        logger.info(f"{self.name}: PLL locked, rb_LD_VTUNE = {rb_LD_VTUNE}, rb_VCO_SEL = {rb_VCO_SEL}")
+        logger.info(
+            f"{self.name}: PLL locked, rb_LD_VTUNE = {rb_LD_VTUNE}, rb_VCO_SEL = {rb_VCO_SEL}"
+        )
         return True
 
     def trigger_fcal(self):
-        '''triggers the VCO frequency calibration'''
+        """triggers the VCO frequency calibration"""
         r0 = self.read_reg(0) & ~(1 << 3)
         self.write_reg(0, r0)  # reset FCAL_EN
         self.write_reg(0, r0 | (1 << 3))  # set FCAL_EN
@@ -292,57 +309,55 @@ class Lmk0482Verifier(LmVerifier):
         mux_val: is the value to write to the mux to select this chip
         name: is an optional string which will be used in print messages to identify the chip
         """
-        exclude = {0x6, 0x182, 0x183, 0x184, 0x185, 0x186, 0x187, 0x188, 0x189, 0x1FFF, 0x015F}
+        exclude = {
+            0x6,
+            0x182,
+            0x183,
+            0x184,
+            0x185,
+            0x186,
+            0x187,
+            0x188,
+            0x189,
+            0x1FFF,
+            0x015F,
+            0x018B,
+        }
         super().__init__(path, config, 1, mux_sel, mux_val, name, exclude)
+        self.enable_sdo()
 
     def enable_sdo(self):
-        """change the chip configuration (PLL1_LD_MUX = 7) to enable the SPI SDO pin"""
-        t_adr = 0x15F
-        t_val = (7 << 3) | 3
-
-        if t_adr not in self.reg_map:
-            self.reg_map[t_adr] = (1 << 3) | 6  # assume it is the POR value
-
-        if self.reg_map[t_adr] != t_val:
-            self.mux_select()
-            logger.debug(
-                f"{self.name}: Changing Reg 0x{t_adr:x} to 0x{t_val:02x} to enable SPI readback"
-            )
-            self.reg_map[t_adr] = t_val
-            self.write_reg(t_adr, self.reg_map[t_adr])
+        """
+        change the chip configuration to enable the SPI SDO pin and PLL lock detect
+        PLL1_LD_MUX = 7 (SPI readback)
+        PLL2_LD_MUX = 3 (PLL1 and PLL2 DLD)
+        """
+        # PLL1_LD_MUX --> SPI readback
+        self.change_config(0x15F, (1 << 3) | 6, (7 << 3) | 3)
+        # PLL2_LD_MUX --> PLL1 and PLL2 DLD
+        self.change_config(0x16E, (2 << 3) | 6, (3 << 3) | 3)
 
     def is_locked(self):
-        """return true if the chip is locked. False if there is an error."""
+        """Return True if PLLs are locked or powered down."""
         self.mux_select()
-
         is_okay = True
 
         reg140 = self.read_reg(0x140)
-        is_pll1_pd = (reg140 >> 7) & 1
-        if is_pll1_pd:
-            logger.info(f"{self.name}: PLL1 is powered down")
-        else:
-            reg182 = self.read_reg(0x182)
-            pll1_ld = (reg182 >> 1) & 1
-            if not pll1_ld:
-                logger.error(f"{self.name}: PLL1 unlocked, reg182 = {reg182:08b}")
-                is_okay = False
-
         reg173 = self.read_reg(0x173)
-        is_pll2_pd = (reg173 >> 5) & 1
-        if is_pll2_pd:
-            logger.info(f"{self.name}: PLL2 is powered down")
+        if ((reg140 >> 7) & 1) or ((reg173 >> 5) & 1):
+            logger.info(
+                f"{self.name}: At least one PLL is powered down. Can't read lock status."
+            )
+            return is_okay
+
+        reg183 = self.read_reg(0x183)
+        if (reg183 & 2) == 0:
+            logger.error(
+                f"{self.name}: At least one PLL is unlocked, reg183 = {reg183:08b}"
+            )
+            is_okay = False
         else:
-            logger.warn(f"{self.name}: Can't check PLL2 lock status. Not implemented yet.")
-            # TODO Datasheet footnote: PLL1_LD_MUX or PLL2_LD_MUX must select
-            # setting 2 (PLL2 DLD) for valid reading of this bit.
-            # Right now this is set to 3 (PLL1 and PLL2 DLD)
-            # fix later, by changig .tcs file. We don't use the PLLs for the Linac / SHB LLRF
-            # reg183 = self.read_reg(0x183)
-            # pll2_ld = (reg183 >> 1) & 1
-            # if not pll2_ld:
-            #     logger.error(f"{self.name}: PLL2 unlocked, reg183 = {reg183:08b}")
-            #     is_okay = False
+            logger.info(f"{self.name}: Both PLLs are locked, reg183 = {reg183:08b}")
 
         return is_okay
 
