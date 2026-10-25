@@ -1,4 +1,2 @@
-e8f0b0a7cc4970c7a98ad2de7854dc00fc105352
-f7146db0c1d6e42efb61d82d3ac0de2f38771528
-cc3bba2e8143ebd4410f947f761f25a2b8ee0106
-4ca48d82125a9abb1e0a72da1547f4d6925d41b0
+# Ruff migration (squash of ruff format, isort, pyupgrade, bugbear)
+8f4bf2b6ca340613cd4f57099f9cd00ee7bda860
