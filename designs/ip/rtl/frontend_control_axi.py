@@ -2,11 +2,13 @@
 Attach multiple SPI controllers to an exposed AXI bus.
 To be used in the Vivado IP integrator to control the RFSOC frontend.
 """
+
 from sys import argv
+
 from litex.gen import Record, run_simulation
+from litex.soc.cores.spi.spi_mmap import SPIMaster
 from litex.soc.interconnect.csr import CSRField, CSRStatus, CSRStorage
 from litex_obsidian.axi_ip_template.axi_ip_template import AxiIpSoc
-from litex.soc.cores.spi.spi_mmap import SPIMaster
 
 
 class SpiCsr(SPIMaster):

@@ -1,23 +1,21 @@
-from pynq import DefaultIP
+import json
 import time
 from pathlib import Path
-import json
+
+from pynq import DefaultIP
 
 
 class EVR(DefaultIP):
-    bindto = ['xilinx.com:module_ref:axil_evr:1.0']
+    bindto = ["xilinx.com:module_ref:axil_evr:1.0"]
 
     def __init__(self, description):
-        ip_path = Path(__file__).resolve().parent.parent.parent / \
-            'designs' / 'ip'
-        json_path = ip_path / 'rtl' / 'axil_evr.json'
-        with open(json_path, 'r') as f:
-            description['registers'] = json.load(f)
+        ip_path = Path(__file__).resolve().parent.parent.parent / "designs" / "ip"
+        json_path = ip_path / "rtl" / "axil_evr.json"
+        with open(json_path) as f:
+            description["registers"] = json.load(f)
         super().__init__(description=description)
 
-    def check_frequencies(self,
-                          ref_freq_expect=156.25,
-                          rx_freq_expect=500/4):
+    def check_frequencies(self, ref_freq_expect=156.25, rx_freq_expect=500 / 4):
         """Diagnostic function to check the GTY frequencies"""
         self._check_freq(self.gt_ref_freq_mhz, ref_freq_expect)
         self._check_freq(self.gt_rx_freq_mhz, rx_freq_expect)
@@ -68,11 +66,10 @@ class EVR(DefaultIP):
 
     def _check_freq(self, freq, freq_expect, tolerance_ppm=50.0):
         ppm = ((freq / freq_expect) - 1.0) * 1e6
-        assert abs(ppm) < tolerance_ppm, \
-            f"Freq is out of spec by {ppm:3.0f} ppm"
+        assert abs(ppm) < tolerance_ppm, f"Freq is out of spec by {ppm:3.0f} ppm"
 
     def _check_reset_cnt(self):
-        """ Check if the GTY has been reset during 1 second """
+        """Check if the GTY has been reset during 1 second"""
         init_val = self.register_map.gt_reset_count
         time.sleep(1)
         new_val = self.register_map.gt_reset_count

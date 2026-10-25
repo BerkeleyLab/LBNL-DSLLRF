@@ -3,9 +3,12 @@ Control and monitor fans via MAX31785.
 If no arguments are given, read the speed from tachometer.
 See arguments below on how to set the speed and re-initialize a fan-channel.
 """
-from smbus2 import SMBus
-from mimo_mts.drivers.telemetry.pmbus import PMBUS_REGS, direct_to_float, float_to_direct
+
 import argparse
+
+from smbus2 import SMBus
+
+from mimo_mts.drivers.telemetry.pmbus import PMBUS_REGS, direct_to_float, float_to_direct
 
 
 class Max31785:
@@ -98,9 +101,7 @@ class Max31785:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--bus", default="/dev/i2c-4", help="I2C bus address (/dev/i2c-4)"
-    )
+    parser.add_argument("--bus", default="/dev/i2c-4", help="I2C bus address (/dev/i2c-4)")
     parser.add_argument(
         "--address",
         default=0x53,

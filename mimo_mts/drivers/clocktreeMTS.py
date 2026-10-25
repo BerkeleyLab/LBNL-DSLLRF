@@ -1,5 +1,6 @@
-from pynq import DefaultHierarchy
 import time
+
+from pynq import DefaultHierarchy
 
 
 class ClockTreeMTS(DefaultHierarchy):
@@ -21,7 +22,7 @@ class ClockTreeMTS(DefaultHierarchy):
         time.sleep(0.1)
 
     def check_mmcm_locked(self):
-        """ Check if MTS ClockWizard MMCM is locked """
+        """Check if MTS ClockWizard MMCM is locked"""
         # reads the LOCK register
         # the ClockWizard AXILite registers are NOT fully mapped:
         # refer to PG065
@@ -30,7 +31,6 @@ class ClockTreeMTS(DefaultHierarchy):
 
     @staticmethod
     def checkhierarchy(description):
-        if 'MTSclkwiz' in description['ip'] \
-           and 'freqcnt_gpio' in description['ip']:
+        if "MTSclkwiz" in description["ip"] and "freqcnt_gpio" in description["ip"]:
             return True
         return False

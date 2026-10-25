@@ -1,12 +1,13 @@
-import logging
-from pathlib import Path
 import json
-import cocotb
+import logging
 import random
+from pathlib import Path
+
+import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, ClockCycles
-from cocotbext.axi import AxiLiteBus, AxiLiteMaster
 from cocotb.handle import Immediate
+from cocotb.triggers import ClockCycles, RisingEdge
+from cocotbext.axi import AxiLiteBus, AxiLiteMaster
 
 
 class TB:
@@ -14,8 +15,8 @@ class TB:
         dut._log.setLevel(logging.WARNING)
         self.dut = dut
         ip_path = Path(__file__).resolve().parent.parent.parent
-        json_path = ip_path / 'rtl' / 'axil_rf_control.json'
-        with open(json_path, 'r') as f:
+        json_path = ip_path / "rtl" / "axil_rf_control.json"
+        with open(json_path) as f:
             self.registers = json.load(f)
 
         cocotb.start_soon(Clock(dut.s_axi_aclk, 4, unit="ns").start())
@@ -25,9 +26,8 @@ class TB:
         self.dut.evr_trigger_in.value = 0
 
         self.axil_master = AxiLiteMaster(
-            AxiLiteBus.from_prefix(dut, "s_axi"),
-            dut.s_axi_aclk, dut.s_axi_aresetn,
-            reset_active_level=False)
+            AxiLiteBus.from_prefix(dut, "s_axi"), dut.s_axi_aclk, dut.s_axi_aresetn, reset_active_level=False
+        )
 
     async def cycle_reset(self):
         self.dut.s_axi_aresetn.set(Immediate(1))
@@ -37,76 +37,71 @@ class TB:
             await RisingEdge(self.dut.s_axi_aclk)
 
     async def write_register(self, register, value):
-        await self.axil_master.write(
-            self.registers[register]['address_offset'],
-            value.to_bytes(4, 'little'))
+        await self.axil_master.write(self.registers[register]["address_offset"], value.to_bytes(4, "little"))
 
     async def read_register(self, register):
-        addr = self.registers[register]['address_offset']
+        addr = self.registers[register]["address_offset"]
         data = await self.axil_master.read(addr, 4)
-        return int.from_bytes(data.data, 'little')
+        return int.from_bytes(data.data, "little")
 
 
-@cocotb.test(timeout_time=1, timeout_unit='us')
+@cocotb.test(timeout_time=1, timeout_unit="us")
 async def test_write(dut):
     tb = TB(dut)
     await tb.cycle_reset()
     test_regs_dict = {
-        'trig_sel': 0,
-        'trig_period': 20,
-        'trig_divide': 1,
-        'pulse_length': 8,
-        'dac_enable': 1,
-        'amp_loop_setpoint': 200,
-        'phs_loop_setpoint': 120,
+        "trig_sel": 0,
+        "trig_period": 20,
+        "trig_divide": 1,
+        "pulse_length": 8,
+        "dac_enable": 1,
+        "amp_loop_setpoint": 200,
+        "phs_loop_setpoint": 120,
     }
 
     for reg, value in test_regs_dict.items():
         await tb.write_register(reg, value)
         reg_val = getattr(tb.dut, reg).value
         cocotb.log.warning(f"reg: {reg:20s} val: {int(reg_val):>8d}, expect: {value:>8d}")
-        assert reg_val == value, \
-            f"write {reg} mismatch: {reg_val} != {value}"
+        assert reg_val == value, f"write {reg} mismatch: {reg_val} != {value}"
         reg_val_readback = await tb.read_register(reg)
-        assert reg_val_readback == value, \
-            f"readback {reg} mismatch: {reg_val_readback} != {value}"
+        assert reg_val_readback == value, f"readback {reg} mismatch: {reg_val_readback} != {value}"
 
 
-@cocotb.test(timeout_time=1, timeout_unit='us')
+@cocotb.test(timeout_time=1, timeout_unit="us")
 async def test_read(dut):
     tb = TB(dut)
     await tb.cycle_reset()
     test_regs_dict = {
-        'amp_measured': random.randint(0, 3000),
-        'amp_loop_err': random.randint(0, 1000),
-        'phs_measured': random.randint(0, 3000),
-        'phs_loop_err': random.randint(0, 1000),
+        "amp_measured": random.randint(0, 3000),
+        "amp_loop_err": random.randint(0, 1000),
+        "phs_measured": random.randint(0, 3000),
+        "phs_loop_err": random.randint(0, 1000),
     }
     # set signal values to be read-back and check
     for reg, value in test_regs_dict.items():
         getattr(tb.dut, reg).value = value
         await RisingEdge(tb.dut.s_axi_aclk)
 
-    reg_val = await tb.read_register('rf_status')
+    reg_val = await tb.read_register("rf_status")
     assert reg_val == 1, f"status mismatch: rf_status = 0x{reg_val}"
 
     for reg, value in test_regs_dict.items():
         reg_val_readback = await tb.read_register(reg)
         reg_val = getattr(tb.dut, reg).value
         cocotb.log.warning(f"reg: {reg:20s} val: {int(reg_val):>8d}, expect: {value:>8d}")
-        assert reg_val_readback == reg_val == value, \
-            f"{reg} mismatch: {reg_val} != {reg_val}"
+        assert reg_val_readback == reg_val == value, f"{reg} mismatch: {reg_val} != {reg_val}"
 
 
-@cocotb.test(timeout_time=1, timeout_unit='us')
+@cocotb.test(timeout_time=1, timeout_unit="us")
 async def test_trigger_delay(dut):
     tb = TB(dut)
     await tb.cycle_reset()
     trig_delay_cycles = random.randint(0, 30)
     test_regs_dict = {
-        'trig_sel': 2,  # select external trigger input
-        'trig_divide': 1,  # purposely test divide=0 case
-        'trig_delay': trig_delay_cycles,
+        "trig_sel": 2,  # select external trigger input
+        "trig_divide": 1,  # purposely test divide=0 case
+        "trig_delay": trig_delay_cycles,
     }
     for reg, value in test_regs_dict.items():
         await tb.write_register(reg, value)

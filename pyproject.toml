@@ -16,7 +16,9 @@ dependencies = [
     "numpy<2",
     "pandas",
     "spidev==3.8",
-    "cocotbext-axi>=0.1.28"
+    "cocotbext-axi>=0.1.28",
+    "ruff==0.17",
+    "pre-commit==4.6"
 ]
 license = "LicenseRef-Government-Use"
 license-files = ["LICEN[CS]E*"]
@@ -41,3 +43,13 @@ llrf-zcu208-ioc = "mimo_mts.ioc.app_iocs:llrf_zcu208_ioc"
 llrf-lbl208-ioc = "mimo_mts.ioc.app_iocs:llrf_lbl208_ioc"
 max31785 = "mimo_mts.drivers.telemetry.max31785:main"
 mcrps_device = "mimo_mts.drivers.telemetry.mcrps_device:main"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint.isort]
+known-first-party = ["mimo_mts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

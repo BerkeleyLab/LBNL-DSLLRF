@@ -1,19 +1,21 @@
 #!/usr/local/share/pynq-venv/bin/python
+import argparse
+import asyncio
+import logging
+import os
+
+from smbus2 import SMBus
+from softioc import builder
+
 from mimo_mts.drivers.telemetry.max31785 import Max31785
 from mimo_mts.drivers.telemetry.mcrps_device import McrpsDevice
 from mimo_mts.ioc.base_ioc import MimoMtsIoc
-from softioc import builder
-from smbus2 import SMBus
-import asyncio
-import os
-import argparse
-import logging
 
 
 class AlsLlrfZCU208(MimoMtsIoc):
     def __init__(self, **kwargs):
-        assert os.environ['BOARD'] == 'ZCU208', "This IOC is only for ZCU208 board."
-        kwargs.setdefault('ol_name', 'ALS_LLRF_ZCU208')
+        assert os.environ["BOARD"] == "ZCU208", "This IOC is only for ZCU208 board."
+        kwargs.setdefault("ol_name", "ALS_LLRF_ZCU208")
         super().__init__(**kwargs)
 
     def init_rf_control(self):
@@ -31,20 +33,14 @@ class AlsLlrfZCU208(MimoMtsIoc):
 
 class AlsLlrfLBL208(MimoMtsIoc):
     def __init__(
-        self,
-        ol_name="ALS_LLRF_LBL208",
-        with_pmbus=True,
-        n_fans=2,
-        pulse_per_rev=2,
-        pmbus_poll_delay=1.0,
-        **kwargs
+        self, ol_name="ALS_LLRF_LBL208", with_pmbus=True, n_fans=2, pulse_per_rev=2, pmbus_poll_delay=1.0, **kwargs
     ):
-        '''
+        """
         when with_pmbus is True, the fan control and power supply status PVs will be added
         n_fans needs to be set to the number of chassis fans connected to the MAX31785
         pulse_per_rev is the number of tachometer pulses per revolution of the chassis fans
         pmbus_poll_delay is how long to sleep between reading the sensor values in [s]
-        '''
+        """
         assert os.environ["BOARD"] == "ZCU208", "This IOC is only for LBL208 board."
         super().__init__(ol_name=ol_name, **kwargs)
 
@@ -60,9 +56,7 @@ class AlsLlrfLBL208(MimoMtsIoc):
             self.max31785 = Max31785(self.smbus)
 
             for i in range(self.n_fans):
-                self.max31785.enable_fan(
-                    i, is_rpm_mode=True, pulse_per_rev=self.pulse_per_rev
-                )
+                self.max31785.enable_fan(i, is_rpm_mode=True, pulse_per_rev=self.pulse_per_rev)
 
     def create_ioc(self):
         super().create_ioc()
@@ -77,9 +71,7 @@ class AlsLlrfLBL208(MimoMtsIoc):
         # Use a 1-based index in the PV name for consistency with the psu_* PVs
         for i in range(self.n_fans):
             name = f"chassis_fan_speed_{i + 1}"
-            self.pvs_in[name] = builder.aIn(
-                prefix + name + ":RBV", initial_value=-1, EGU="RPM"
-            )
+            self.pvs_in[name] = builder.aIn(prefix + name + ":RBV", initial_value=-1, EGU="RPM")
             self.pvs_out[name] = builder.aOut(
                 prefix + name,
                 initial_value=-1,
@@ -89,9 +81,7 @@ class AlsLlrfLBL208(MimoMtsIoc):
 
         # M-CRPS power supply sensors
         for k in self.mcrps.supported_sensors:
-            self.pvs_in[k] = builder.aIn(
-                f"{prefix}psu_{k.lower()}", initial_value=-1, EGU=McrpsDevice.UNITS[k]
-            )
+            self.pvs_in[k] = builder.aIn(f"{prefix}psu_{k.lower()}", initial_value=-1, EGU=McrpsDevice.UNITS[k])
 
         # M-CRPS power supply status words (error flags)
         self.pvs_in["PSU_STATUS"] = builder.mbbIn(
@@ -148,8 +138,8 @@ class AlsLlrfLBL208(MimoMtsIoc):
 
 class MimoZCU208(MimoMtsIoc):
     def __init__(self, **kwargs):
-        assert os.environ['BOARD'] == 'ZCU208', "This IOC is only for ZCU208 board."
-        kwargs.setdefault('ol_name', 'MIMO_ZCU208')
+        assert os.environ["BOARD"] == "ZCU208", "This IOC is only for ZCU208 board."
+        kwargs.setdefault("ol_name", "MIMO_ZCU208")
         super().__init__(**kwargs)
 
     def init_rf_control(self):
@@ -160,8 +150,8 @@ class MimoZCU208(MimoMtsIoc):
 
 class AlsMimo5GZCU208(MimoMtsIoc):
     def __init__(self, **kwargs):
-        assert os.environ['BOARD'] == 'ZCU208', "This IOC is only for ZCU208 board."
-        kwargs.setdefault('ol_name', 'ALS_MIMO5G_ZCU208')
+        assert os.environ["BOARD"] == "ZCU208", "This IOC is only for ZCU208 board."
+        kwargs.setdefault("ol_name", "ALS_MIMO5G_ZCU208")
         super().__init__(**kwargs)
 
     def init_rf_control(self):
@@ -171,15 +161,15 @@ class AlsMimo5GZCU208(MimoMtsIoc):
 
 class MimoLBL208(MimoMtsIoc):
     def __init__(self, **kwargs):
-        assert os.environ['BOARD'] == 'ZCU208', "This IOC is only for LBL208 board."
-        kwargs.setdefault('ol_name', 'MIMO_LBL208')
+        assert os.environ["BOARD"] == "ZCU208", "This IOC is only for LBL208 board."
+        kwargs.setdefault("ol_name", "MIMO_LBL208")
         super().__init__(**kwargs)
 
 
 class MimoZCU216(MimoMtsIoc):
     def __init__(self, **kwargs):
-        assert os.environ['BOARD'] == 'ZCU216', "This IOC is only for ZCU216 board."
-        kwargs.setdefault('ol_name', 'MIMO_ZCU216')
+        assert os.environ["BOARD"] == "ZCU216", "This IOC is only for ZCU216 board."
+        kwargs.setdefault("ol_name", "MIMO_ZCU216")
         super().__init__(**kwargs)
 
     def init_rf_control(self):
@@ -190,7 +180,7 @@ class MimoZCU216(MimoMtsIoc):
 
 def run_app_ioc(ioc_class, description):
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug logging')
+    parser.add_argument("-d", "--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
     log_level = logging.DEBUG if args.debug else logging.INFO
     ioc = ioc_class(log_level=log_level)

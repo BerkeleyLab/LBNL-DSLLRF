@@ -1,17 +1,17 @@
-from pynq import DefaultIP
-from pathlib import Path
 import json
+from pathlib import Path
+
+from pynq import DefaultIP
 
 
 class WaveGen(DefaultIP):
-    bindto = ['xilinx.com:module_ref:axil_wave_gen:1.0']
+    bindto = ["xilinx.com:module_ref:axil_wave_gen:1.0"]
 
     def __init__(self, description):
-        ip_path = Path(__file__).resolve().parent.parent.parent / \
-            'designs' / 'ip'
-        json_path = ip_path / 'rtl' / 'axil_wave_gen.json'
-        with open(json_path, 'r') as f:
-            description['registers'] = json.load(f)
+        ip_path = Path(__file__).resolve().parent.parent.parent / "designs" / "ip"
+        json_path = ip_path / "rtl" / "axil_wave_gen.json"
+        with open(json_path) as f:
+            description["registers"] = json.load(f)
         super().__init__(description)
         self.wave_mem = self._mem_to_view()
 
@@ -58,4 +58,4 @@ class WaveGen(DefaultIP):
         # See maximum length defined in axil_wave_gen.v
         # XXX hard-coded parameters
         self._max_wave_bytes = 4096 * 320 // 8
-        return self.mmio.array[start:start+self._max_wave_bytes].view(dtype)
+        return self.mmio.array[start : start + self._max_wave_bytes].view(dtype)

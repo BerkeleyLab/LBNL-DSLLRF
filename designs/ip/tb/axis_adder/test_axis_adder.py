@@ -1,9 +1,10 @@
+import logging
+import random
+
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
-from cocotbext.axi import AxiStreamBus, AxiStreamSource, AxiStreamSink
-import logging
-import random
+from cocotbext.axi import AxiStreamBus, AxiStreamSink, AxiStreamSource
 
 
 class AXISAdderTB:
@@ -15,20 +16,26 @@ class AXISAdderTB:
         self.data_width = samp_dw * samp_num
         self.s0_source = AxiStreamSource(
             AxiStreamBus.from_prefix(dut, "s0_axis"),
-            dut.axis_aclk, dut.axis_aresetn,
+            dut.axis_aclk,
+            dut.axis_aresetn,
             reset_active_level=False,
-            byte_size=samp_dw)
+            byte_size=samp_dw,
+        )
         self.s1_source = AxiStreamSource(
             AxiStreamBus.from_prefix(dut, "s1_axis"),
-            dut.axis_aclk, dut.axis_aresetn,
+            dut.axis_aclk,
+            dut.axis_aresetn,
             reset_active_level=False,
-            byte_size=samp_dw)
+            byte_size=samp_dw,
+        )
 
         self.m_sink = AxiStreamSink(
             AxiStreamBus.from_prefix(dut, "m_axis"),
-            dut.axis_aclk, dut.axis_aresetn,
+            dut.axis_aclk,
+            dut.axis_aresetn,
             reset_active_level=False,
-            byte_size=samp_dw)
+            byte_size=samp_dw,
+        )
 
         cocotb.start_soon(Clock(dut.axis_aclk, 4, unit="ns").start())
 
@@ -48,7 +55,7 @@ class AXISAdderTB:
         return await self.m_sink.read()
 
     def validate_samples(self, s0_samples, s1_samples, output_samples):
-        for s0, s1, out in zip(s0_samples, s1_samples, output_samples):
+        for s0, s1, out in zip(s0_samples, s1_samples, output_samples, strict=True):
             expected = (s0 + s1) & (2**self.samp_dw - 1)
             assert out == expected, f"Unexpected result: expected {expected}, got {out}"
 
@@ -76,7 +83,7 @@ async def test_random_data(dut):
     await tb.reset()
 
     # Run multiple random tests
-    for test_num in range(10):
+    for _test_num in range(10):
         s0_samples = [random.randint(-0x7FFF, 0x7FFF) for _ in range(tb.samp_num)]
         s1_samples = [random.randint(-0x7FFF, 0x7FFF) for _ in range(tb.samp_num)]
 
@@ -103,7 +110,7 @@ async def test_continuous_stream(dut):
         await tb.send_parallel_transactions(s0_samples, s1_samples)
 
     # Verify all outputs
-    for transaction, (s0_samples, s1_samples) in enumerate(test_data):
+    for _transaction, (s0_samples, s1_samples) in enumerate(test_data):
         output_samples = await tb.receive_result()
         tb.validate_samples(s0_samples, s1_samples, output_samples)
 

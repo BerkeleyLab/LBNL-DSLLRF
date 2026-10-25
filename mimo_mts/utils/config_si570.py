@@ -1,6 +1,7 @@
+from time import sleep
+
 import numpy as np
 from smbus2 import SMBus
-from time import sleep
 
 
 class SI570:
@@ -20,12 +21,12 @@ class SI570:
         In Linux device tree, the chip is available at /dev/i2c-1,
         or /sys/bus/i2c/devices/9-005d.
         """
-        self.dev = kwargs.get('dev', '/dev/i2c-1')
-        self.i2c_mux_addr = kwargs.get('i2c_mux_addr', 0x74)
-        self.i2c_mux_chan = kwargs.get('i2c_mux_chan', 3)
-        self.i2c_addr = kwargs.get('i2c_addr', 0x5D)
-        self.start_address = kwargs.get('start_address', 7)
-        self.default_freq_mhz = kwargs.get('default_freq_mhz', 156.25)  # MHz
+        self.dev = kwargs.get("dev", "/dev/i2c-1")
+        self.i2c_mux_addr = kwargs.get("i2c_mux_addr", 0x74)
+        self.i2c_mux_chan = kwargs.get("i2c_mux_chan", 3)
+        self.i2c_addr = kwargs.get("i2c_addr", 0x5D)
+        self.start_address = kwargs.get("start_address", 7)
+        self.default_freq_mhz = kwargs.get("default_freq_mhz", 156.25)  # MHz
 
         self.bus = SMBus(self.dev, force=True)
 
@@ -37,14 +38,13 @@ class SI570:
 
     def set_i2c_mux(self):
         """Write the control register of the TCA9548A I2C multiplexer
-           to select the channel of the SI570.
+        to select the channel of the SI570.
         """
-        self.bus.write_byte_data(
-            self.i2c_mux_addr, 0, (1 << self.i2c_mux_chan))
+        self.bus.write_byte_data(self.i2c_mux_addr, 0, (1 << self.i2c_mux_chan))
 
     def get_xtal_freq(self):
         """Get the crystal frequency of the SI570
-           Returns: fxtal (float): the crystal frequency in MHz
+        Returns: fxtal (float): the crystal frequency in MHz
         """
         # reset si570 to read default registers, corresponds to default freq
         self.bus.write_block_data(self.i2c_addr, 135, [0x80])
@@ -54,18 +54,15 @@ class SI570:
         a = self.bus.read_i2c_block_data(self.i2c_addr, self.start_address, 6)
         hs_div = (a[0] >> 5) + 4
         n1 = (((a[0] & 0x1F) << 2) | (a[1] >> 6)) + 1
-        rfreq = np.uint64(
-            (((a[1] & 0x3F) << 32) | (a[2] << 24) |
-             (a[3] << 16) | (a[4] << 8) | a[5])
-        ) / (2**28)
+        rfreq = np.uint64(((a[1] & 0x3F) << 32) | (a[2] << 24) | (a[3] << 16) | (a[4] << 8) | a[5]) / (2**28)
         fdco = self.default_freq_mhz * n1 * hs_div
         fxtal = fdco / rfreq
         return fxtal
 
     def set_freq(self, freq_mhz=156.25):
         """Configure the SI570 to a new frequency
-           Args:
-               freq_mhz (float): the new frequency in MHz
+        Args:
+            freq_mhz (float): the new frequency in MHz
         """
         self.set_i2c_mux()
         self.fxtal = self.get_xtal_freq()

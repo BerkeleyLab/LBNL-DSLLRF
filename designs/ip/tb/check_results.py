@@ -1,6 +1,5 @@
-from xml.etree import ElementTree as ET
 import argparse
-
+from xml.etree import ElementTree as ET
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -10,6 +9,6 @@ if __name__ == "__main__":
     result = ET.parse(args.result_fname)
     for testsuite in result.iter("testsuite"):
         for testcase in testsuite.iter("testcase"):
-            for failure in testcase.iter("failure"):
-                raise Exception(f'{testcase.get("name")}: Test Failed.')
+            for _failure in testcase.iter("failure"):
+                raise Exception(f"{testcase.get('name')}: Test Failed.")
     print("PASS")

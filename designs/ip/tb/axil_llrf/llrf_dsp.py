@@ -32,22 +32,24 @@ class LLRFModule:
             self._gain *= m.gain
 
     def __repr__(self):
-        str = (f"< {self.__class__.__name__:12s}:   "
-               f"Amp gain={np.abs(self.gain):6.3f},   "
-               f"Phs gain={np.angle(self.gain, deg=True):8.2f} deg >\n")
+        str = (
+            f"< {self.__class__.__name__:12s}:   "
+            f"Amp gain={np.abs(self.gain):6.3f},   "
+            f"Phs gain={np.angle(self.gain, deg=True):8.2f} deg >\n"
+        )
         for m in self.submodules:
-            str += (f"{m.__class__.__name__:14s}:   "
-                    f"Amp gain={np.abs(m.gain):6.3f},   "
-                    f"Phs gain={np.angle(m.gain, deg=True):8.2f} deg;\n")
+            str += (
+                f"{m.__class__.__name__:14s}:   "
+                f"Amp gain={np.abs(m.gain):6.3f},   "
+                f"Phs gain={np.angle(m.gain, deg=True):8.2f} deg;\n"
+            )
         return str
 
 
 class CORDIC(LLRFModule):
     CORDIC_GAIN = 1.646760258
 
-    def __init__(self, width: int = 22,
-                 pipeline_delay: int = 22,
-                 phase_off_deg: float = 0) -> None:
+    def __init__(self, width: int = 22, pipeline_delay: int = 22, phase_off_deg: float = 0) -> None:
         """Receiver or Transceiver CORDIC.
             Gateware: cordicg_b22.v (rx_cordic or tx_cordic).
 
@@ -62,9 +64,7 @@ class CORDIC(LLRFModule):
 
 
 class Coupler(LLRFModule):
-    def __init__(self, input_width: int = 16,
-                 output_width: int = 18,
-                 pipeline_delay: int = 1) -> None:
+    def __init__(self, input_width: int = 16, output_width: int = 18, pipeline_delay: int = 1) -> None:
         """Receiver / Transmitter coupler to pad signal datawitdh
             between axi stream and dsp_core.
         Args:
@@ -77,9 +77,7 @@ class Coupler(LLRFModule):
 
 
 class LLRFModel(LLRFModule):
-    def __init__(self, width: int = 18,
-                 input_width: int = 16,
-                 output_width: int = 16) -> None:
+    def __init__(self, width: int = 18, input_width: int = 16, output_width: int = 16) -> None:
         """DSP chain in llrf_dsp.v.
         Args:
             width (int): datawidth of the dsp_core. Defaults to 16.
@@ -88,21 +86,15 @@ class LLRFModel(LLRFModule):
         """
         super().__init__(width)
 
-        self.rx_coupler = Coupler(input_width=input_width,
-                                  output_width=width)
+        self.rx_coupler = Coupler(input_width=input_width, output_width=width)
         self.rx_cordic = CORDIC(phase_off_deg=0)
         self.tx_cordic = CORDIC(phase_off_deg=0)
-        self.tx_coupler = Coupler(input_width=width,
-                                  output_width=output_width)
+        self.tx_coupler = Coupler(input_width=width, output_width=output_width)
 
         self.rx_gain = self.rx_coupler.gain * self.rx_cordic.gain
         self.tx_gain = self.tx_coupler.gain * self.tx_cordic.gain
-        self.submodules += [
-            self.rx_coupler,
-            self.rx_cordic,
-            self.tx_cordic,
-            self.tx_coupler]
-        self.max_adc_amp = (1 << (self.width-1)) / np.abs(self.rx_gain) * 0.99
+        self.submodules += [self.rx_coupler, self.rx_cordic, self.tx_cordic, self.tx_coupler]
+        self.max_adc_amp = (1 << (self.width - 1)) / np.abs(self.rx_gain) * 0.99
 
     def calc_open_loop_setp(self, amp_setpoint_adc, phs_setpoint_deg):
         """calculate open loop setpoint register values

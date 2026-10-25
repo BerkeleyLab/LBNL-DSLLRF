@@ -11,10 +11,17 @@ variables:
 
 image: mohs.dhcp.lbl.gov/xilinx_env_trixie_custom_verilator
 
-flake8:
+lint:
   stage: test
   script:
-    - flake8 mimo_mts designs
+    - pip install ruff==0.17
+    - ruff check --output-format=gitlab mimo_mts designs > gl-code-quality-report.json || true
+    - ruff check mimo_mts designs
+    - ruff format --check mimo_mts designs
+  artifacts:
+    when: always
+    reports:
+      codequality: gl-code-quality-report.json
 
 rtl_test:
   before_script:
