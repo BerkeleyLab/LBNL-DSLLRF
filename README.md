@@ -123,27 +123,6 @@ This work was presented as in the [Low Level 2025 Radio Frequency Workshop](http
    sudo -E llrf-lbl208-ioc
    ```
 
-## IOC PVs
-Once the IOC is running, the PVs below are available to read or write. Please replace
-the prefix `$P` with `ALS_LLRF_LBL208:pmbus`.
-
-The PVs below are read-only and return sensor readings from the M-CRPS enabled power supply. They are listed here with their nominal values:
-
-  * `$P:psu_vout`: power-supply DC output voltage: 12.1 V
-  * `$P:psu_vin`: power-supply AC input voltage: 122.0 V
-  * `$P:psu_iout`: power-supply DC output current: 2.3 A
-  * `$P:psu_iin`: power-supply AC input current: 0.3 A
-  * `$P:psu_pout`: power-supply output power: 28.6 W
-  * `$P:psu_pin`: power-supply input power: 35.5 W
-  * `$P:psu_temperature_{1,2}`: temperature within the power-supply: 24.0 °C
-  * `$P:psu_fan_speed_1`: speed of the fan inside the power-supply: 4480 rpm
-  * `$P:psu_status`: The 16 bit status word of the power-supply. [Bit definitions](mimo_mts/drivers/telemetry/pmbus.py?#L141).
-
-There are 2 chassis fans which can be speed-controlled with the following PVs:
-
-  * `$P:chassis_fan_speed_{1,2}:RBV`: measured speed of the 2 chassis fans in [rpm]
-  * `$P:chassis_fan_speed_{1,2}`: set-point of the 2 chassis fans in [rpm]
-
 ## 📖 Citation
 
 If you use this design in your research or projects, please cite our papers.
@@ -177,3 +156,54 @@ If you use this design in your research or projects, please cite our papers.
           url={https://arxiv.org/abs/2510.13711},
     }
     ``` -->
+
+## Code Style and Linting
+
+This project uses [Ruff](https://docs.astral.sh/ruff/) for both linting and formatting.
+
+Ruff checks the `mimo_mts` and `designs` directories. All configuration lives in `pyproject.toml` under `[tool.ruff]`.
+
+The pipeline runs `ruff check` and `ruff format --check`. Unformatted or failing code blocks the merge. The pre-commit hook and editor setup below catch nearly everything before a push.
+
+
+### Environment setup
+
+Install the development dependencies, which include a pinned Ruff version:
+
+```bash
+pip install -e .
+```
+
+Then run these from the repository root:
+
+```bash
+# Check for lint violations (same as CI)
+ruff check mimo_mts designs
+
+# Apply all safe automatic fixes
+ruff check --fix mimo_mts designs
+
+# Format code
+ruff format mimo_mts designs
+```
+
+To automatically format / check before a commit install the pre-commit hooks:
+
+```bash
+pre-commit install
+```
+
+From now on, every `git commit` runs Ruff on all staged files. If Ruff changes anything, the commit is stopped so the changes can be reviewed. Run `git add` on the modified files and commit again. If the hook reports something it can't fix, fix it manually and retry.
+
+We recommend enabling format-on-save in your code editor, so most issues are fixed as you work. Whichever editor you use, make sure it uses the Ruff binary from your project's virtual environment, not a separately bundled copy, so your results match CI.
+
+### A note about `git blame`
+During the migration to ruff, a large number of files were modified, making the output of `git blame` somewhat less useful.
+
+To locally ignore the formatting commit and restore functionality, run this command once:
+
+```
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
+The same can be achieved in gitlab by following [these steps](https://docs.gitlab.com/user/project/repository/files/git_blame/#ignore-specific-revisions).

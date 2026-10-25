@@ -3,7 +3,7 @@ from pynq import DeviceTreeSegment
 
 # LBNL specific
 device_tree_segments = [
-    '/boot/lmxadc.dtbo',  # CLK104A
+    "/boot/lmxadc.dtbo",  # CLK104A
 ]
 
 for dtsb_file in device_tree_segments:

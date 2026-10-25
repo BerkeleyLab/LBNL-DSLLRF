@@ -1,14 +1,13 @@
+import json
+import logging
+import math
+import random
+from pathlib import Path
+
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, ClockCycles
-import logging
-from cocotbext.axi import AxiLiteBus, AxiLiteMaster
-from cocotbext.axi import AxiStreamBus, AxiStreamSink
-from pathlib import Path
-import json
-
-import random
-import math
+from cocotb.triggers import ClockCycles, RisingEdge
+from cocotbext.axi import AxiLiteBus, AxiLiteMaster, AxiStreamBus, AxiStreamSink
 
 
 class AxilWaveGenTB:
@@ -20,12 +19,12 @@ class AxilWaveGenTB:
         self.log.setLevel(logging.INFO)
 
         # Get parameters (defaults for simulation)
-        self.axi_data_width = self._get_param('C_S_AXI_DATA_WIDTH', 32)
-        self.axi_addr_width = self._get_param('C_S_AXI_ADDR_WIDTH', 6)
-        self.out_data_width = self._get_param('OUT_DATA_WIDTH', 320)
-        self.granule = self._get_param('GRANULE', 64)
-        self.bank_depth = self._get_param('BANK_DEPTH', 4096)
-        self.ram_style = self._get_param('RAM_STYLE', "ultra")
+        self.axi_data_width = self._get_param("C_S_AXI_DATA_WIDTH", 32)
+        self.axi_addr_width = self._get_param("C_S_AXI_ADDR_WIDTH", 6)
+        self.out_data_width = self._get_param("OUT_DATA_WIDTH", 320)
+        self.granule = self._get_param("GRANULE", 64)
+        self.bank_depth = self._get_param("BANK_DEPTH", 4096)
+        self.ram_style = self._get_param("RAM_STYLE", "ultra")
 
         self.axi_bytes = self.axi_data_width // 8
         self.out_bytes = self.out_data_width // 8
@@ -34,15 +33,15 @@ class AxilWaveGenTB:
 
         # Load register map from JSON
         ip_path = Path(__file__).resolve().parent.parent.parent
-        json_path = ip_path / 'rtl' / 'axil_wave_gen.json'
-        with open(json_path, 'r') as f:
+        json_path = ip_path / "rtl" / "axil_wave_gen.json"
+        with open(json_path) as f:
             self.registers = json.load(f)
 
         # Map register names to addresses
-        self.ADDR_CTRL = self.registers['ctrl']['address_offset']
-        self.ADDR_LENGTH = self.registers['wave_length']['address_offset']
-        self.ADDR_STATUS = self.registers['status']['address_offset']
-        self.WAVEFORM_BASE_ADDR = self.registers['waveform_data']['address_offset']
+        self.ADDR_CTRL = self.registers["ctrl"]["address_offset"]
+        self.ADDR_LENGTH = self.registers["wave_length"]["address_offset"]
+        self.ADDR_STATUS = self.registers["status"]["address_offset"]
+        self.WAVEFORM_BASE_ADDR = self.registers["waveform_data"]["address_offset"]
 
         self.log.warning("Configuration:")
         self.log.warning(f"  AXI Data Width: {self.axi_data_width} bits")
@@ -58,10 +57,7 @@ class AxilWaveGenTB:
 
         # Create AXI-Lite Master
         self.axil_master = AxiLiteMaster(
-            AxiLiteBus.from_prefix(dut, "s_axi"),
-            dut.s_axi_aclk,
-            dut.s_axi_aresetn,
-            reset_active_level=False
+            AxiLiteBus.from_prefix(dut, "s_axi"), dut.s_axi_aclk, dut.s_axi_aresetn, reset_active_level=False
         )
 
         # Create AXI-Stream Sink
@@ -70,7 +66,7 @@ class AxilWaveGenTB:
             dut.s_axi_aclk,
             dut.s_axi_aresetn,
             reset_active_level=False,
-            byte_size=self.out_data_width
+            byte_size=self.out_data_width,
         )
 
     def _get_param(self, name, default):
@@ -109,12 +105,12 @@ class AxilWaveGenTB:
     async def write_register(self, address: int, data: int):
         """Write to a control register via AXI-Lite"""
         self.log.debug(f"Writing 0x{data:08x} to register 0x{address:02x}")
-        await self.axil_master.write(address, data.to_bytes(self.axi_bytes, byteorder='little'))
+        await self.axil_master.write(address, data.to_bytes(self.axi_bytes, byteorder="little"))
 
     async def read_register(self, address: int) -> int:
         """Read from a control register via AXI-Lite"""
         data = await self.axil_master.read(address, self.axi_bytes)
-        value = int.from_bytes(data, byteorder='little')
+        value = int.from_bytes(data, byteorder="little")
         self.log.debug(f"Read 0x{value:08x} from register 0x{address:02x}")
         return value
 
@@ -133,9 +129,9 @@ class AxilWaveGenTB:
 
     async def write_waveform_words(self, words: list, address: int = 0):
         """Write list of integer words as waveform data"""
-        data = b''
+        data = b""
         for word in words:
-            data += word.to_bytes(self.axi_bytes, byteorder='little')
+            data += word.to_bytes(self.axi_bytes, byteorder="little")
 
         await self.write_waveform_data(data, address)
 
@@ -264,12 +260,12 @@ class AxilWaveGenTB:
             return False
 
         for i, rx_int in enumerate(received):
-            self.log.info(f"  Got {i}:   0x{rx_int:0{self.out_bytes*2}x}")
+            self.log.info(f"  Got {i}:   0x{rx_int:0{self.out_bytes * 2}x}")
 
-        for i, (rx, exp) in enumerate(zip(received, expected)):
+        for i, (rx, exp) in enumerate(zip(received, expected, strict=True)):
             # Convert bytes to int for comparison
             if isinstance(rx, bytes):
-                rx_int = int.from_bytes(rx, byteorder='little')
+                rx_int = int.from_bytes(rx, byteorder="little")
             else:
                 rx_int = int(rx)
             # Mask to output width
@@ -278,9 +274,9 @@ class AxilWaveGenTB:
 
             if rx_int != exp:
                 self.log.error(f"Sample {i} mismatch:")
-                self.log.error(f"  Got:      0x{rx_int:0{self.out_bytes*2}x}")
-                self.log.error(f"  Expected: 0x{exp:0{self.out_bytes*2}x}")
-                self.log.error(f"  XOR:      0x{(rx_int ^ exp):0{self.out_bytes*2}x}")
+                self.log.error(f"  Got:      0x{rx_int:0{self.out_bytes * 2}x}")
+                self.log.error(f"  Expected: 0x{exp:0{self.out_bytes * 2}x}")
+                self.log.error(f"  XOR:      0x{(rx_int ^ exp):0{self.out_bytes * 2}x}")
                 return False
 
         self.log.info(f"All {len(expected)} samples verified successfully")
@@ -291,7 +287,8 @@ class AxilWaveGenTB:
 # Test Cases
 # =============================================================================
 
-@cocotb.test(timeout_time=5, timeout_unit='us')
+
+@cocotb.test(timeout_time=5, timeout_unit="us")
 async def test_basic_write_read(dut):
     """Test basic write and read functionality via AXI-Lite"""
     tb = AxilWaveGenTB(dut)
@@ -312,7 +309,7 @@ async def test_basic_write_read(dut):
     assert tb.verify_samples(received, expected_samples), "Sample verification failed"
 
 
-@cocotb.test(timeout_time=5, timeout_unit='us')
+@cocotb.test(timeout_time=5, timeout_unit="us")
 async def test_register_read_write(dut):
     """Test AXI-Lite register read/write"""
     tb = AxilWaveGenTB(dut)
@@ -327,7 +324,7 @@ async def test_register_read_write(dut):
     tb.log.info(f"Register read/write test passed: {test_length} == {read_length}")
 
 
-@cocotb.test(timeout_time=5, timeout_unit='us')
+@cocotb.test(timeout_time=5, timeout_unit="us")
 async def test_status_register(dut):
     """Test status register read"""
     tb = AxilWaveGenTB(dut)
@@ -339,7 +336,7 @@ async def test_status_register(dut):
     tb.log.info(f"Status register test passed: busy bit = {status & 0x1}")
 
 
-@cocotb.test(timeout_time=5, timeout_unit='us')
+@cocotb.test(timeout_time=5, timeout_unit="us")
 async def test_random_data(dut):
     """Test with random data pattern"""
     tb = AxilWaveGenTB(dut)
@@ -359,7 +356,7 @@ async def test_random_data(dut):
     assert tb.verify_samples(received, expected_samples), "Random data test failed"
 
 
-@cocotb.test(timeout_time=5, timeout_unit='us')
+@cocotb.test(timeout_time=5, timeout_unit="us")
 async def test_multiple_triggers(dut):
     """Test multiple trigger sequences"""
     tb = AxilWaveGenTB(dut)
@@ -386,7 +383,7 @@ async def test_multiple_triggers(dut):
         await ClockCycles(dut.s_axi_aclk, 20)
 
 
-@cocotb.test(timeout_time=5, timeout_unit='us')
+@cocotb.test(timeout_time=5, timeout_unit="us")
 async def test_partial_length(dut):
     """Test reading partial waveform length"""
     tb = AxilWaveGenTB(dut)
@@ -408,7 +405,7 @@ async def test_partial_length(dut):
     assert tb.verify_samples(received, expected_samples[:num_read_samples]), "Partial length test failed"
 
 
-@cocotb.test(timeout_time=5, timeout_unit='us')
+@cocotb.test(timeout_time=5, timeout_unit="us")
 async def test_conversion_boundary(dut):
     """Test at gearbox conversion boundary (LCM of widths)"""
     tb = AxilWaveGenTB(dut)
@@ -436,7 +433,7 @@ async def test_conversion_boundary(dut):
     assert tb.verify_samples(received, expected_samples), "Conversion boundary test failed"
 
 
-@cocotb.test(timeout_time=5, timeout_unit='us')
+@cocotb.test(timeout_time=5, timeout_unit="us")
 async def test_single_sample(dut):
     """Test single sample write/read"""
     tb = AxilWaveGenTB(dut)
@@ -455,7 +452,7 @@ async def test_single_sample(dut):
     assert tb.verify_samples(received, expected_samples), "Single sample test failed"
 
 
-@cocotb.test(timeout_time=5, timeout_unit='us')
+@cocotb.test(timeout_time=5, timeout_unit="us")
 async def test_tlast_assertion(dut):
     """Verify TLAST is asserted correctly"""
     tb = AxilWaveGenTB(dut)
@@ -492,7 +489,7 @@ async def test_tlast_assertion(dut):
     tb.log.info("TLAST assertion verified")
 
 
-@cocotb.test(timeout_time=50, timeout_unit='us')
+@cocotb.test(timeout_time=50, timeout_unit="us")
 async def test_large_waveform(dut):
     """Test larger waveform"""
     tb = AxilWaveGenTB(dut)
@@ -511,7 +508,7 @@ async def test_large_waveform(dut):
     assert tb.verify_samples(received, expected_samples), "Large waveform test failed"
 
 
-@cocotb.test(timeout_time=10, timeout_unit='us')
+@cocotb.test(timeout_time=10, timeout_unit="us")
 async def test_external_trigger(dut):
     """Test external trigger functionality"""
     tb = AxilWaveGenTB(dut)

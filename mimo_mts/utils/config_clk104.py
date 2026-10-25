@@ -1,10 +1,12 @@
 import logging
+import struct
 from configparser import ConfigParser
 from pathlib import Path
-import struct
-import xrfclk
+
 import spidev  # not used by xrfclk, but needed for register readback
+import xrfclk
 from pynq import GPIO
+
 from .config_tics import LMKConfig, LMXConfig
 
 logger = logging.getLogger(__name__)
@@ -92,9 +94,7 @@ class CLK104Config:
                     "num_bytes": num_bytes,
                 }
         if not {"lmk", "lmxadc", "lmxdac"}.issubset(devinfo):
-            raise KeyError(
-                "Missing required device configuration (lmk, lmxadc, or lmxdac)"
-            )
+            raise KeyError("Missing required device configuration (lmk, lmxadc, or lmxdac)")
         return devinfo
 
     def write_regs(self):
@@ -190,7 +190,7 @@ class LmVerifier:
         reg_addr |= 0x8000 if self.data_width == 1 else 0x80  # set the read bit
         b_reg_addr = reg_addr.to_bytes(3 - self.data_width, "big")
         b_rx = self.spi.xfer(b_reg_addr + bytes(self.data_width))
-        return int.from_bytes(b_rx[-self.data_width:], "big")
+        return int.from_bytes(b_rx[-self.data_width :], "big")
 
     def verify_regs(self):
         """
@@ -205,9 +205,7 @@ class LmVerifier:
             if addr in self.exclude_regs:
                 logger.debug(f"{self.name}: Register 0x{addr:04x} excluded")
                 continue
-            logger.debug(
-                f"{self.name}: Register 0x{addr:04x} value 0x{read_value:04x}, expect: 0x{tcs_value:04x}"
-            )
+            logger.debug(f"{self.name}: Register 0x{addr:04x} value 0x{read_value:04x}, expect: 0x{tcs_value:04x}")
             if read_value != tcs_value:
                 logger.error(
                     f"{self.name}: Register 0x{addr:04x} value 0x{read_value:04x} doesn't match .tcs: 0x{tcs_value:04x}"
@@ -279,9 +277,7 @@ class Lmx2594Verifier(LmVerifier):
             logger.error(f"{self.name}: PLL not locked, rb_LD_VTUNE = {rb_LD_VTUNE}")
             return False
 
-        logger.info(
-            f"{self.name}: PLL locked, rb_LD_VTUNE = {rb_LD_VTUNE}, rb_VCO_SEL = {rb_VCO_SEL}"
-        )
+        logger.info(f"{self.name}: PLL locked, rb_LD_VTUNE = {rb_LD_VTUNE}, rb_VCO_SEL = {rb_VCO_SEL}")
         return True
 
     def trigger_fcal(self):
@@ -345,16 +341,12 @@ class Lmk0482Verifier(LmVerifier):
         reg140 = self.read_reg(0x140)
         reg173 = self.read_reg(0x173)
         if ((reg140 >> 7) & 1) or ((reg173 >> 5) & 1):
-            logger.info(
-                f"{self.name}: At least one PLL is powered down. Can't read lock status."
-            )
+            logger.info(f"{self.name}: At least one PLL is powered down. Can't read lock status.")
             return is_okay
 
         reg183 = self.read_reg(0x183)
         if (reg183 & 2) == 0:
-            logger.error(
-                f"{self.name}: At least one PLL is unlocked, reg183 = {reg183:08b}"
-            )
+            logger.error(f"{self.name}: At least one PLL is unlocked, reg183 = {reg183:08b}")
             is_okay = False
         else:
             logger.info(f"{self.name}: Both PLLs are locked, reg183 = {reg183:08b}")

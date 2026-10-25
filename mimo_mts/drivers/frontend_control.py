@@ -1,8 +1,9 @@
-from enum import IntEnum
-from pynq import DefaultIP, Register
-from pathlib import Path
 import json
 import time
+from enum import IntEnum
+from pathlib import Path
+
+from pynq import DefaultIP, Register
 
 
 def sign_extend(value, bits):
@@ -115,13 +116,7 @@ class Ina239:
         self.mcp = mcp
 
         # Write the configuration register
-        self.cfg_val = (
-            ((MODE & 0xF) << 12)
-            | ((VBUSCT & 7) << 9)
-            | ((VSHCT & 7) << 6)
-            | ((VTCT & 7) << 3)
-            | (AVG & 7)
-        )
+        self.cfg_val = ((MODE & 0xF) << 12) | ((VBUSCT & 7) << 9) | ((VSHCT & 7) << 6) | ((VTCT & 7) << 3) | (AVG & 7)
         self.write_reg(0x01, self.cfg_val)
 
     def read_reg(self, addr: int):
@@ -135,9 +130,7 @@ class Ina239:
         addr: register address to write, 6 bits
         value: the 16 bit value to write to the register
         """
-        return self.mcp.spi_transaction(
-            self.chip_id, (addr << 18) | (value & 0xFFFF), 24, 1
-        )
+        return self.mcp.spi_transaction(self.chip_id, (addr << 18) | (value & 0xFFFF), 24, 1)
 
     def get_current(self):
         """returns shunt current in [A]"""
@@ -238,7 +231,7 @@ class FrontendControl(DefaultIP):
         json_path = root_path / "designs/ip/rtl/frontend_control_axi.json"
         # json_path = "/home/xilinx/pynq_llrf/designs/ip/rtl/frontend_control_axi.json"
 
-        with open(json_path, "r") as f:
+        with open(json_path) as f:
             self.json_dat = json.load(f)
 
         description["registers"] = self.json_dat["csr_registers"]

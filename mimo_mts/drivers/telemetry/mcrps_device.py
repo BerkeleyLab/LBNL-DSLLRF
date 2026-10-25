@@ -1,7 +1,11 @@
 """A helper class to read sensor values and state from CRPS compatible power supplies"""
-from smbus2 import SMBus
+
 import argparse
+
+from smbus2 import SMBus
+
 from mimo_mts.drivers.telemetry.pmbus import (
+    PMBUS_REGS,
     STATUS_CML,
     STATUS_FAN,
     STATUS_INPUT,
@@ -12,7 +16,6 @@ from mimo_mts.drivers.telemetry.pmbus import (
     STATUS_WORD,
     VoutDecoder,
     linear11_to_float,
-    PMBUS_REGS,
 )
 
 
@@ -130,9 +133,7 @@ class McrpsDevice:
             all_alerts.append(STATUS_IOUT(self.read_byte(PMBUS_REGS.STATUS_IOUT)))
 
         if STATUS_WORD.TEMPERATURE in sw:
-            all_alerts.append(
-                STATUS_TEMPERATURE(self.read_byte(PMBUS_REGS.STATUS_TEMPERATURE))
-            )
+            all_alerts.append(STATUS_TEMPERATURE(self.read_byte(PMBUS_REGS.STATUS_TEMPERATURE)))
 
         if STATUS_WORD.INPUT in sw or STATUS_WORD.VIN_UV in sw:
             all_alerts.append(STATUS_INPUT(self.read_byte(PMBUS_REGS.STATUS_INPUT)))
@@ -165,21 +166,15 @@ class McrpsDevice:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--bus", default="/dev/i2c-4", help="I2C bus address (/dev/i2c-4)"
-    )
+    parser.add_argument("--bus", default="/dev/i2c-4", help="I2C bus address (/dev/i2c-4)")
     parser.add_argument(
         "--address",
         default=0x58,
         type=lambda x: int(x, 0),
         help="SMBus device address of PSU (0x58)",
     )
-    parser.add_argument(
-        "--pec", action="store_true", help="Enable Packet Error Checking"
-    )
-    parser.add_argument(
-        "--clear", action="store_true", help="Clear all faults after reading them"
-    )
+    parser.add_argument("--pec", action="store_true", help="Enable Packet Error Checking")
+    parser.add_argument("--clear", action="store_true", help="Clear all faults after reading them")
     args = parser.parse_args()
 
     with SMBus(args.bus) as smbus:

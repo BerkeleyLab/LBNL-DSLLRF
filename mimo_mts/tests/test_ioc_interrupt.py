@@ -1,12 +1,13 @@
 import argparse
 import logging
+
 from mimo_mts.ioc.app_iocs import AlsLlrfZCU208
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Test Overlay Interrupts through IOC')
-    parser.add_argument('--trig_period', type=float, default=25e6, help='Trigger period in dsp_clk cycles')
-    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
+    parser = argparse.ArgumentParser(description="Test Overlay Interrupts through IOC")
+    parser.add_argument("--trig_period", type=float, default=25e6, help="Trigger period in dsp_clk cycles")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
     dsp_clk_mhz = 250  # dsp_clk

@@ -1,5 +1,5 @@
-from enum import Enum, IntEnum, IntFlag
 import struct
+from enum import Enum, IntEnum, IntFlag
 
 from smbus2 import SMBus
 
@@ -179,9 +179,7 @@ class STATUS_VOUT(IntFlag):  # Also valid for STATUS_INPUT?
     VOUT_TRACKING_ERROR = BIT(0)
     TOFF_MAX_WARNING = BIT(1)
     TON_MAX_FAULT = BIT(2)
-    VOUT_MAX_MIN = BIT(
-        3
-    )  # attempted to set output voltage above VOUT_MAX or below VOUT_MIN
+    VOUT_MAX_MIN = BIT(3)  # attempted to set output voltage above VOUT_MAX or below VOUT_MIN
     VOUT_UV_FAULT = BIT(4)
     VOUT_UV_WARNING = BIT(5)
     VOUT_OV_WARNING = BIT(6)
@@ -282,9 +280,7 @@ def float_to_direct(value: float, m: int, b: int, R: int):
 
 def read_coefficients(smbus, address, target_cmd, is_for_reading=1):
     """Use COEFFICIENT command to get m, b, R for decoding a DIRECT value"""
-    coeff_data = smbus.block_process_call(
-        address, PMBUS_REGS.COEFFICIENTS, [target_cmd, is_for_reading]
-    )
+    coeff_data = smbus.block_process_call(address, PMBUS_REGS.COEFFICIENTS, [target_cmd, is_for_reading])
     m = (coeff_data[1] << 16) | coeff_data[0]
     b = (coeff_data[3] << 16) | coeff_data[2]
     R = coeff_data[4]
@@ -309,9 +305,7 @@ class VoutDecoder:
         """
         self.address = address
         self.smbus = smbus
-        self.coefficients: tuple[
-            int, int, int
-        ] | None = None  # m, b and R coefficients for DIRECT mode
+        self.coefficients: tuple[int, int, int] | None = None  # m, b and R coefficients for DIRECT mode
         self.ulin16_factor = 1.0
 
         # Get the VOUT_MODE first

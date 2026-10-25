@@ -1,0 +1,9 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.0
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^(mimo_mts|designs)/
+      - id: ruff-format
+        files: ^(mimo_mts|designs)/
