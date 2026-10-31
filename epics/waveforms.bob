@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--Saved on 2025-11-03 10:11:03 by du-->
 <display version="2.0.0">
   <name>mimo_mts</name>
   <width>1150</width>
@@ -42,20 +41,26 @@
     <height>30</height>
     <vertical_alignment>1</vertical_alignment>
   </widget>
-  <widget type="textentry" version="3.0.0">
+  <widget type="textupdate" version="2.0.0">
     <name>Text Entry_14</name>
     <pv_name>$(P):rf_control:pulse_length:RBV</pv_name>
     <x>1060</x>
     <y>180</y>
     <width>80</width>
     <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
     <precision>0</precision>
     <show_units>false</show_units>
     <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
   </widget>
   <widget type="label" version="2.0.0">
     <name>Label_36</name>
-    <text>Pul.width [4ns]</text>
+    <text>Pulse len [4ns]</text>
     <x>850</x>
     <y>180</y>
     <height>30</height>
@@ -317,6 +322,7 @@
               <name>Action Button_8</name>
               <actions>
                 <action type="execute">
+                  <description>Fullscale</description>
                   <script file="EmbeddedPy">
                     <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
 
@@ -332,7 +338,6 @@ plot.setPropertyValue("y_axes[0].minimum", -32768)
 plot.setPropertyValue("y_axes[0].maximum", 32767)
 ]]></text>
                   </script>
-                  <description>Fullscale</description>
                 </action>
               </actions>
               <x>660</x>
@@ -345,6 +350,7 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
               <name>Action Button_9</name>
               <actions>
                 <action type="execute">
+                  <description>Autoscale</description>
                   <script file="EmbeddedPy">
                     <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
 
@@ -359,7 +365,6 @@ plot.setPropertyValue("y_axes[0].autoscale", False)
 plot.setPropertyValue("y_axes[0].autoscale", True)
 ]]></text>
                   </script>
-                  <description>Autoscale</description>
                 </action>
               </actions>
               <x>730</x>
@@ -566,6 +571,7 @@ plot.setPropertyValue("y_axes[0].autoscale", True)
               <name>Action Button_10</name>
               <actions>
                 <action type="execute">
+                  <description>Autoscale</description>
                   <script file="EmbeddedPy">
                     <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
 
@@ -580,7 +586,6 @@ plot.setPropertyValue("y_axes[0].autoscale", False)
 plot.setPropertyValue("y_axes[0].autoscale", True)
 ]]></text>
                   </script>
-                  <description>Autoscale</description>
                 </action>
               </actions>
               <x>730</x>
@@ -592,6 +597,7 @@ plot.setPropertyValue("y_axes[0].autoscale", True)
               <name>Action Button_11</name>
               <actions>
                 <action type="execute">
+                  <description>Fullscale</description>
                   <script file="EmbeddedPy">
                     <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
 
@@ -607,7 +613,6 @@ plot.setPropertyValue("y_axes[0].minimum", -32768)
 plot.setPropertyValue("y_axes[0].maximum", 32767)
 ]]></text>
                   </script>
-                  <description>Fullscale</description>
                 </action>
               </actions>
               <x>660</x>
@@ -823,11 +828,32 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
                   <visible>true</visible>
                 </trace>
               </traces>
+              <marker>
+                <marker>
+                  <color>
+                    <color red="0" green="0" blue="255">
+                    </color>
+                  </color>
+                  <pv_name>$(P):DSP:ADC0:pulse_stat:start_ns</pv_name>
+                  <interactive>false</interactive>
+                  <visible>false</visible>
+                </marker>
+                <marker>
+                  <color>
+                    <color red="0" green="0" blue="255">
+                    </color>
+                  </color>
+                  <pv_name>$(P):DSP:ADC0:pulse_stat:end_ns</pv_name>
+                  <interactive>false</interactive>
+                  <visible>false</visible>
+                </marker>
+              </marker>
             </widget>
             <widget type="action_button" version="3.0.0">
               <name>Action Button_6</name>
               <actions>
                 <action type="execute">
+                  <description>Fullscale</description>
                   <script file="EmbeddedPy">
                     <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
 
@@ -843,7 +869,6 @@ plot.setPropertyValue("y_axes[0].minimum", -180)
 plot.setPropertyValue("y_axes[0].maximum", 180)
 ]]></text>
                   </script>
-                  <description>Fullscale</description>
                 </action>
               </actions>
               <x>660</x>
@@ -856,6 +881,7 @@ plot.setPropertyValue("y_axes[0].maximum", 180)
               <name>Action Button_7</name>
               <actions>
                 <action type="execute">
+                  <description>Autoscale</description>
                   <script file="EmbeddedPy">
                     <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
 
@@ -870,7 +896,6 @@ plot.setPropertyValue("y_axes[0].autoscale", False)
 plot.setPropertyValue("y_axes[0].autoscale", True)
 ]]></text>
                   </script>
-                  <description>Autoscale</description>
                 </action>
               </actions>
               <x>730</x>
@@ -1072,11 +1097,32 @@ plot.setPropertyValue("y_axes[0].autoscale", True)
                   <visible>true</visible>
                 </trace>
               </traces>
+              <marker>
+                <marker>
+                  <color>
+                    <color red="0" green="0" blue="255">
+                    </color>
+                  </color>
+                  <pv_name>$(P):DSP:ADC0:pulse_stat:start_ns</pv_name>
+                  <interactive>false</interactive>
+                  <visible>false</visible>
+                </marker>
+                <marker>
+                  <color>
+                    <color red="0" green="0" blue="255">
+                    </color>
+                  </color>
+                  <pv_name>$(P):DSP:ADC0:pulse_stat:end_ns</pv_name>
+                  <interactive>false</interactive>
+                  <visible>false</visible>
+                </marker>
+              </marker>
             </widget>
             <widget type="action_button" version="3.0.0">
               <name>Action Button</name>
               <actions>
                 <action type="execute">
+                  <description>Autoscale</description>
                   <script file="EmbeddedPy">
                     <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
 
@@ -1091,7 +1137,6 @@ plot.setPropertyValue("y_axes[0].autoscale", False)
 plot.setPropertyValue("y_axes[0].autoscale", True)
 ]]></text>
                   </script>
-                  <description>Autoscale</description>
                 </action>
               </actions>
               <x>730</x>
@@ -1103,6 +1148,7 @@ plot.setPropertyValue("y_axes[0].autoscale", True)
               <name>Action Button_5</name>
               <actions>
                 <action type="execute">
+                  <description>Fullscale</description>
                   <script file="EmbeddedPy">
                     <text><![CDATA[from org.csstudio.display.builder.runtime.script import ScriptUtil
 
@@ -1118,7 +1164,6 @@ plot.setPropertyValue("y_axes[0].minimum", 0)
 plot.setPropertyValue("y_axes[0].maximum", 32767)
 ]]></text>
                   </script>
-                  <description>Fullscale</description>
                 </action>
               </actions>
               <x>660</x>
@@ -1134,6 +1179,7 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
     <y>50</y>
     <width>830</width>
     <height>880</height>
+    <active_tab>1</active_tab>
   </widget>
   <widget type="label" version="2.0.0">
     <name>Label_37</name>
@@ -1152,16 +1198,22 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
     <height>30</height>
     <horizontal_alignment>1</horizontal_alignment>
   </widget>
-  <widget type="textentry" version="3.0.0">
+  <widget type="textupdate" version="2.0.0">
     <name>Text Entry_15</name>
     <pv_name>$(P):rfdc_mixer:dac_mixer_nco_freq_mhz:RBV</pv_name>
     <x>1060</x>
     <y>220</y>
     <width>80</width>
     <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
     <precision>0</precision>
     <show_units>false</show_units>
     <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
   </widget>
   <widget type="label" version="2.0.0">
     <name>Label_38</name>
@@ -1180,16 +1232,22 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
     <height>30</height>
     <horizontal_alignment>1</horizontal_alignment>
   </widget>
-  <widget type="textentry" version="3.0.0">
+  <widget type="textupdate" version="2.0.0">
     <name>Text Entry_17</name>
     <pv_name>$(P):rfdc_mixer:adc_mixer_nco_freq_mhz:RBV</pv_name>
     <x>1060</x>
     <y>260</y>
     <width>80</width>
     <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
     <precision>0</precision>
     <show_units>false</show_units>
     <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
   </widget>
   <widget type="bool_button" version="2.0.0">
     <name>Boolean Button_16</name>
@@ -1241,16 +1299,22 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
     <height>30</height>
     <horizontal_alignment>1</horizontal_alignment>
   </widget>
-  <widget type="textentry" version="3.0.0">
+  <widget type="textupdate" version="2.0.0">
     <name>Text Entry_21</name>
     <pv_name>$(P):rf_control:amp_loop_setpoint:RBV</pv_name>
     <x>1060</x>
     <y>300</y>
     <width>80</width>
     <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
     <precision>0</precision>
     <show_units>false</show_units>
     <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
   </widget>
   <widget type="label" version="2.0.0">
     <name>Label_41</name>
@@ -1269,16 +1333,22 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
     <height>30</height>
     <horizontal_alignment>1</horizontal_alignment>
   </widget>
-  <widget type="textentry" version="3.0.0">
+  <widget type="textupdate" version="2.0.0">
     <name>Text Entry_23</name>
     <pv_name>$(P):rf_control:phs_loop_setpoint:RBV</pv_name>
     <x>1060</x>
     <y>380</y>
     <width>80</width>
     <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
     <precision>0</precision>
     <show_units>false</show_units>
     <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
   </widget>
   <widget type="scaledslider" version="2.0.0">
     <name>Scaled Slider_4</name>
@@ -1368,6 +1438,210 @@ plot.setPropertyValue("y_axes[0].maximum", 32767)
     <text>Trigger</text>
     <x>850</x>
     <y>70</y>
+    <height>30</height>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="spinner" version="2.0.0">
+    <name>Spinner_1</name>
+    <pv_name>loc://pulse_stat:chan&lt;VLong&gt;(0)</pv_name>
+    <x>988</x>
+    <y>560</y>
+    <width>120</width>
+    <height>30</height>
+    <format>0</format>
+    <precision>0</precision>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <scripts>
+      <script file="EmbeddedPy">
+        <text><![CDATA[# Embedded python script
+from org.csstudio.display.builder.runtime.script import PVUtil, ScriptUtil
+P = widget.getEffectiveMacros().getValue("P")
+
+channel_index = PVUtil.getString(pvs[0])
+# start = widget.getDisplayModel().runtimeChildren().getChildByName("Pulse_Start")
+amp_plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcAmpPlot")
+phs_plot = widget.getDisplayModel().runtimeChildren().getChildByName("AdcPhsPlot")
+
+# Update plot markers
+for plot in [amp_plot, phs_plot]:
+    pv_name_start = P + ":DSP:ADC" + channel_index + ":pulse_stat:start_ns"
+    pv_name_end = P + ":DSP:ADC" + channel_index + ":pulse_stat:end_ns"
+    plot.setPropertyValue("marker[0].pv_name", pv_name_start)
+    # plot.setPropertyValue("marker[0].visible", 1)
+    plot.setPropertyValue("marker[1].pv_name", pv_name_end)
+    # plot.setPropertyValue("marker[1].visible", 1)
+
+# Update pulse statistics
+params = ["start_ns", "end_ns", "amp:mean", "amp:std", "phs:mean", "phs:std"]
+widget_names = ["Pulse_Start", "Pulse_End", "Pulse_Amp_Mean", "Pulse_Amp_Std", "Pulse_Phs_Mean", "Pulse_Phs_Std"]
+for param, name in zip(params, widget_names):
+    w = widget.getDisplayModel().runtimeChildren().getChildByName(name)
+    pv_name = P + ":DSP:ADC" + channel_index + ":pulse_stat:" + param
+    w.setPropertyValue("pv_name", pv_name)
+    # print("pulse_stat", channel_index, pv_name)
+]]></text>
+        <pv_name>$(pv_name)</pv_name>
+      </script>
+    </scripts>
+  </widget>
+  <widget type="group" version="3.0.0">
+    <name>Pulse Stat</name>
+    <macros>
+      <CH>0</CH>
+    </macros>
+    <x>840</x>
+    <y>590</y>
+    <width>286</width>
+    <height>236</height>
+    <transparent>true</transparent>
+    <widget type="label" version="2.0.0">
+      <name>Label_45</name>
+      <text>Pulse Start</text>
+      <width>120</width>
+      <height>30</height>
+      <vertical_alignment>1</vertical_alignment>
+    </widget>
+    <widget type="spinner" version="2.0.0">
+      <name>Pulse_Start</name>
+      <pv_name>$(P):DSP:ADC$(CH):pulse_stat:start_ns</pv_name>
+      <x>130</x>
+      <width>120</width>
+      <height>30</height>
+      <format>0</format>
+      <show_units>true</show_units>
+      <horizontal_alignment>1</horizontal_alignment>
+      <vertical_alignment>1</vertical_alignment>
+      <maximum>16000.0</maximum>
+      <limits_from_pv>false</limits_from_pv>
+      <increment>200.0</increment>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_46</name>
+      <text>Pulse End</text>
+      <y>30</y>
+      <width>120</width>
+      <height>30</height>
+      <vertical_alignment>1</vertical_alignment>
+    </widget>
+    <widget type="spinner" version="2.0.0">
+      <name>Pulse_End</name>
+      <pv_name>$(P):DSP:ADC$(CH):pulse_stat:end_ns</pv_name>
+      <x>130</x>
+      <y>30</y>
+      <width>120</width>
+      <height>30</height>
+      <format>0</format>
+      <show_units>true</show_units>
+      <horizontal_alignment>1</horizontal_alignment>
+      <vertical_alignment>1</vertical_alignment>
+      <maximum>16000.0</maximum>
+      <limits_from_pv>false</limits_from_pv>
+      <increment>200.0</increment>
+    </widget>
+    <widget type="textupdate" version="2.0.0">
+      <name>Pulse_Amp_Mean</name>
+      <pv_name>$(P):DSP:ADC$(CH):pulse_stat:amp:mean</pv_name>
+      <x>130</x>
+      <y>70</y>
+      <width>120</width>
+      <height>30</height>
+      <background_color>
+        <color name="Write_Background" red="128" green="255" blue="255">
+        </color>
+      </background_color>
+      <precision>2</precision>
+      <horizontal_alignment>1</horizontal_alignment>
+      <vertical_alignment>1</vertical_alignment>
+      <wrap_words>false</wrap_words>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_47</name>
+      <text>Pulse Amp Mean</text>
+      <y>70</y>
+      <width>120</width>
+      <height>30</height>
+      <vertical_alignment>1</vertical_alignment>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_48</name>
+      <text>Pulse Amp Std</text>
+      <y>100</y>
+      <width>120</width>
+      <height>30</height>
+      <vertical_alignment>1</vertical_alignment>
+    </widget>
+    <widget type="textupdate" version="2.0.0">
+      <name>Pulse_Amp_Std</name>
+      <pv_name>$(P):DSP:ADC$(CH):pulse_stat:amp:std</pv_name>
+      <x>130</x>
+      <y>100</y>
+      <width>120</width>
+      <height>30</height>
+      <background_color>
+        <color name="Write_Background" red="128" green="255" blue="255">
+        </color>
+      </background_color>
+      <precision>2</precision>
+      <horizontal_alignment>1</horizontal_alignment>
+      <vertical_alignment>1</vertical_alignment>
+      <wrap_words>false</wrap_words>
+    </widget>
+    <widget type="textupdate" version="2.0.0">
+      <name>Pulse_Phs_Mean</name>
+      <pv_name>$(P):DSP:ADC$(CH):pulse_stat:phs:mean</pv_name>
+      <x>130</x>
+      <y>140</y>
+      <width>120</width>
+      <height>30</height>
+      <background_color>
+        <color name="Write_Background" red="128" green="255" blue="255">
+        </color>
+      </background_color>
+      <precision>2</precision>
+      <horizontal_alignment>1</horizontal_alignment>
+      <vertical_alignment>1</vertical_alignment>
+      <wrap_words>false</wrap_words>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_49</name>
+      <text>Pulse Phs Mean</text>
+      <y>140</y>
+      <width>120</width>
+      <height>30</height>
+      <vertical_alignment>1</vertical_alignment>
+    </widget>
+    <widget type="label" version="2.0.0">
+      <name>Label_50</name>
+      <text>Pulse Phs Std</text>
+      <y>170</y>
+      <width>120</width>
+      <height>30</height>
+      <vertical_alignment>1</vertical_alignment>
+    </widget>
+    <widget type="textupdate" version="2.0.0">
+      <name>Pulse_Phs_Std</name>
+      <pv_name>$(P):DSP:ADC$(CH):pulse_stat:phs:std</pv_name>
+      <x>130</x>
+      <y>170</y>
+      <width>120</width>
+      <height>30</height>
+      <background_color>
+        <color name="Write_Background" red="128" green="255" blue="255">
+        </color>
+      </background_color>
+      <precision>2</precision>
+      <horizontal_alignment>1</horizontal_alignment>
+      <vertical_alignment>1</vertical_alignment>
+      <wrap_words>false</wrap_words>
+    </widget>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label_51</name>
+    <text>Pulse ADC Ch</text>
+    <x>858</x>
+    <y>560</y>
+    <width>120</width>
     <height>30</height>
     <vertical_alignment>1</vertical_alignment>
   </widget>

@@ -57,6 +57,9 @@ class MimoMtsIoc:
         self.dsp_decimation_factor = self.ol.ol_info["rfdc"]["adc_decimation_factor"] * self.decimation
         self.n_dsp_samples = self.n_samples / self.decimation
         self.dsp_fs_ghz = self.adc_fs_ghz / self.dsp_decimation_factor
+        self.dsp_clk_ns = 1 / self.dsp_fs_ghz
+        self.adc_pulse_start_ns = np.ones(self.n_adc, dtype=np.int32) * 1000
+        self.adc_pulse_end_ns = np.ones(self.n_adc, dtype=np.int32) * 1000
         self.init_rf_control()
         self.update_adc_bufs()
         self._init_per_channel_mixer_cfg()
@@ -116,6 +119,14 @@ class MimoMtsIoc:
             self.pvs_in[f"ADC{ix}:QWF"].set(self.adc_bufs_q[ix])
             self.pvs_in[f"DSP:ADC{ix}:AWF"].set(np.abs(self.adc_bufs_mean[ix]))
             self.pvs_in[f"DSP:ADC{ix}:PWF"].set(np.angle(self.adc_bufs_mean[ix], deg=True))
+            start = int(self.adc_pulse_start_ns[ix] // self.dsp_clk_ns)
+            end = int(self.adc_pulse_end_ns[ix] // self.dsp_clk_ns)
+            if end > start:
+                pulse_data = self.adc_bufs_mean[ix][start:end]
+                self.pvs_in[f"DSP:ADC{ix}:pulse_stat:amp:mean"].set(np.abs(pulse_data).mean())
+                self.pvs_in[f"DSP:ADC{ix}:pulse_stat:amp:std"].set(np.abs(pulse_data).std())
+                self.pvs_in[f"DSP:ADC{ix}:pulse_stat:phs:mean"].set(np.angle(pulse_data, deg=True).mean())
+                self.pvs_in[f"DSP:ADC{ix}:pulse_stat:phs:std"].set(np.angle(pulse_data, deg=True).std())
 
     def encode_2s_comp(self, val):
         """encode signed integer to 2's complement representation"""
@@ -147,6 +158,7 @@ class MimoMtsIoc:
 
         self.add_mixer_pvs()
         self.add_rf_control_pvs()
+        self.add_pulse_pvs()
 
     def add_mixer_pvs(self, prefix="rfdc_mixer:"):
         """
@@ -203,6 +215,28 @@ class MimoMtsIoc:
             self.pvs_out[prefix + name] = builder.longOut(
                 prefix + name, initial_value=value, on_update_name=self.on_update_name
             )
+
+    def add_pulse_pvs(self, prefix="pulse_stat:"):
+        """
+        Add pulse amplitude and phase statistics, after start_ns and before end_ns
+        DSP:ADC?:pulse_stat:start_ns
+        DSP:ADC?:pulse_stat:end_ns
+        DSP:ADC?:pulse_stat:amp:mean
+        DSP:ADC?:pulse_stat:amp:std
+        DSP:ADC?:pulse_stat:phs:mean
+        DSP:ADC?:pulse_stat:phs:std
+        """
+        for ix in range(self.n_adc):
+            for s in ["start_ns", "end_ns"]:
+                name = f"DSP:ADC{ix}:{prefix}{s}"
+                self.pvs_out[name] = builder.longOut(
+                    name, DRVL=0, DRVH=16380, EGU="ns", initial_value=1000, on_update_name=self.on_update_name
+                )
+            for p in ["mean", "std"]:
+                name = f"DSP:ADC{ix}:{prefix}amp:{p}"
+                self.pvs_in[name] = builder.aIn(name, LOPR=0, HOPR=32768, EGU="cnt", initial_value=0)
+                name = f"DSP:ADC{ix}:{prefix}phs:{p}"
+                self.pvs_in[name] = builder.aIn(name, LOPR=-180, HOPR=180, EGU="deg", initial_value=0)
 
     def start_ioc(self):
         loop = asyncio.get_event_loop()  # required for IRQ!
@@ -328,6 +362,21 @@ class MimoMtsIoc:
                     self.pvs_out[f"rfdc_mixer:DAC{ch}:nco_freq_mhz"].set(cfg["freq_mhz"])
                     self.pvs_out[f"rfdc_mixer:DAC{ch}:nco_nyquist"].set(cfg["nyquist"])
                     self.pvs_out[f"rfdc_mixer:DAC{ch}:nco_phase"].set(cfg["phase"])
+
+        elif "pulse_stat" in pv_name:
+            # Per-channel ADC: DSP:ADC?:pulse_stat:start|end
+            field = pv_name.removeprefix(f"{self.prefix}:")
+            match = re.match(r"^(?P<type>DSP:ADC)(?P<ch>\d+):pulse_stat:(?P<param>start_ns|end_ns)$", field)
+            if match:
+                ch_type = match.group("type")
+                ch = int(match.group("ch"))
+                param = match.group("param")
+                self.pvs_out[f"{ch_type}{ch}:pulse_stat:{param}"].set(value)
+                if param == "start_ns":
+                    self.adc_pulse_start_ns[ch] = value
+                elif param == "end_ns":
+                    self.adc_pulse_end_ns[ch] = value
+                logger.info("Updated %s ch%d pulse_stat %s to %s", ch_type, ch, param, value)
 
     def drive_test_awg(self):
         """Drive DAC with a test arbitrary waveform"""
