@@ -8,6 +8,7 @@ import xrfdc  # pyright: ignore[reportMissingModuleSource]  # board-only; stub i
 from pynq import MMIO, PL, DeviceTreeSegment, Interrupt, Overlay
 
 from mimo_mts.config import ol_configs
+from mimo_mts.drivers.adc_calibration import AdcCalibration
 from mimo_mts.drivers.clocktreeMTS import ClockTreeMTS
 from mimo_mts.drivers.evr import EVR
 from mimo_mts.drivers.frontend_control import FrontendControl
@@ -31,6 +32,7 @@ class MimoMtsOverlay(Overlay):
         self.log_level = kwargs.pop("log_level", logging.INFO)
         logger.setLevel(self.log_level)
 
+        self.config = config
         self.ol_info = ol_info = ol_configs[config].copy()
         self.ol_info.update({k: kwargs[k] for k in self.ol_info if k in kwargs})
         kwargs = {k: kwargs[k] for k in kwargs.keys() - self.ol_info.keys()}
@@ -95,6 +97,7 @@ class MimoMtsOverlay(Overlay):
             self._initialize_memories()
             self._initialize_mts()
             self._initialize_mixers()
+            self._initialize_adc_calibration()
 
     def __repr__(self):
         description = f"< {self.__class__.__name__} >:\n"
@@ -253,6 +256,40 @@ class MimoMtsOverlay(Overlay):
     def _initialize_mixers(self):
         self.set_dac_mixer(self.dac_mixer_nco_freq_mhz, self.dac_mixer_nco_nyquist, self.dac_mixer_nco_phase)
         self.set_adc_mixer(self.adc_mixer_nco_freq_mhz, self.adc_mixer_nco_nyquist, self.adc_mixer_nco_phase)
+
+    def _initialize_adc_calibration(self):
+        """
+        Expose RF-ADC calibration as ``self.adc_cal`` without changing its state.
+
+        After overlay load the ADCs are exactly as RF-ADC startup left them: foreground
+        calibration done, OCB1/GCB/TSCB tracking in the background (PG269). Freeze or
+        restore policy belongs to the application, see ``mimo_mts.ioc.app_iocs``.
+        """
+        self.adc_cal = AdcCalibration(
+            self.rfdc,
+            active_tiles=self.board.active_adc_tiles,
+            converters_per_tile=self.board.converters_per_tile,
+            context={
+                "board": self.board.name,
+                "overlay": self.config,
+                "adc_sampling_rate_hz": self.adc_sampling_rate,
+            },
+        )
+
+    def restart_adc_tiles(self):
+        """
+        Re-run RF-ADC startup on the active tiles, which repeats the foreground calibration.
+
+        Mute the ADC inputs before calling: PG269 requires no signal energy at k*Fs/N while
+        the foreground calibration runs. The tile reset also clears freeze settings and
+        coefficient overrides. MTS is re-synchronized (DAC tiles are reset too) and the mixers
+        are set back to the overlay defaults, so per-channel mixer settings must be re-applied.
+        """
+        for tile in range(4):
+            if self.board.active_adc_tiles >> tile & 1:
+                self.rfdc.adc_tiles[tile].Reset()
+        self._initialize_mts()
+        self._initialize_mixers()
 
     def _memdict_to_view(self, ip, dtype="int16"):
         """Configures access to internal memory via MMIO."""

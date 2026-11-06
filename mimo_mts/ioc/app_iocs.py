@@ -11,6 +11,8 @@ from mimo_mts.drivers.telemetry.max31785 import Max31785
 from mimo_mts.drivers.telemetry.mcrps_device import McrpsDevice
 from mimo_mts.ioc.base_ioc import MimoMtsIoc
 
+logger = logging.getLogger(__name__)
+
 
 class AlsLlrfZCU208(MimoMtsIoc):
     def __init__(self, **kwargs):
@@ -58,6 +60,20 @@ class AlsLlrfLBL208(MimoMtsIoc):
 
             for i in range(self.n_fans):
                 self.max31785.enable_fan(i, is_rpm_mode=True, pulse_per_rev=self.pulse_per_rev)
+
+    def init_adc_cal(self):
+        """
+        ALS LLRF drives a 5 us pulse at 2.973 GHz. The pulse is shorter than the ~7 us freeze/resume
+        time and the ADC input is below -40 dBFS between pulses, so GCB/TSCB cannot track it (PG269).
+        Instead, coefficients trained once with a CW signal are restored and frozen at every start.
+        Train and save with the adc_cal:* PVs or ``ol.adc_cal`` (see doc/zcu208/adc_calibration.ipynb).
+        """
+        if not self.adc_cal_file.exists():
+            self.adc_cal_status = f"no {self.adc_cal_file}; background calibration tracking"
+            logger.warning("ADC calibration: %s", self.adc_cal_status)
+            return
+        self.restore_adc_cal()
+        logger.info("ADC calibration: %s", self.adc_cal_status)
 
     def create_ioc(self):
         super().create_ioc()

@@ -4,6 +4,22 @@ Once the IOC is running, the PVs below are available to read or write.
 ## RF control PVs
 TODO
 
+## RF-ADC calibration PVs
+Available on every IOC whose overlay contains the RF Data Converter. Replace `$P` with the IOC prefix, e.g. `ALS_LLRF_LBL208`.
+See `mimo_mts/drivers/adc_calibration.py` for the PG269 background.
+
+  * `$P:adc_cal:freeze`: write 1 to freeze, 0 to resume GCB/TSCB background calibration on all ADCs.
+  * `$P:adc_cal:ADC{ch}:freeze`: the same for one ADC channel.
+  * `$P:adc_cal:ADC{ch}:frozen:RBV`: freeze status reported by the RFDC.
+  * `$P:adc_cal:save`: write 1 to save the coefficients of all ADCs to `$P:adc_cal:file`.
+  * `$P:adc_cal:restore`: write 1 to restore GCB/TSCB from `$P:adc_cal:file` and freeze them.
+  * `$P:adc_cal:release_override`: write 1 to hand all calibration blocks back to the calibration engine.
+  * `$P:adc_cal:file`: calibration file on the board, one per board (default `/etc/mimo_mts/adc_cal.json`, set `MIMO_MTS_ADC_CAL_FILE` to change).
+  * `$P:adc_cal:status`: result of the last action.
+
+At start, `AlsLlrfLBL208` restores and freezes the saved coefficients if the file exists; the other IOCs leave background calibration tracking.
+To train: apply a CW signal at the operating frequency (above -40 dBFS, ideally near -10 dBFS) to the ADCs, unfreeze, wait for convergence, then freeze and save.
+
 ## Telemetry PVs
 Telemetry PVs are only available for the AlsLlrfLBL208 platform.
 
