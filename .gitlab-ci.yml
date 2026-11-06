@@ -32,14 +32,22 @@ rtl_test:
   stage: test
   script:
     - make
+  rules:
+    - changes:
+        - designs/ip/**/*
 
-.bitfile_synthesis_zcu216:
+bitfile_synthesis_zcu216:
   before_script:
     - cd designs/ZCU216/${OVERLAY}
   stage: synthesis
   timeout: 3h
   script:
     - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make all
+  rules:
+    - changes:
+        - designs/ip/rtl/*
+        - designs/zcu216/*/*.xdc
+        - designs/zcu216/*/*.tcl
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     expire_in: 4 weeks
@@ -61,6 +69,11 @@ bitfile_synthesis_208:
   timeout: 3h
   script:
     - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make all
+  rules:
+    - changes:
+        - designs/ip/rtl/*
+        - designs/*208/*/*.xdc
+        - designs/*208/*/*.tcl
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     expire_in: 4 weeks
