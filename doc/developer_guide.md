@@ -2,7 +2,8 @@
 
 Orientation for anyone working on this repository, human or AI coding agent: how the code is organized, how to build,
 lint and test it, and the non-obvious constraints. The user-facing setup (flashing the SD card, installing on the
-board, running the IOCs) is in the top-level `README.md`.
+board, running the IOCs) is in the top-level `README.md`; planned work is in
+[development_plan.md](development_plan.md).
 
 ## Project
 
