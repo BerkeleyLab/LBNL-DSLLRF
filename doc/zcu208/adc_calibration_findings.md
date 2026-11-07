@@ -34,6 +34,24 @@ MR !37), November 2026. Notebooks with the raw outputs:
    same ADC clock, and the polar phase loop integrates out a static drive-phase offset. Where a fixed DAC-to-ADC
    phase is wanted, clocking ADC and DAC from one LMX2594 removes the ambiguity (see Open items).
 
+## Conclusion
+
+Background calibration must be frozen during ALS operation. Calibration coefficients should be trained on an
+off-carrier CW tone (about 60 s), frozen and saved. GCB can be restored at boot; TSCB cannot be restored through the
+driver override, so whether restore-and-freeze reproduces the trained performance after a reboot is the remaining
+question, to be tested on the LBL208 with single-LMX clocking (`adc_calibration.ipynb` step 15).
+
+| Element | Status |
+|---|---|
+| Freeze during operation | Supported: tracking on pulses -82 → -52 dBc in 2 min; at 3·Fs/4 TSCB runs to its limits |
+| Train on an off-carrier tone | Supported: 60 s at 2973 MHz -79.7 dBc vs 60 s at 3000 MHz -49.6 dBc |
+| Save coefficients | Works for all four blocks |
+| Restore after reboot reproduces the trained state | **Not demonstrated**: only GCB restores; startup TSCB is near its limits; reload + restore was equal to the startup state in run 3 and 10 dB worse in run 4 |
+
+Why it matters at the ALS carrier: trained calibration (about -80 dBc) means about 0.01 % / 0.006° carrier error;
+startup TSCB (down to -38 dBc) means up to about 1.3 % / 0.7°, depending on the carrier phase. Frozen coefficients do
+not follow temperature drift, so periodic retraining may be needed.
+
 ## Calibration mechanics (driver and hardware behaviour)
 
 | Item | Finding |
@@ -95,8 +113,11 @@ findings:
 
 ## Open items
 
-1. Repeat the reload loop with clean loopback data: single-LMX clocking (item 3), a ~3 GHz band-pass filter, or an
-   external generator. Expect a constant carrier and consistent training; then re-check restore versus training.
+1. **Decisive test** (`adc_calibration.ipynb` step 15) on the LBL208 with clean loopback data: single-LMX clocking
+   (item 3), a ~3 GHz band-pass filter, or an external generator. Train on the offset tone, freeze, save; then about
+   five times: reload, freeze immediately, restore, measure; and the alternative freeze → `restart_adc_tiles()` →
+   restore. Restore near the trained reference → the `AlsLlrfLBL208` policy is complete. Well below → TSCB cannot
+   be restored; use the restart variant or retrain on an offset tone at every boot (needs a tone injection path).
 2. Measure the DAC-to-ADC loop phase at exactly 3000 MHz across CLK104 re-programmings to confirm the RF phase
    jumps directly.
 3. DAC-to-ADC clock phase (outside this MR):
@@ -125,7 +146,7 @@ findings:
    - **LMK04828 dividers:** in PLL2 mode the LMX references come from /5 DCLKout dividers excluded from SYNC
      (`0x144 = 0xFF`). This matters only while the two LMXs use separate references; single-LMX clocking or the
      `_DIST` configuration (dividers /1, available on CLK104A) avoids it.
-4. Decide the boot policy for `AlsLlrfLBL208` after items 1–3.
+4. Decide the boot policy for `AlsLlrfLBL208` from item 1.
 
 ## Pitfalls found on the way
 
