@@ -14,6 +14,7 @@ import argparse
 import asyncio
 import sys
 import time
+import warnings
 
 from mimo_mts.overlay import MimoMtsOverlay
 
@@ -57,7 +58,10 @@ def main():
 
     # PYNQ registers the interrupt's UIO file with asyncio.get_event_loop() when the overlay loads,
     # so wait on that default loop; asyncio.run() would create a new loop that never sees the IRQ.
-    loop = asyncio.get_event_loop()
+    # Newer Python warns about get_event_loop() outside a running loop; PYNQ 3.0.1 relies on it.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        loop = asyncio.get_event_loop()
     times = loop.run_until_complete(irq_times(ol.write_done_irq, args.n, max(args.timeout_s, 3 * period_s)))
     if not times:
         wrap_s = 2**32 / (args.clk_mhz * 1e6)
