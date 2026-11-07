@@ -1,9 +1,14 @@
 import time
+from typing import Any
 
 from pynq import DefaultHierarchy
 
 
 class ClockTreeMTS(DefaultHierarchy):
+    # Hierarchy members, resolved by PYNQ at runtime (checked in checkhierarchy)
+    MTSclkwiz: Any
+    freqcnt_gpio: Any
+
     def __init__(self, description):
         super().__init__(description)
         self.dspclk_freqcnt = self.freqcnt_gpio.channel1
@@ -30,7 +35,8 @@ class ClockTreeMTS(DefaultHierarchy):
         return (mmcm_status & 0x1) == 0x1
 
     @staticmethod
-    def checkhierarchy(description):
+    # PYNQ's base implementation is `return False`, which pyright infers as Literal[False]
+    def checkhierarchy(description):  # pyright: ignore[reportIncompatibleMethodOverride]
         if "MTSclkwiz" in description["ip"] and "freqcnt_gpio" in description["ip"]:
             return True
         return False

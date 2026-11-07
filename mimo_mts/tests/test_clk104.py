@@ -20,9 +20,9 @@ class TestCLK104:
         logger.setLevel(self.log_level)
         self.ol_info = ol_info = ol_configs.get(conf, {})
         board_name = ol_info["board"].name.lower()
-        bitfile_name = files(overlays).joinpath(f"{board_name}/base.bit")
+        bitfile_name = str(files(overlays).joinpath(f"{board_name}/base.bit"))
         assert Path(bitfile_name).exists(), f"Bitfile {bitfile_name} does not exist."
-        overlay = Overlay(str(bitfile_name), download=False)
+        overlay = Overlay(bitfile_name, download=False)
         if overlay.is_loaded():
             logger.info(f"Overlay {bitfile_name} already loaded")
         else:

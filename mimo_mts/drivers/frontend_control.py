@@ -2,8 +2,9 @@ import json
 import time
 from enum import IntEnum
 from pathlib import Path
+from typing import Any
 
-from pynq import DefaultIP, Register
+from pynq import DefaultIP
 
 
 def sign_extend(value, bits):
@@ -30,7 +31,8 @@ class Mcp23:
         GPIO = 9  # Port pin value
         OLAT = 10  # Output latch value
 
-    def __init__(self, regs: list[Register]):
+    def __init__(self, regs: list[Any]):
+        """regs: PYNQ register_map registers (control, status, sdo, sdi); their fields are built at runtime."""
         # Get the SPI control and status registers for this slice
         self.control, self.status, self.sdo, self.sdi = regs
 
@@ -215,6 +217,7 @@ class Slice:
 
 class FrontendControl(DefaultIP):
     bindto = ["xilinx.com:module_ref:frontend_control_axi:1.0"]
+    register_map: Any  # built at runtime by PYNQ from frontend_control_axi.json
 
     def __init__(self, description):
         """PYNQ driver for the Flexible analog Front End

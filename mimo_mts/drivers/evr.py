@@ -1,12 +1,14 @@
 import json
 import time
 from pathlib import Path
+from typing import Any
 
 from pynq import DefaultIP
 
 
 class EVR(DefaultIP):
     bindto = ["xilinx.com:module_ref:axil_evr:1.0"]
+    register_map: Any  # built at runtime by PYNQ from axil_evr.json
 
     def __init__(self, description):
         ip_path = Path(__file__).resolve().parent.parent.parent / "designs" / "ip"

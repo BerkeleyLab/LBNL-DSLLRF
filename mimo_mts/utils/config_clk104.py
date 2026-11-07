@@ -4,7 +4,7 @@ from configparser import ConfigParser
 from pathlib import Path
 
 import spidev  # not used by xrfclk, but needed for register readback
-import xrfclk
+import xrfclk  # pyright: ignore[reportMissingModuleSource]  # board-only; stub in typings/
 from pynq import GPIO
 
 from .config_tics import LMKConfig, LMXConfig

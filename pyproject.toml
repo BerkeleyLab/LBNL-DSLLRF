@@ -16,6 +16,8 @@ dependencies = [
     "cocotb==2.0.1",
     "numpy<2",
     "pandas",
+    "matplotlib",  # mimo_mts/utils/plot.py
+    "scipy",  # mimo_mts/utils/plot.py
     "spidev==3.8",
     "cocotbext-axi>=0.1.28",
     "ruff==0.17",

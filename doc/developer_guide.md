@@ -46,11 +46,14 @@ tcl files change. Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` t
 
 - Ruff is the only linter; editor integrations should use the ruff installed in the project environment, so results
   match CI.
-- `typings/` holds type stubs for board-only modules (`typings/xrfdc`), which Pylance/pyright pick up automatically.
-  Imports of those modules carry `# pyright: ignore[reportMissingModuleSource]`. Add new constants to the stub when
-  code starts using them.
-- PYNQ creates register-map attributes at runtime from the JSON register descriptions, so static checkers cannot see
-  them; errors such as `Cannot access attribute "<register>"` on `register_map` are false positives.
+- `mimo_mts` is clean under pyright in its default (standard) mode: `uvx --from pyright pyright --pythonpath
+  .venv/bin/python mimo_mts`. Pylance in VS Code uses the same engine.
+- `typings/` holds type stubs for board-only PYNQ modules (`typings/xrfdc`, `typings/xrfclk`), which Pylance/pyright
+  pick up automatically. Imports of those modules carry `# pyright: ignore[reportMissingModuleSource]`. Add names to
+  a stub when code starts using them.
+- PYNQ creates register-map attributes and hierarchy members at runtime (from the JSON register descriptions and the
+  `.hwh`), so static checkers cannot see them. Driver classes declare them as `Any`, e.g.
+  `register_map: Any  # built at runtime by PYNQ from axil_evr.json`; follow that pattern in new drivers.
 
 ## Architecture
 
