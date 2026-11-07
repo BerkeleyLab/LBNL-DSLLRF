@@ -60,7 +60,7 @@ DEFAULT_CAL_FILE = Path(os.environ.get("MIMO_MTS_ADC_CAL_FILE", "/etc/mimo_mts/a
 
 
 def _default_coeff_struct():
-    import xrfdc  # imported lazily so the module can be imported off-board
+    import xrfdc  # pyright: ignore[reportMissingModuleSource]  # lazy: importable off-board
 
     return xrfdc._ffi.new("XRFdc_Calibration_Coefficients *")
 
