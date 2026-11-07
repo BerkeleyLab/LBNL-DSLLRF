@@ -53,6 +53,10 @@ bitfile_synthesis_zcu216:
   timeout: 3h
   script:
     - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make all
+  after_script:
+    # Summarize timing/utilization/power/datasheet reports, also when the build fails (runs from the repo root)
+    - python3 designs/scripts/vivado_reports.py designs/ZCU216/${OVERLAY} -o designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}_report.json
+      --junit designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}_timing.xml || true
   rules:
     - changes:
         - designs/ip/rtl/*
@@ -68,6 +72,9 @@ bitfile_synthesis_zcu216:
       # - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}.xsa
       - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
       - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
+      - designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}_report.json
+    reports:
+      junit: designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}_timing.xml
   parallel:
     matrix:
       - OVERLAY: [mimo_mts]
@@ -79,6 +86,10 @@ bitfile_synthesis_208:
   timeout: 3h
   script:
     - make clean && PATH=$XILINX_VIVADO/bin:$PATH && make all
+  after_script:
+    # Summarize timing/utilization/power/datasheet reports, also when the build fails (runs from the repo root)
+    - python3 designs/scripts/vivado_reports.py designs/${BOARD}/${OVERLAY} -o designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}_report.json
+      --junit designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}_timing.xml || true
   rules:
     - changes:
         - designs/ip/rtl/*
@@ -94,6 +105,9 @@ bitfile_synthesis_208:
       # - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}.xsa
       - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.log
       - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}/${OVERLAY}.runs/{synth_1,impl_1}/*.rpt
+      - designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}_report.json
+    reports:
+      junit: designs/${BOARD}/${OVERLAY}/_xilinx/${OVERLAY}_timing.xml
   parallel:
     matrix:
       - OVERLAY: [base, mimo_mts, als_llrf_mts]

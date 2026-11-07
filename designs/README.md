@@ -74,6 +74,15 @@ designs/scripts/fetch_ci_overlays.py <id>        # same, from anywhere
 Only successful synthesis jobs are fetched, so it can be re-run while the pipeline is still building; identical files
 are skipped, and a replaced local file is kept as `<name>.prev`.
 
+Each synthesis job also summarizes its implementation reports with `scripts/vivado_reports.py`: timing (design and
+per-clock slack), utilization, power and the data sheet (I/O setup/hold, setup between clocks, ...) as
+`_xilinx/<design>_report.json` in the artifacts, and a JUnit test report, so the merge request's test summary shows
+per overlay whether timing is met, with the slack and a utilization summary. For a local build:
+
+```bash
+designs/scripts/vivado_reports.py designs/<BOARD>/<design> [-o report.json] [--junit timing.xml]
+```
+
 ## Device-tree overlays (`dts/`)
 
 | File | Purpose |
