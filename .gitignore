@@ -1,6 +1,7 @@
 __pycache__/
 .ipynb_checkpoints/
 .vscode/
+.ruff_cache/
 PYNQ/
 *.Xil/
 *_xilinx*/

@@ -21,11 +21,19 @@ class MimoMtsIoc:
     def __init__(self, **kwargs) -> None:
         self.log_level = kwargs.get("log_level", logging.INFO)
         logger.setLevel(self.log_level)
-        self.ol = kwargs.get("ol", None)
         self.ol_name = ol_name = kwargs.get("ol_name", "MIMO_ZCU208")
         self.prefix = kwargs.get("prefix", ol_name)
         self.ioc_name = ol_name + ":ioc"
+        self.ol: MimoMtsOverlay = self._load_overlay(kwargs.get("ol"))
         self.init()
+
+    def _load_overlay(self, ol: MimoMtsOverlay | None) -> MimoMtsOverlay:
+        """Use the overlay passed in, or load ``self.ol_name``."""
+        if ol is None:
+            logger.info("Initializing IOC with overlay: %s", self.ol_name)
+            return MimoMtsOverlay(config=self.ol_name, log_level=self.log_level)
+        logger.info("Using provided overlay for IOC: %s", self.ol_name)
+        return ol
 
     @contextmanager
     def run(self):
@@ -42,12 +50,6 @@ class MimoMtsIoc:
             softioc.interactive_ioc(globals())
 
     def init(self):
-        if self.ol is None:
-            logger.info("Initializing IOC with overlay: %s", self.ol_name)
-            self.ol = MimoMtsOverlay(config=self.ol_name, log_level=self.log_level)
-        else:
-            logger.info("Using provided overlay for IOC: %s", self.ol_name)
-
         self.llrf_register_map = self.ol.rf_control.register_map
         self.decimation = self.ol.ol_info["ioc"]["decimation"]
         self.adc_bufs_i, self.adc_bufs_q = self.ol.capture_adc_iq_buf()
@@ -380,8 +382,9 @@ class MimoMtsIoc:
 
     def drive_test_awg(self):
         """Drive DAC with a test arbitrary waveform"""
-        f_c = self.fs_ghz / 16  # 250 MHz
-        t = np.arange(self.ol.dac_player.size) / self.fs_ghz  # ns
+        assert self.ol.dac_player is not None, "DAC player buffer not initialized."
+        f_c = self.dac_fs_ghz / 16  # 250 MHz
+        t = np.arange(self.ol.dac_player.size) / self.dac_fs_ghz  # ns
         amp = 2**14 - 1
         # interp_factor = ol.ol_info['rfdc']['dac_interpolation_factor']
         dac_wfm = np.exp(1j * 2 * np.pi * f_c * t) * amp
@@ -393,6 +396,7 @@ class MimoMtsIoc:
 
     def drive_ones_awg(self):
         """Drive DAC with all ones, for testing purposes."""
+        assert self.ol.dac_player is not None, "DAC player buffer not initialized."
         dac_i = np.ones(self.ol.dac_player.size // 2, dtype=np.int16) * 32767
         dac_q = np.zeros_like(dac_i)
         self.ol.write_dac_iq_buf(dac_i, dac_q)

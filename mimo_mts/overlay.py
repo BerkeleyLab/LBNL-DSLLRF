@@ -4,7 +4,7 @@ from pprint import pformat
 
 import numpy as np
 import pandas as pd
-import xrfdc
+import xrfdc  # pyright: ignore[reportMissingModuleSource]  # board-only; stub in typings/
 from pynq import MMIO, PL, DeviceTreeSegment, Interrupt, Overlay
 
 from mimo_mts.config import ol_configs
@@ -200,6 +200,10 @@ class MimoMtsOverlay(Overlay):
             active_adc_blocks = {xrfdc.MIXER_MODE_R2C: [0, 1, 2, 3], xrfdc.MIXER_MODE_C2C: [0, 2]}
             # See PG269 Quad RF-DAC Configuration Options, Figure 110-115
             active_dac_blocks = {xrfdc.MIXER_MODE_C2R: [0, 1, 2, 3], xrfdc.MIXER_MODE_C2C: [0, 2]}
+        else:
+            raise ValueError(
+                f"{self.board.name}: unsupported converters_per_tile={self.board.converters_per_tile} (expected 2 or 4)"
+            )
 
         self.dac_blocks = np.array(
             [[self.rfdc.dac_tiles[i].blocks[j] for j in active_dac_blocks[self.dac_mixer_mode]] for i in range(4)]
@@ -430,6 +434,7 @@ class MimoMtsOverlay(Overlay):
             s00_axis_data -> DAC0/1: Q7,I7,Q6,I6,...,Q0,I0
             s02_axis_data -> DAC2/3: Q7,I7,Q6,I6,...,Q0,I0
         """
+        assert self.dac_player is not None, "DAC player buffer not initialized."
         assert i_buffer.size == self.dac_player.size // 2, "i_buffer size must be half of the DAC player buffer size."
         assert q_buffer.size == self.dac_player.size // 2, "q_buffer size must be half of the DAC player buffer size."
         self.dac_player[0::2] = i_buffer.astype(np.int16)
@@ -443,13 +448,14 @@ class MimoMtsOverlay(Overlay):
         self.write_dac_iq_buf(c_buffer.real, c_buffer.imag)
 
     def capture_dac_iq_buf(self, i_buffer=None, q_buffer=None):
+        assert self.dac_capture is not None, "DAC capture not initialized."
         length = self.dac_capture.size // 2
         if i_buffer is None:
             i_buffer = np.empty((length,), dtype=np.int16)
         if q_buffer is None:
             q_buffer = np.empty((length,), dtype=np.int16)
-        np.copyto(i_buffer, self.dac_capture[0::2])
-        np.copyto(q_buffer, self.dac_capture[1::2])
+        i_buffer[:] = self.dac_capture[0::2]
+        q_buffer[:] = self.dac_capture[1::2]
         return i_buffer, q_buffer
 
     def capture_dac_iq_df(self):

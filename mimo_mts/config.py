@@ -1,6 +1,6 @@
 from importlib.resources import files
 
-import xrfdc
+import xrfdc  # pyright: ignore[reportMissingModuleSource]  # board-only; stub in typings/
 
 import mimo_mts.overlays as overlays
 import mimo_mts.utils.clk104 as clk104
