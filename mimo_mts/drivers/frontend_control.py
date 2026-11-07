@@ -1,10 +1,13 @@
 import json
+import logging
 import time
 from enum import IntEnum
 from pathlib import Path
 from typing import Any
 
 from pynq import DefaultIP
+
+logger = logging.getLogger(__name__)
 
 
 def sign_extend(value, bits):
@@ -240,7 +243,7 @@ class FrontendControl(DefaultIP):
         description["registers"] = self.json_dat["csr_registers"]
         super().__init__(description)
 
-        print("Powering up and initializing analog frontend ...")
+        logger.info("Powering up and initializing analog frontend ...")
         self.set_power(True)
         time.sleep(100e-3)
 
