@@ -63,6 +63,16 @@ Products, in `<BOARD>/<design>/_xilinx/`: the bitstream `<design>.bit`, the hard
 
 CI (`.gitlab-ci.yml`) builds `base`, `mimo_mts` and `als_llrf_mts` for ZCU208 and LBL208, and `mimo_mts` for ZCU216,
 when RTL, `.xdc` or `.tcl` files change. The `.bit`, `.hwh`, logs and reports are kept as job artifacts for 4 weeks.
+To use them, download a pipeline's overlays into `mimo_mts/overlays/<board>/` (needs `glab` logged in to the GitLab
+host), then sync them to a board as below:
+
+```bash
+make fetch_ci PIPELINE=<id>                      # from any design directory; FETCH_ARGS=--dry-run to preview
+designs/scripts/fetch_ci_overlays.py <id>        # same, from anywhere
+```
+
+Only successful synthesis jobs are fetched, so it can be re-run while the pipeline is still building; identical files
+are skipped, and a replaced local file is kept as `<name>.prev`.
 
 ## Device-tree overlays (`dts/`)
 
