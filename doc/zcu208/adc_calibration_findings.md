@@ -30,7 +30,9 @@ MR !37), November 2026. Notebooks with the raw outputs:
    between programmings. With no filter in the loopback, the DAC's 1027 MHz Nyquist image aliases onto the tone and
    adds or subtracts depending on that timing.
 5. **The same timing ambiguity means the DAC-to-ADC RF phase is not deterministic across reboots** (half a sample
-   ≈ 135° at 2998 MHz). This is outside the calibration work but matters for ALS.
+   ≈ 135° at 2998 MHz). For ALS operation this is absorbed: phases are measured against the reference line on the
+   same ADC clock, and the polar phase loop integrates out a static drive-phase offset. Where a fixed DAC-to-ADC
+   phase is wanted, clocking ADC and DAC from one LMX2594 removes the ambiguity (see Open items).
 
 ## Calibration mechanics (driver and hardware behaviour)
 
@@ -93,24 +95,36 @@ findings:
 
 ## Open items
 
-1. Repeat the reload loop with a ~3 GHz band-pass filter in the loopback, or with an external generator. Expect a
-   constant carrier and consistent training; then re-check restore versus training on clean data.
+1. Repeat the reload loop with clean loopback data: single-LMX clocking (item 3), a ~3 GHz band-pass filter, or an
+   external generator. Expect a constant carrier and consistent training; then re-check restore versus training.
 2. Measure the DAC-to-ADC loop phase at exactly 3000 MHz across CLK104 re-programmings to confirm the RF phase
    jumps directly.
-3. Make the DAC-to-ADC clock phase deterministic (outside this MR):
-   - **LMX2594 phase-sync mode.** `VCO_PHASE_SYNC` is a register bit (R0[14]), not a pin. With it set, the channel
-     divider is moved into the feedback loop (IncludedDivide = 4 for ÷2), which makes the output phase deterministic
-     relative to OSCin. Per datasheet SNAS696C §7.3.10 the current setup (integer mode, no input multiplier,
-     4000 MHz a multiple of the 500 MHz OSCin, `CHDIV` = 2) is **Category 1**: SYNC mode is required but **no
-     software or pin SYNC pulse is needed**. Cost: N must be divided by 4, and the minimum N is 28 at an 8 GHz VCO,
-     so the phase-detector frequency has to drop from 250 to 62.5 MHz (N = 32). That raises in-band PLL noise by about
-     6 dB, and the loop filter and charge pump need re-tuning in TICS Pro, so phase noise must be re-checked.
-   - **LMK04828 dividers.** The LMX OSCin comes from LMK DCLKout dividers (/5 in PLL2 mode) that are excluded from
-     SYNC (`0x144 = 0xFF`). Either synchronize them after programming (clear the relevant `SYNC_DIS` bits and issue a
-     SYNC) or use the `_DIST` configuration (dividers /1, reference on CLKin1).
-   - **Hardware:** each LMX2594 SYNC pin (pin 5) is wired on the CLK104 (schematic 038-05007-01 rev A02): an LMK04828
-     SDCLKout pin, AC-coupled (0.1 µF) and through a 0 Ω resistor (R283 for the ADC LMX). The pin would only be
-     needed for Category 3 configurations.
+3. DAC-to-ADC clock phase (outside this MR):
+   - **Impact on ALS operation: absorbed.** All ADC tiles are clocked from the ADC LMX through tile 225, so an ADC
+     LMX shift moves every ADC channel equally, including the master-oscillator reference line; cavity phase relative
+     to the reference is unchanged. A DAC LMX shift is a static drive-phase offset, which the polar phase loop
+     (`phs_loop`, integral action) removes, so the cavity reaches its phase setpoint whatever the DAC phase after a
+     reboot. Caveats: I/Q feedback would need the loop phase calibrated at each boot (a 135° error destabilizes it);
+     if the phase integrator resets every pulse, the offset must be corrected within each 5 µs pulse; anything stored
+     in DAC-phase terms across reboots (feedforward tables, loop-phase or latency diagnostics) shifts with it.
+   - **Chosen approach where a fixed phase is wanted: clock ADC and DAC from one LMX2594.** RFoutA and RFoutB share
+     the same channel divider (datasheet Figure 24, Table 9), so their relative phase is fixed whichever way the ÷2
+     starts. Each CLK104 LMX brings out both outputs (`RF1_CLKO_A`/`_B`, J27–J30), ADC and DAC both run at 4 GSPS, and
+     `LMX2594_4G.tcs` already routes OUTB through the channel divider (`OUTB_MUX` = 0). Cable ADC-LMX OUTA to the ADC
+     clock and OUTB to the DAC clock: the phase-detector frequency and the optimized CLK104A loop filter stay
+     unchanged, the DAC gets the same low-noise clock, and the DAC LMX can be powered down. To check: OUTB power into
+     the DAC clock input, and the CLK104A layout and cabling. On the LBL208 this also gives a loopback without the
+     4 dB level jumps, i.e. clean calibration data without a filter, and directly tests the explanation in Summary
+     item 4.
+   - **Rejected: LMX2594 phase-sync mode.** `VCO_PHASE_SYNC` is a register bit (R0[14]), not a pin. The current
+     setup is datasheet SNAS696C §7.3.10 **Category 1** (no SYNC pulse needed), but sync mode moves the ÷2 into the
+     feedback loop (IncludedDivide = 4); with minimum N = 28 the phase detector would have to drop from 250 to
+     62.5 MHz, with ~6 dB more in-band PLL noise and a re-tuned loop filter. Not acceptable for the CLK104A's loop
+     filter, which is optimized for lowest additive phase noise at 4 GHz. (The LMX SYNC pins are wired on the CLK104,
+     schematic 038-05007-01 rev A02, but are only required for Category 3.)
+   - **LMK04828 dividers:** in PLL2 mode the LMX references come from /5 DCLKout dividers excluded from SYNC
+     (`0x144 = 0xFF`). This matters only while the two LMXs use separate references; single-LMX clocking or the
+     `_DIST` configuration (dividers /1, available on CLK104A) avoids it.
 4. Decide the boot policy for `AlsLlrfLBL208` after items 1–3.
 
 ## Pitfalls found on the way
