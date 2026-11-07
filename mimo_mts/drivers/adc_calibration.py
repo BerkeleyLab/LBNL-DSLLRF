@@ -41,6 +41,10 @@ N_COEFFS = 8
 # Blocks that can only be trained by an input signal; these are what a pulsed application restores.
 TRACKING_BLOCKS = ("GCB", "TSCB")
 
+# Read-back does not show written values: on ZCU208 (Gen 3) a TSCB write sets the override-enable
+# bit, but the value field keeps reading the calibration engine's value. Not used for verification.
+READBACK_UNVERIFIABLE = ("TSCB",)
+
 # XRFDC_CAL_FREEZE_CALIB / XRFDC_CAL_FRZ_PIN_DISABLE in xrfdc.h
 _FREEZE_PIN_DISABLE = 1
 _FREEZE_PIN_ENABLE = 0
@@ -313,15 +317,24 @@ class AdcCalibration:
 
         self.write(coeffs)
         self.freeze(chs)
-        mismatches = self.verify(path, chs, names)
+        mismatches = self.verify(path, chs, [n for n in names if n not in READBACK_UNVERIFIABLE] or names)
         if any(mismatches.values()):
             logger.error("ADC calibration restore did not verify: %s", mismatches)
         else:
             logger.info("Restored %s for ADC %s from %s", names, chs, path)
         return mismatches
 
-    def verify(self, path=DEFAULT_CAL_FILE, adc_ch=None, blocks=tuple(CAL_BLOCKS)) -> dict[int, list[str]]:
-        """Compare hardware coefficients with a file; returns mismatch descriptions per channel."""
+    def verify(
+        self,
+        path=DEFAULT_CAL_FILE,
+        adc_ch=None,
+        blocks=tuple(b for b in CAL_BLOCKS if b not in READBACK_UNVERIFIABLE),
+    ) -> dict[int, list[str]]:
+        """
+        Compare hardware coefficients with a file; returns mismatch descriptions per channel.
+
+        TSCB is skipped by default because its read-back does not reflect written values.
+        """
         data = self.load(path)
         names = self._parse_blocks(blocks)
         result = {}

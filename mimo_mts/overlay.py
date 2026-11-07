@@ -281,9 +281,10 @@ class MimoMtsOverlay(Overlay):
         Re-run RF-ADC startup on the active tiles, which repeats the foreground calibration.
 
         Mute the ADC inputs before calling: PG269 requires no signal energy at k*Fs/N while
-        the foreground calibration runs. The tile reset also clears freeze settings and
-        coefficient overrides. MTS is re-synchronized (DAC tiles are reset too) and the mixers
-        are set back to the overlay defaults, so per-channel mixer settings must be re-applied.
+        the foreground calibration runs. The freeze setting survives the tile reset (seen on
+        ZCU208), so GCB/TSCB stay frozen if they were. MTS is re-synchronized (DAC tiles are
+        reset too) and the mixers are set back to the overlay defaults, so per-channel mixer
+        settings must be re-applied.
         """
         for tile in range(4):
             if self.board.active_adc_tiles >> tile & 1:

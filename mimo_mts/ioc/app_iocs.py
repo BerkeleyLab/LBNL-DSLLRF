@@ -63,7 +63,8 @@ class AlsLlrfLBL208(MimoMtsIoc):
 
     def init_adc_cal(self):
         """
-        ALS LLRF drives a 5 us pulse at 2.973 GHz. The pulse is shorter than the ~7 us freeze/resume
+        ALS LLRF drives a 5 us pulse at 6 x f_ref (~2998 MHz = 3 Fs/4, with Fs = 8 x f_ref and
+        f_ref = 499.64 MHz). The pulse is shorter than the ~7 us freeze/resume
         time and the ADC input is below -40 dBFS between pulses, so GCB/TSCB cannot track it (PG269).
         Instead, coefficients trained once with a CW signal are restored and frozen at every start.
         Train and save with the adc_cal:* PVs or ``ol.adc_cal`` (see doc/zcu208/adc_calibration.ipynb).
