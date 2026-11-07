@@ -1,5 +1,6 @@
 """
 Type stub for PYNQ's xrfdc module, which only exists on the board.
+https://github.com/Xilinx/PYNQ/blob/master/sdbuild/packages/xrfdc/package/xrfdc/__init__.py
 
 Lets Pylance/pyright resolve `import xrfdc` on a development machine. Not used at runtime.
 Constant values are from xrfdc.h of the RFdc driver v8.0 (Vitis 2022.1, embeddedsw rfdc_v8_0);

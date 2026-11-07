@@ -29,7 +29,7 @@ make WAVES=1                                  # dump FST waveforms (Verilator)
 
 # Build an overlay (needs Vivado 2022.1 on PATH); outputs _xilinx/<design>.{bit,hwh}
 cd designs/<BOARD>/<design> && make           # BOARD in ZCU208|LBL208|ZCU216; `make help` lists steps
-make block_diagram                            # only generate the block design, no synthesis/implementation
+make block_design                             # only create the project and block design, no synthesis
 
 # Run an IOC on the board (production)
 sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc   # entry points in pyproject.toml (also mimo5g-zcu208-ioc)
@@ -58,7 +58,7 @@ tcl files change. Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` t
 ## Architecture
 
 **Overlay build (`designs/`)**: each `designs/<BOARD>/<design>/` has a small `Makefile` (sets `OVERLAY`, `BOARD`,
-`RTL_SRC`, `TCL_SRC`, `XDC`, then includes `designs/scripts/common.mk`), a `<design>.tcl` (exported Vivado block
+`RTL_SRC`, optional `IP_SCRIPTS`, then includes `designs/scripts/common.mk`), a `<design>.tcl` (exported Vivado block
 design; regenerate with `write_bd_tcl`, do not hand-edit heavily) and a `.xdc`. Shared Tcl lives in
 `designs/scripts/`. Path variables come from the root `dir_list.mk`. Custom RTL is in `designs/ip/rtl/` (AXI-lite
 wrappers `axil_*.v`, `llrf_dsp.v`, `pi_scalar.v`, `pulse_gen.v`, etc.) and is imported into the block design as

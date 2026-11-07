@@ -46,8 +46,8 @@ bitfile_synthesis_zcu216:
   rules:
     - changes:
         - designs/ip/rtl/*
-        - designs/zcu216/*/*.xdc
-        - designs/zcu216/*/*.tcl
+        - designs/ZCU216/*/*.xdc
+        - designs/ZCU216/*/*.tcl
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     expire_in: 4 weeks
