@@ -97,8 +97,20 @@ findings:
    constant carrier and consistent training; then re-check restore versus training on clean data.
 2. Measure the DAC-to-ADC loop phase at exactly 3000 MHz across CLK104 re-programmings to confirm the RF phase
    jumps directly.
-3. Clock fixes to evaluate: LMX2594 `VCO_PHASE_SYNC` with a SYNC/SYSREF pulse (if the CLK104 routes one), the
-   `_DIST` LMK configuration with the reference on CLKin1.
+3. Make the DAC-to-ADC clock phase deterministic (outside this MR):
+   - **LMX2594 phase-sync mode.** `VCO_PHASE_SYNC` is a register bit (R0[14]), not a pin. With it set, the channel
+     divider is moved into the feedback loop (IncludedDivide = 4 for ÷2), which makes the output phase deterministic
+     relative to OSCin. Per datasheet SNAS696C §7.3.10 the current setup (integer mode, no input multiplier,
+     4000 MHz a multiple of the 500 MHz OSCin, `CHDIV` = 2) is **Category 1**: SYNC mode is required but **no
+     software or pin SYNC pulse is needed**. Cost: N must be divided by 4, and the minimum N is 28 at an 8 GHz VCO,
+     so the phase-detector frequency has to drop from 250 to 62.5 MHz (N = 32). That raises in-band PLL noise by about
+     6 dB, and the loop filter and charge pump need re-tuning in TICS Pro, so phase noise must be re-checked.
+   - **LMK04828 dividers.** The LMX OSCin comes from LMK DCLKout dividers (/5 in PLL2 mode) that are excluded from
+     SYNC (`0x144 = 0xFF`). Either synchronize them after programming (clear the relevant `SYNC_DIS` bits and issue a
+     SYNC) or use the `_DIST` configuration (dividers /1, reference on CLKin1).
+   - **Hardware:** each LMX2594 SYNC pin (pin 5) is wired on the CLK104 (schematic 038-05007-01 rev A02): an LMK04828
+     SDCLKout pin, AC-coupled (0.1 µF) and through a 0 Ω resistor (R283 for the ADC LMX). The pin would only be
+     needed for Category 3 configurations.
 4. Decide the boot policy for `AlsLlrfLBL208` after items 1–3.
 
 ## Pitfalls found on the way
