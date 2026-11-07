@@ -85,9 +85,16 @@ cat /sys/kernel/config/device-tree/overlays/lmxadc/status    # prints "applied"
 ## Developing against a board
 
 Keep development on the host under git and synchronize the working tree, including built overlays, to the board.
-This avoids needing internet access or manual updates on the board. For example:
+This avoids needing internet access or manual updates on the board. From any design directory:
 
 ```bash
-rsync -avz --include '.git/' --exclude '.*/' --exclude '*.egg-info' --exclude '*__pycache__' \
-    pynq_llrf/ xilinx@192.168.2.99:~/jupyter_notebooks/pynq_llrf/
+make rsync BOARD_IP=192.168.2.99                        # to xilinx@<ip>:~/jupyter_notebooks/pynq_llrf/
+make rsync BOARD_IP=192.168.2.99 RSYNC_ARGS=--dry-run   # list what would be copied
+make rsync BOARD_IP=<ip> BOARD_USER=<user> BOARD_DIR=<path on board>
 ```
+
+`make rsync` runs `scripts/rsync_to_board.sh`, which can also be called directly from anywhere
+(`designs/scripts/rsync_to_board.sh <board_ip> [user] [dest_dir] [rsync options]`). It always syncs the repository
+the script belongs to, whatever the current directory. Not copied: dot-directories except `.git` (e.g. `.venv`),
+`*.egg-info`, `__pycache__`, and Vivado build directories (`*_xilinx*/`, several GB); built overlays reach the board
+through `mimo_mts/overlays/<board>/`. Needs `rsync` on both sides.

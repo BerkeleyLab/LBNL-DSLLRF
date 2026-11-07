@@ -13,9 +13,11 @@ help:
 	@echo "Available targets:"
 	@echo "  all           - Build the overlay, and check timing"
 	@echo "  block_design  - Create the block design"
-	@echo "  overlay.      - Build the overlay"
+	@echo "  overlay       - Build the overlay"
 	@echo "  check_timing  - Check the timing of the design"
 	@echo "  clean         - Remove generated files"
+	@echo "  rsync         - Sync the repository to a board: make rsync BOARD_IP=<addr>"
+	@echo "                  [BOARD_USER=xilinx] [BOARD_DIR=~/jupyter_notebooks/pynq_llrf/] [RSYNC_ARGS=--dry-run]"
 	@echo "  help          - Display this help message"
 
 .PHONY: all
@@ -78,6 +80,15 @@ block_design: $(PROJECT)
 
 .PHONY: overlay
 overlay: $(OUTPUT_DIR)/$(OVERLAY).bit
+
+# Sync the whole repository working tree to a PYNQ board (see scripts/rsync_to_board.sh)
+BOARD_USER ?= xilinx
+BOARD_DIR  ?= ~/jupyter_notebooks/pynq_llrf/
+
+.PHONY: rsync
+rsync:
+	@test -n "$(BOARD_IP)" || { echo "usage: make rsync BOARD_IP=<addr> [BOARD_USER=..] [BOARD_DIR=..] [RSYNC_ARGS=..]"; exit 1; }
+	$(SCRIPT_DIR)/rsync_to_board.sh $(BOARD_IP) $(BOARD_USER) '$(BOARD_DIR)' $(RSYNC_ARGS)
 
 .PHONY: clean
 clean::
