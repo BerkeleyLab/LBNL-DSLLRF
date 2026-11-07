@@ -70,7 +70,10 @@ class AlsLlrfLBL208(MimoMtsIoc):
         Train and save with the adc_cal:* PVs or ``ol.adc_cal`` (see doc/zcu208/adc_calibration.ipynb).
         """
         if not self.adc_cal_file.exists():
-            self.adc_cal_status = f"no {self.adc_cal_file}; background calibration tracking"
+            # Tracking on the pulse pattern degrades the image by ~30 dB within minutes (ZCU208 test),
+            # so freeze at the startup values rather than leave it tracking.
+            self.ol.adc_cal.freeze()
+            self.adc_cal_status = f"no {self.adc_cal_file}; frozen at startup values"
             logger.warning("ADC calibration: %s", self.adc_cal_status)
             return
         self.restore_adc_cal()
