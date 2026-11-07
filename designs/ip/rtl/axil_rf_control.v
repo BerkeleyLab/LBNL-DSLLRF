@@ -142,12 +142,19 @@ module axil_rf_control #(
     // Clock and reset
     assign dsp_reset = ~s_axi_aresetn;
 
-    // Internal trigger source
-    reg [31:0] int_trig_cnt=0;
-    wire int_trig;
-    assign int_trig = (int_trig_cnt == trig_period - 1);
+    // Internal trigger source: one pulse every trig_period cycles, disabled while trig_period == 0
+    // (its reset value). The counter restarts once it reaches trig_period - 1 *or more*, so a
+    // smaller trig_period takes effect within one period. With an exact-match comparison the
+    // counter first had to wrap at 2**32 (~17 s at 250 MHz), which delayed the first trigger after
+    // every bitstream load. trig_period - 1 and the enable are registered for timing margin.
+    reg [31:0] int_trig_cnt = 0;
+    reg [31:0] trig_period_m1 = 0;
+    reg int_trig_en = 0;
+    wire int_trig = int_trig_en && (int_trig_cnt >= trig_period_m1);
     always @(posedge s_axi_aclk) begin
-        int_trig_cnt <= (dsp_reset || int_trig) ? 0 : int_trig_cnt + 1'b1;
+        trig_period_m1 <= trig_period - 1'b1;
+        int_trig_en <= (trig_period != 0);
+        int_trig_cnt <= (dsp_reset || int_trig || !int_trig_en) ? 0 : int_trig_cnt + 1'b1;
     end
 
     // cdc and edge detection

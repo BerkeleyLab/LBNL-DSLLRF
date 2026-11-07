@@ -8,7 +8,7 @@
     "trig_period": {
         "address_offset": 4,
         "access": "read-write",
-        "description": "Trigger period",
+        "description": "Internal trigger period in clock cycles; 0 disables the internal trigger",
         "size": 32
     },
     "trig_delay": {
