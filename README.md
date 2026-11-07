@@ -159,6 +159,9 @@ If you use this design in your research or projects, please cite our papers.
 
 ## Code Style and Linting
 
+See [doc/developer_guide.md](doc/developer_guide.md) for the repository layout, build and test commands, and
+development notes.
+
 This project uses [Ruff](https://docs.astral.sh/ruff/) for both linting and formatting.
 
 Ruff checks the `mimo_mts` and `designs` directories. All configuration lives in `pyproject.toml` under `[tool.ruff]`.

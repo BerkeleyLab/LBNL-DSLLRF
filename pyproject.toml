@@ -10,11 +10,14 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "pynq==3.0.1",
+    "setuptools<82",  # pynq 3.0.1 imports pkg_resources
     "smbus2==0.4.3",
     "softioc==4.7.1",
     "cocotb==2.0.1",
     "numpy<2",
     "pandas",
+    "matplotlib",  # mimo_mts/utils/plot.py
+    "scipy",  # mimo_mts/utils/plot.py
     "spidev==3.8",
     "cocotbext-axi>=0.1.28",
     "ruff==0.17",

@@ -115,3 +115,48 @@ async def test_trigger_delay(dut):
         v = tb.dut.trigger_out.value
         cocotb.log.warning(f"dut.trigger_out: {v}")
         assert v == (ix == 1), "unexpected trigger output"
+
+
+async def trigger_cycles(tb, n_triggers, timeout_cycles):
+    """Clock cycles at which trigger_out is high, collecting up to n_triggers within timeout_cycles."""
+    hits = []
+    for cycle in range(timeout_cycles):
+        await RisingEdge(tb.dut.s_axi_aclk)
+        if tb.dut.trigger_out.value == 1:
+            hits.append(cycle)
+            if len(hits) == n_triggers:
+                break
+    return hits
+
+
+@cocotb.test(timeout_time=20, timeout_unit="us")
+async def test_internal_trigger_period_change(dut):
+    """
+    The internal trigger must follow a trig_period write within one period, also when the
+    counter has already passed the new period (after reset trig_period is 0, and software sets it
+    later). With an exact-match comparison the counter would first wrap at 2**32 (~17 s at 250 MHz).
+    """
+    tb = TB(dut)
+    await tb.cycle_reset()
+    await tb.write_register("trig_sel", 0)  # internal trigger
+    await ClockCycles(dut.s_axi_aclk, 200)  # counter runs past the period written next
+
+    for period in (20, 50, 8):
+        await tb.write_register("trig_period", period)
+        hits = await trigger_cycles(tb, n_triggers=4, timeout_cycles=5 * period)
+        cocotb.log.warning(f"trig_period={period}: triggers at cycles {hits}")
+        assert len(hits) == 4, f"trig_period={period}: {len(hits)} triggers in {5 * period} cycles"
+        assert hits[0] <= period, f"trig_period={period}: first trigger after {hits[0]} cycles"
+        spacing = {hits[i + 1] - hits[i] for i in range(len(hits) - 1)}
+        assert spacing == {period}, f"trig_period={period}: trigger spacing {spacing}"
+
+
+@cocotb.test(timeout_time=5, timeout_unit="us")
+async def test_internal_trigger_disabled(dut):
+    """trig_period = 0 (the reset value) disables the internal trigger."""
+    tb = TB(dut)
+    await tb.cycle_reset()
+    await tb.write_register("trig_sel", 0)
+    await tb.write_register("trig_period", 0)
+    hits = await trigger_cycles(tb, n_triggers=1, timeout_cycles=500)
+    assert hits == [], f"trigger with trig_period=0 at cycles {hits}"

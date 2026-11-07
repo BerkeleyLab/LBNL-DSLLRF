@@ -8,7 +8,7 @@ class TICSConfig:
     Utility class to parse TICS configuration file
     """
 
-    def __init__(self, config_file="LMX2594.tcs"):
+    def __init__(self, config_file: str | Path = "LMX2594.tcs"):
         self.config = config = configparser.ConfigParser(strict=False)
         assert Path(config_file).exists(), f"File {config_file} not found"
         config.read(config_file, encoding="utf-8-sig")
@@ -42,7 +42,7 @@ class LMKConfig(TICSConfig):
     Utility class to parse TICS configuration file for LMK04828
     """
 
-    def __init__(self, config_file="LMK04828.tcs"):
+    def __init__(self, config_file: str | Path = "LMK04828.tcs"):
         super().__init__(config_file)
         assert self.part == "LMK04828B", "Invalid part number"
         attrs = ["SYSREF_FREQ", "OSCout_FREQ"]
@@ -86,7 +86,7 @@ class LMXConfig(TICSConfig):
     Utility class to parse TICS configuration file for LMX2594
     """
 
-    def __init__(self, config_file="LMX2594.tcs"):
+    def __init__(self, config_file: str | Path = "LMX2594.tcs"):
         super().__init__(config_file)
         assert self.part == "LMX2594", "Invalid part number"
         attrs = ["Fosc_FREQ", "FoutA_FREQ", "FoutB_FREQ", "Fpd_FREQ", "Fvco_FREQ"]

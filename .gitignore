@@ -1,6 +1,7 @@
 __pycache__/
 .ipynb_checkpoints/
 .vscode/
+.ruff_cache/
 PYNQ/
 *.Xil/
 *_xilinx*/
@@ -19,3 +20,4 @@ designs/ip/tb/*/sim_build/
 designs/ip/tb/*/results.xml
 designs/ip/tb/*/synth/vivado_synth/
 doc/*_test.ipynb
+*.vvp

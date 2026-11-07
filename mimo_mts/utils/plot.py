@@ -15,8 +15,9 @@ def plot_adc_wfm(cdata, fs=4e9, width=8, height=1, title=""):
     fs /= 1e9
     n_ch, n_samples = cdata.shape
     t = np.arange(0, n_samples / fs, 1 / fs)
-    fig, axes = plt.subplots(n_ch, sharex=True, figsize=(width, n_ch * height))
-    for i, (wfm, ax) in enumerate(zip(cdata, axes, strict=True)):
+    # squeeze=False: always a 2-D array of Axes, also for n_ch == 1
+    fig, axes = plt.subplots(n_ch, 1, sharex=True, squeeze=False, figsize=(width, n_ch * height))
+    for i, (wfm, ax) in enumerate(zip(cdata, axes[:, 0], strict=True)):
         ax.plot(t, wfm, label=f"chan {i} ")
         ax.legend()
         ax.set_xlabel("Time [ns]")
@@ -30,10 +31,10 @@ def plot_adc_psd(wfm, fs=4e9, onsided=True, fullscale=32767, width=8, height=2, 
         f = np.fft.fftshift(f)
         pxxs = np.fft.fftshift(pxxs, axes=1)
     n_ch, n_samples = wfm.shape
-    fig, axes = plt.subplots(n_ch, sharex=True, figsize=(width, n_ch * height))
+    fig, axes = plt.subplots(n_ch, 1, sharex=True, squeeze=False, figsize=(width, n_ch * height))
     fsdb = 20 * np.log10(fullscale / np.sqrt(2))
     pxx_dbfs = 10 * np.log10(pxxs) - fsdb
-    for i, (p, ax) in enumerate(zip(pxx_dbfs, axes, strict=True)):
+    for i, (p, ax) in enumerate(zip(pxx_dbfs, axes[:, 0], strict=True)):
         f_peak = f[np.argmax(p)]
         ax.plot(f, p, label=f"ADC {i}, peak: {f_peak / 1e6:.3f} MHz")
         # ax.set_title(f'ADC {i}, peak: {f_peak/1e6:.3f} MHz ')

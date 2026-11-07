@@ -1,11 +1,13 @@
 import json
 from pathlib import Path
+from typing import Any
 
 from pynq import DefaultIP
 
 
 class WaveGen(DefaultIP):
     bindto = ["xilinx.com:module_ref:axil_wave_gen:1.0"]
+    register_map: Any  # built at runtime by PYNQ from axil_wave_gen.json
 
     def __init__(self, description):
         ip_path = Path(__file__).resolve().parent.parent.parent / "designs" / "ip"

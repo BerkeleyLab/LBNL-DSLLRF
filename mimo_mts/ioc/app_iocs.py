@@ -24,7 +24,7 @@ class AlsLlrfZCU208(MimoMtsIoc):
         self.llrf_register_map.trig_period = 125e6
         self.llrf_register_map.trig_delay = 0
         self.llrf_register_map.trig_divide = 1
-        self.llrf_register_map.dac_enable = 1
+        self.llrf_register_map.dac_enable.dac_enable = 1
         # Set 50% maximum RF amplitude
         self.llrf_register_map.amp_loop_setpoint = 32767 / self.ol.rf_control.tx_gain / 2
         self.llrf_register_map.dac_enable.pulse_enable = 1
@@ -41,6 +41,7 @@ class AlsLlrfLBL208(MimoMtsIoc):
         pulse_per_rev is the number of tachometer pulses per revolution of the chassis fans
         pmbus_poll_delay is how long to sleep between reading the sensor values in [s]
         """
+        # LBL208 uses the default PYNQ image of ZCU208, which is why os.environ["BOARD"] is ZCU208.
         assert os.environ["BOARD"] == "ZCU208", "This IOC is only for LBL208 board."
         super().__init__(ol_name=ol_name, **kwargs)
 
@@ -129,7 +130,7 @@ class AlsLlrfLBL208(MimoMtsIoc):
         self.llrf_register_map.trig_period = 125e6
         self.llrf_register_map.trig_delay = 0
         self.llrf_register_map.trig_divide = 1
-        self.llrf_register_map.dac_enable = 1
+        self.llrf_register_map.dac_enable.dac_enable = 1
         # Set 50% maximum RF amplitude
         self.llrf_register_map.amp_loop_setpoint = 32767 / self.ol.rf_control.tx_gain / 2
         self.llrf_register_map.dac_enable.pulse_enable = 1
