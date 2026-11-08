@@ -165,7 +165,9 @@ CLK104 configuration and the PS stay running, so MTS alignment and the ADC calib
 ## Related open work
 
 - ADC interleaving calibration (MR !37): restore-after-reboot test on LBL208 with single-LMX clocking.
-- Internal trigger fix (MR !44): optional hardware check with the CI-built ALS overlays at 250 MHz.
+- ADC calibration notebooks (`doc/zcu208/`, `doc/lbl208/adc_calibration.ipynb`) duplicate their helpers (capture with
+  trigger-delay wait, spectrum, interleaving-spur levels, front-end attenuation); move them into a small module,
+  e.g. `mimo_mts/utils/adc_cal_test.py`, once the procedure settles.
 
 ## References
 
