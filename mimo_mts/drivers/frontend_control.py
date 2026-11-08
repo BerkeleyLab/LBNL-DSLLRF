@@ -255,6 +255,22 @@ class FrontendControl(DefaultIP):
             else:
                 self.slices.append(Slice(self.register_map, i))
 
+        self.set_rx_attenuation_max()
+
+    RX_SLICES = (4, 5, 6, 7)
+
+    def set_rx_attenuation_max(self):
+        """
+        Set every attenuator of the present RX slices to the maximum (31.5 dB). Called on every overlay load so the
+        receive path starts in a known, safe state (HMC1122 settings are write-only and the power-up state is not
+        guaranteed); lower the attenuation explicitly afterwards.
+        """
+        present = [s for s in self.RX_SLICES if self.slices[s] is not None and self.slices[s].is_present()]
+        for s in present:
+            for att in self.slices[s].attenuators:
+                att.set_db(31.5)
+        logger.info("RX attenuators of slices %s set to 31.5 dB", present)
+
     def set_power(self, value: bool):
         """when value is true, enables the power to the frontend
         this connects to the buck_en signal, which needs to be driven high

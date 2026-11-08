@@ -249,12 +249,12 @@ ol_configs = {
             "dac": 4.0e9,
         },
         "clk104_tcs": {
-            "lmk_tcs": files(clk104).joinpath("LMK04828_500M_CLKin0_DIST.tcs"),
+            "lmk_tcs": files(clk104).joinpath("LMK04828_500M_CLKin0.tcs"),
             "lmxadc_tcs": files(clk104).joinpath("LMX2594_4G.tcs"),
             "lmxdac_tcs": files(clk104).joinpath("LMX2594_4G.tcs"),
             "verify": True,
         },
-        "device_tree_segments": ["/boot/lmxadc.dtbo"],
+        # "device_tree_segments": ["/boot/lmxadc.dtbo"],
         "si570_freq_mhz": 156.1375,
         "rfdc": {
             "adc_decimation_factor": 8,

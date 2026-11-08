@@ -7,10 +7,12 @@ import re
 import threading
 import time
 from contextlib import contextmanager
+from pathlib import Path
 
 import numpy as np
 from softioc import asyncio_dispatcher, builder, softioc
 
+from mimo_mts.drivers.adc_calibration import DEFAULT_CAL_FILE
 from mimo_mts.overlay import MimoMtsOverlay
 
 logging.basicConfig(level=logging.INFO, format="%(name)s - %(levelname)s - %(message)s")
@@ -25,6 +27,8 @@ class MimoMtsIoc:
         self.prefix = kwargs.get("prefix", ol_name)
         self.ioc_name = ol_name + ":ioc"
         self.ol: MimoMtsOverlay = self._load_overlay(kwargs.get("ol"))
+        self.adc_cal_file = Path(kwargs.get("adc_cal_file", DEFAULT_CAL_FILE))
+        self.adc_cal_status = "not initialized"
         self.init()
 
     def _load_overlay(self, ol: MimoMtsOverlay | None) -> MimoMtsOverlay:
@@ -65,6 +69,8 @@ class MimoMtsIoc:
         self.init_rf_control()
         self.update_adc_bufs()
         self._init_per_channel_mixer_cfg()
+        if hasattr(self.ol, "adc_cal"):
+            self.init_adc_cal()
 
     def _init_per_channel_mixer_cfg(self):
         """Initialize per-channel mixer config from the global defaults."""
@@ -108,6 +114,27 @@ class MimoMtsIoc:
         self.llrf_register_map.trig_divide = 1
         self.llrf_register_map.dac_enable = 1
         self.llrf_register_map.amp_loop_setpoint = 0
+
+    def init_adc_cal(self):
+        """
+        RF-ADC calibration policy at IOC start. Default: leave the ADCs as RF-ADC startup
+        left them (background calibration tracking). Applications override this.
+        """
+        frozen = self.ol.adc_cal.is_frozen()
+        self.adc_cal_status = f"startup state, frozen: {[ch for ch, f in frozen.items() if f]}"
+        logger.info("ADC calibration %s", self.adc_cal_status)
+
+    def restore_adc_cal(self):
+        """Restore GCB/TSCB from ``self.adc_cal_file`` and freeze; never raises, reports via status."""
+        try:
+            mismatches = self.ol.adc_cal.restore(self.adc_cal_file)
+        except (OSError, KeyError, ValueError, RuntimeError) as e:
+            self.adc_cal_status = f"restore failed: {e}"
+            logger.error("ADC calibration %s", self.adc_cal_status)
+            return False
+        bad = [ch for ch, m in mismatches.items() if m]
+        self.adc_cal_status = f"restore verify failed on ADC {bad}" if bad else f"restored from {self.adc_cal_file}"
+        return not bad
 
     def update_adc_bufs(self):
         self.ol.capture_adc_iq_buf(self.adc_bufs_i, self.adc_bufs_q)
@@ -161,6 +188,78 @@ class MimoMtsIoc:
         self.add_mixer_pvs()
         self.add_rf_control_pvs()
         self.add_pulse_pvs()
+        if hasattr(self.ol, "adc_cal"):
+            self.add_adc_cal_pvs()
+
+    def add_adc_cal_pvs(self, prefix="adc_cal:"):
+        """
+        RF-ADC calibration PVs (see mimo_mts/drivers/adc_calibration.py):
+            adc_cal:freeze               write 1/0 to freeze/unfreeze GCB+TSCB on all ADCs
+            adc_cal:ADC{ch}:freeze       same, one ADC
+            adc_cal:ADC{ch}:frozen:RBV   freeze status reported by the RFDC
+            adc_cal:save                 write 1 to save all coefficients to adc_cal:file
+            adc_cal:restore              write 1 to restore GCB+TSCB from adc_cal:file and freeze
+            adc_cal:release_override     write 1 to return all blocks to engine-computed values
+            adc_cal:file                 calibration file path on the board
+            adc_cal:status               result of the last action
+        """
+        cal = self.ol.adc_cal
+        self.pvs_out[prefix + "freeze"] = builder.boolOut(
+            prefix + "freeze",
+            ZNAM="tracking",
+            ONAM="frozen",
+            always_update=True,
+            on_update=lambda v: self._adc_cal_action("freeze" if v else "unfreeze"),
+        )
+        for ch in cal.channels:
+            name = f"{prefix}ADC{ch}:freeze"
+            self.pvs_out[name] = builder.boolOut(
+                name,
+                ZNAM="tracking",
+                ONAM="frozen",
+                always_update=True,
+                on_update=lambda v, ch=ch: self._adc_cal_action("freeze" if v else "unfreeze", ch),
+            )
+            name = f"{prefix}ADC{ch}:frozen:RBV"
+            self.pvs_in[name] = builder.boolIn(name, ZNAM="tracking", ONAM="frozen")
+
+        for action in ("save", "restore", "release_override"):
+            self.pvs_out[prefix + action] = builder.boolOut(
+                prefix + action,
+                ZNAM="idle",
+                ONAM="run",
+                always_update=True,
+                on_update=lambda v, action=action: v and self._adc_cal_action(action),
+            )
+        self.pvs_in[prefix + "file"] = builder.longStringIn(prefix + "file", initial_value=str(self.adc_cal_file))
+        self.pvs_in[prefix + "status"] = builder.longStringIn(prefix + "status", initial_value=self.adc_cal_status)
+
+    def _adc_cal_action(self, action, ch=None):
+        cal = self.ol.adc_cal
+        try:
+            if action == "freeze":
+                cal.freeze(ch)
+                self.adc_cal_status = f"frozen ADC {'all' if ch is None else ch}"
+            elif action == "unfreeze":
+                cal.unfreeze(ch)
+                self.adc_cal_status = f"tracking ADC {'all' if ch is None else ch}"
+            elif action == "save":
+                cal.save(self.adc_cal_file)
+                self.adc_cal_status = f"saved to {self.adc_cal_file}"
+            elif action == "restore":
+                self.restore_adc_cal()
+            elif action == "release_override":
+                cal.release_override()
+                self.adc_cal_status = "override released"
+        except (OSError, KeyError, ValueError, RuntimeError) as e:
+            self.adc_cal_status = f"{action} failed: {e}"
+            logger.error("ADC calibration %s", self.adc_cal_status)
+        self.pvs_in["adc_cal:status"].set(self.adc_cal_status)
+        self.update_adc_cal_pvs()
+
+    def update_adc_cal_pvs(self):
+        for ch, frozen in self.ol.adc_cal.is_frozen().items():
+            self.pvs_in[f"adc_cal:ADC{ch}:frozen:RBV"].set(frozen)
 
     def add_mixer_pvs(self, prefix="rfdc_mixer:"):
         """
@@ -294,6 +393,9 @@ class MimoMtsIoc:
             for ch, cfg in self.dac_mixer_cfg.items():
                 for key in cfg.keys():
                     self.pvs_in[f"rfdc_mixer:DAC{ch}:nco_{key}:RBV"].set(cfg[key])
+
+            if hasattr(self.ol, "adc_cal"):
+                self.update_adc_cal_pvs()
 
     def on_update_name(self, value, pv_name):
         """

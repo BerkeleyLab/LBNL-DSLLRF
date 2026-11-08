@@ -8,14 +8,15 @@
 #   e.g. rsync_to_board.sh 192.168.2.99 xilinx '~/jupyter_notebooks/pynq_llrf/' --dry-run
 #
 # Works from any directory: the source is always the repository containing this script.
-# Not copied: dot-directories except .git (e.g. .venv, .ruff_cache), *.egg-info, __pycache__,
-# and Vivado build directories (*_xilinx*/). Built overlays reach the board through
+# Copies what git considers the working tree: tracked files and untracked files that .gitignore
+# does not exclude, plus .git. Ignored files (sim_build/, _xilinx/, .venv, caches, ...) and the
+# bedrock submodule (RTL for building overlays only) stay local. Built overlays reach the board through
 # mimo_mts/overlays/<board>/; board overlays are never deleted, and only replaced by newer
-# local files (the replaced file is kept as <name>.prev).
+# local files (the replaced file is kept as <name>.prev). Nothing on the board is deleted.
 set -euo pipefail
 
 if [[ $# -lt 1 || $1 == -h || $1 == --help ]]; then
-    sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
     exit 1
 fi
 
@@ -35,16 +36,21 @@ fi
 
 cd "$repo"
 
-echo "Syncing $repo/ -> $user@$board_ip:$dest (code; overlays in a second pass)"
-rsync -avz \
-    --include '.git/' \
-    --exclude '.*/' \
-    --exclude '*.egg-info' \
-    --exclude '__pycache__/' \
-    --exclude '*_xilinx*/' \
-    --exclude '/mimo_mts/overlays/' \
-    "$@" \
+command -v git >/dev/null || { echo "git is not installed" >&2; exit 1; }
+
+# Files of the working tree as git sees it, NUL-separated: untracked but not ignored, and tracked.
+# Submodules (bedrock) appear as a single directory entry and arrive as an empty, uninitialized
+# submodule: the board only runs Python, it does not build RTL.
+working_tree_files() {
+    git ls-files -z --others --exclude-standard
+    git ls-files -z
+}
+
+echo "Syncing $repo/ -> $user@$board_ip:$dest (files git does not ignore; then .git; then overlays)"
+# --ignore-missing-args: tracked files deleted in the working tree are skipped, not an error
+working_tree_files | rsync -avz --from0 --files-from=- --ignore-missing-args "$@" \
     ./ "$user@$board_ip:$dest"
+rsync -az --exclude '/modules/' "$@" .git/ "$user@$board_ip:${dest%/}/.git/"
 
 # Overlays (.bit/.hwh/.dtbo) on the board may be newer than local ones (e.g. CI builds copied
 # there). Never delete them (no --delete), replace one only when the local file is newer

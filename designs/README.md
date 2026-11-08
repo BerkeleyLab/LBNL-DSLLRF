@@ -114,6 +114,8 @@ make rsync BOARD_IP=<ip> BOARD_USER=<user> BOARD_DIR=<path on board>
 
 `make rsync` runs `scripts/rsync_to_board.sh`, which can also be called directly from anywhere
 (`designs/scripts/rsync_to_board.sh <board_ip> [user] [dest_dir] [rsync options]`). It always syncs the repository
-the script belongs to, whatever the current directory. Not copied: dot-directories except `.git` (e.g. `.venv`),
-`*.egg-info`, `__pycache__`, and Vivado build directories (`*_xilinx*/`, several GB); built overlays reach the board
-through `mimo_mts/overlays/<board>/`. Needs `rsync` on both sides.
+the script belongs to, whatever the current directory. It copies the files git considers part of the working tree
+(tracked, and untracked but not ignored) plus `.git`, so anything in `.gitignore` (`sim_build/`, `_xilinx/`, `.venv`,
+caches, ...) stays local, as does the `bedrock` submodule (needed only to build overlays). Built overlays reach the
+board through `mimo_mts/overlays/<board>/` in a separate pass that never deletes board files and only replaces older
+ones, keeping the replaced file as `<name>.prev`. Needs `git` locally and `rsync` on both sides.
