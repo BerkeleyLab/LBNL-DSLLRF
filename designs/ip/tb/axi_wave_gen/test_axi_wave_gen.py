@@ -532,3 +532,75 @@ async def test_unaligned_and_wrap_bursts(dut):
 
     readback = (await tb.axi_master.read(0, len(mem))).data
     assert bytes(readback) == bytes(mem), "Unaligned/WRAP burst landed in the wrong place"
+
+
+@cocotb.test(timeout_time=3000, timeout_unit="us")
+async def test_retrigger_stress(dut):
+    """
+    Triggers at random times (including during and right after a playback) with random back-pressure: every playback
+    must deliver exactly wave_length beats ending in tlast, and busy must return to 0 (seen on hardware: stuck busy
+    with a 20 us trigger period).
+    """
+    tb = AxiWaveGenTB(dut)
+    await tb.reset()
+    rng = random.Random(5)
+    n_rows = 64
+    samples = tb.generate_test_pattern(n_rows, "random")
+    await tb.write_waveform_words(tb.samples_to_axi_words(samples), address=0)
+    dut.ctrl_wave_length.value = n_rows
+    tb.axis_sink.set_pause_generator(_random_pause(0.3, seed=2))
+
+    beats = 0
+    frames = 0
+
+    async def count():
+        nonlocal beats, frames
+        while True:
+            await RisingEdge(dut.clk)
+            if dut.m_axis_tvalid.value == 1 and dut.m_axis_tready.value == 1:
+                beats += 1
+                if dut.m_axis_tlast.value == 1:
+                    frames += 1
+
+    cocotb.start_soon(count())
+    for _ in range(300):
+        await ClockCycles(dut.clk, rng.choice((1, 2, 3, 5, 40, 80, 90, 95, 100, 120)))
+        dut.ctrl_trigger.value = 1
+        await RisingEdge(dut.clk)
+        dut.ctrl_trigger.value = 0
+    for _ in range(2000):
+        await RisingEdge(dut.clk)
+        if dut.ctrl_busy.value == 0:
+            break
+    assert dut.ctrl_busy.value == 0, "generator stuck busy"
+    while not tb.axis_sink.empty():
+        tb.axis_sink.recv_nowait()
+    tb.log.info(f"{frames} playbacks, {beats} beats")
+    assert frames > 0 and beats == frames * n_rows, f"{beats} beats for {frames} playbacks of {n_rows}"
+
+
+@cocotb.test(timeout_time=200, timeout_unit="us")
+async def test_wave_length_zero_plays_full_depth_once(dut):
+    """
+    wave_length = 0 plays all BANK_DEPTH rows once, ending with tlast, and busy returns to 0. (A 32-bit
+    `rd_length - 1` made this loop forever on hardware.)
+    """
+    tb = AxiWaveGenTB(dut)
+    await tb.reset()
+    beats = lasts = 0
+
+    async def count():
+        nonlocal beats, lasts
+        while True:
+            await RisingEdge(dut.clk)
+            if dut.m_axis_tvalid.value == 1 and dut.m_axis_tready.value == 1:
+                beats += 1
+                lasts += int(dut.m_axis_tlast.value)
+
+    cocotb.start_soon(count())
+    await tb.trigger_waveform(0)
+    assert await tb._wait_not_busy(tb.bank_depth + 1000), "playback with wave_length = 0 never ended"
+    await ClockCycles(dut.clk, 20)
+    while not tb.axis_sink.empty():
+        tb.axis_sink.recv_nowait()
+    assert (beats, lasts) == (tb.bank_depth, 1), f"{beats} beats, {lasts} tlast; expected {tb.bank_depth}, 1"

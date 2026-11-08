@@ -5,6 +5,8 @@ COCOTB_TOPLEVEL     = $(DUT)
 COCOTB_TEST_MODULES = test_$(DUT)
 VERILOG_SOURCES += $(RTL_DIR)/$(DUT).v
 VERILOG_SOURCES += $(RTL_DIR)/wave_gen.v
+VERILOG_SOURCES += $(RTL_DIR)/banked_mem.v
+VERILOG_SOURCES += $(RTL_DIR)/axi4_mem_port.v
 # COCOTB_TEST_FILTER = test_basic_write_read
 # TESTCASE = test_basic_write_read
 # Parameters (can be overridden from command line)

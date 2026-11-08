@@ -7,14 +7,20 @@ first steps and open questions. Update this file as items progress; repository c
 | # | Item | Depends on | Size |
 |---|---|---|---|
 | 1 | Upgrade cocotb to 2.1 | – | small |
-| 2 | 5 GSPS with a waveform generator per DAC channel | – | large |
-| 3 | LLRF logic in the MIMO overlays, CW mode | 2 (DAC path) | medium |
+| 2 | 5 GSPS with a waveform generator per DAC channel (remaining: per-DAC AWG) | – | large |
+| 3 | LLRF logic in the MIMO overlays (closed-loop pulsed and CW) | 2 (DAC path) | medium |
 | 4 | Upgrade to PYNQ 4.0 (Vivado 2025.2) | – | large |
 | 5 | Partial reconfiguration of the LLRF logic | 3, 4 | large |
 | 6 | Complete EPICS PV reference (`PVs.md`) — done | – | small |
+| 7 | CW mode for `mimo_mts_5g` (per-DAC constant I/Q) | 2 (per-DAC AWG) | medium |
+| 8 | `mimo_mts_5g` for the LBL208 | 2 | medium |
+| 9 | Rerun the ADC calibration tests on ZCU208 and LBL208, update the findings | – (5 GSPS part: 8) | medium |
+| 10 | `mimo_mts_iq` at 5 GSPS with `wave_gen` / `wave_cap` | 2 | medium |
 
-Items 4 and 5 both change the Vivado flow; doing the tool upgrade first avoids building the DFX flow twice. Item 6
-is independent and can be done at any time; items 2, 3 and 5 add PVs, so generating the reference (below) pays off.
+Next in line: the per-DAC AWG (item 2, step 4), then CW mode on top of it (7) and the LBL208 port (8); item 9 can run in
+parallel on the existing overlays, with its 5 GSPS part after item 8. Items 4 and 5 both change the Vivado flow; doing
+the tool upgrade first avoids building the DFX flow twice. Item 6 is independent and can be done at any time; items 2, 3
+and 5 add PVs, so generating the reference (below) pays off.
 
 ## 1. Upgrade cocotb to 2.1
 
@@ -90,7 +96,10 @@ clock enable with 89 % routing delay (WNS -0.057 ns, 54 endpoints).
 **Steps.**
 
 1. ~~**Hardware test in `ZCU208/base`**~~: done, 6/6 passed (8 Nov 2026).
-2. **ADC capture with the banked memory** (the 5 → 4 direction of the same mapping):
+2. **ADC capture with the banked memory** (the 5 → 4 direction of the same mapping). *RTL done* on branch
+   `feature/banked-capture`: `banked_mem.v`, `axi4_mem_port.v`, `wave_cap.v`, `axi_wave_cap.v`, testbench 6/6,
+   20 BRAM36 and WNS +1.42 ns at 250 MHz out of context. Remaining: the block design (below and step 3).
+   Original plan:
    - Factor the memory out of `wave_gen.v` into `banked_mem.v`: the 5 × 64-bit banks, port A (AXI byte port:
      address-mapped writes with `WSTRB`, reads) and port B (one full row per cycle). `wave_gen` = `banked_mem` +
      playback control (port B read); the new capture core = `banked_mem` + capture control (port B write).
@@ -104,13 +113,17 @@ clock enable with 89 % routing delay (WNS -0.057 ns, 54 endpoints).
      AXI4 slave (today one beat per ~9 cycles) if DMA readout is wanted.
    - Testbench: stream rows in at full rate, trigger, read back over AXI with mixed sizes, compare.
 3. **Rebuild `mimo_mts_5g`** with the new capture path and check timing with `designs/scripts/vivado_reports.py`.
+   *Done 8 Nov 2026:* timing met (WNS +0.080 ns at 500 MHz; URAM 5, BRAM36 361.5, LUTs 59k) and verified on
+   hardware: bit-exact DAC copy, gap-free 8.2 µs captures, capture IRQ, one-shot captures (details in
+   [wave_gen.md](wave_gen.md)).
    Hardware test: MTS, captures of a tone without gaps, the generator played through the broadcaster, CPU
    responsive with the DAC stream stopped.
-4. **Per-channel generators**: one `wave_gen` per DAC (8 instances, URAM, BANK_DEPTH 2048), replacing the broadcaster
+4. **Per-DAC AWG (next)**: one `wave_gen` per DAC (8 instances, URAM, BANK_DEPTH 2048), replacing the broadcaster
    and `hier_dac_cap`; a shared trigger and start-time alignment across channels; one
    control interface (per-channel `wave_length`, a common trigger/arm register) rather than eight AXI-Lite slaves if
    the interconnect gets large. Driver and IOC: `ol.wave_gens[ch]`, and per-channel waveform PVs `DAC{n}:IWF` /
-   `DAC{n}:QWF` next to today's shared `DAC:IWF` / `DAC:QWF`.
+   `DAC{n}:QWF` next to today's shared `DAC:IWF` / `DAC:QWF`. Design the control interface so the CW registers of
+   item 7 fit in it.
 5. **Choose the bus flavour**: `axil_wave_gen` (registers included, CPU writes) or `axi_wave_gen` (256-bit memory
    like `axi_bram_ctrl`, DMA bursts, read-back; needs a driver and separate control). Loading eight channels does not
    need DMA: 8 × 80 KB take about 4 ms at the measured 153.5 MB/s.
@@ -120,7 +133,7 @@ clock enable with 89 % routing delay (WNS -0.057 ns, 54 endpoints).
 all ADC channels without lost samples, with MTS working, and an IOC (or notebook) loads the waveforms without stalling
 the CPU.
 
-## 3. LLRF logic in the MIMO overlays; CW mode
+## 3. LLRF logic in the MIMO overlays (closed-loop pulsed and CW)
 
 **State.** Only `als_llrf_mts` (ZCU208, LBL208) contains `axil_llrf` (RF control + `llrf_dsp`: amplitude/phase loops,
 interpolator, averager). The `mimo_mts*` overlays have `axil_rf_control` with `dac_streamer` or the waveform generator
@@ -194,18 +207,91 @@ configuration that did not exist). `--list <IOC class>` prints the full names fo
 The Phoebus screens (`epics/*.bob`) use none of the removed read-only setpoints. Open: compare `--list` with `dbl()`
 from a running IOC.
 
+## 7. CW mode for `mimo_mts_5g`
+
+**Goal.** Continuous wave on every DAC with its own amplitude and phase, changed by software at any time and on all
+channels at once, for MIMO measurements without reloading waveforms.
+
+**Approach (recommended): per-DAC constant I/Q in the generator, carrier from the DAC NCO.** The RFDC fine mixer
+already makes a phase-continuous carrier at the frequency set by `rfdc_mixer:*:rf_freq_mhz` (the NCO tone was flat to
+0.2° over 8.2 µs on hardware); CW then only needs a constant baseband I/Q per DAC.
+- Add a CW mode to each per-DAC generator: instead of reading the memory it streams one I/Q pair from registers,
+  repeated in every 320-bit row (10 I/Q pairs per row at the 2.5 GSPS complex rate), so no memory write is needed
+  and the waveform memory keeps its pulse for the other mode.
+- Double-buffer the I/Q registers and apply them with one common strobe, so all DACs change amplitude and phase on
+  the same clock (MIMO phase coherence); switching between CW and playback takes effect on the trigger or the
+  strobe, not mid-row.
+- IOC: per-DAC `DAC{n}:cw:amp` (fraction of full scale) and `DAC{n}:cw:phase` (degrees) converted to I/Q, a mode PV
+  (playback / CW), and an "apply" PV.
+- Also add a loop mode to the generator (play `wave_length` rows repeatedly): periodic waveforms such as multitone
+  without the CPU (what the `wave_length = 0` bug did by accident, made explicit with a control bit).
+
+**Alternatives considered.** Writing a constant waveform into the memory works today but rewrites 80 KB per change
+and cannot update channels together. A separate I/Q mux in front of each DAC duplicates the generator's control
+logic. Closed-loop CW (amplitude/phase feedback) is item 3.
+
+**Done when** each DAC holds its own CW amplitude and phase on hardware, updated on all channels on the same clock
+(checked with the loopback captures), and the IOC exposes it.
+
+## 8. `mimo_mts_5g` for the LBL208
+
+**Goal.** The 5 GSPS MIMO overlay with banked captures and per-DAC AWG on the LBL208, as on the ZCU208.
+
+**Steps.**
+- `designs/LBL208/mimo_mts_5g` from the ZCU208 design: LBL208 pin constraints (`.xdc` from `LBL208/mimo_mts`),
+  CLK104A device tree, the analog front end (`frontend_control_axi`: RX attenuators and power), EVR if wanted.
+- `MIMO5G_LBL208` in `config.py` (CLK104A TCS files for 5 GHz), an IOC class and entry point, the PV reference
+  regenerated.
+- Hardware check with `test_mimo5g.py` and `doc/lbl208/mimo_mts_5g.ipynb` (loopback through the front end; mind the
+  reversed ADC-to-slice mapping, see Related open work).
+
+**Done when** the LBL208 passes the same checks as the ZCU208 (bit-exact DAC copy, gap-free captures, alignment).
+
+## 9. Rerun the ADC calibration tests on ZCU208 and LBL208
+
+**Goal.** Close the open hardware questions of `doc/adc_calibration_findings.md` and measure the 5 GSPS case.
+
+**Steps.**
+- 4 GSPS (ALS overlays), both boards: repeat `adc_calibration.ipynb` step 15 with the DAC disabled during
+  `restart_adc_tiles()` (the boot sequence now in `AlsLlrfLBL208`), and sweep the carrier phase to measure the peak
+  phase error against the 0.1° requirement. Check the boot sequence through the IOC (`adc_cal:status`).
+- 5 GSPS (`mimo_mts_5g`, ZCU208 then LBL208): confirm that at Fs = 10·f_ref the interleaving products sit 125 and
+  250 MHz from a 3·Fs/5 tone and none on it; measure SFDR untrained, trained and frozen. The banked captures (8.2 µs,
+  one-shot) and the RF-frequency PVs make this a notebook job.
+- Move the helpers duplicated between the calibration notebooks (capture with trigger wait, spectrum, interleaving
+  spur levels, front-end attenuation) into `mimo_mts/utils/adc_cal_test.py` first.
+- Update `doc/adc_calibration_findings.md`: boot-policy results against 0.1°, the 5 GSPS spur positions, and what
+  remains (pilot tone).
+
+**Done when** the findings document answers the 0.1° question for the ALS boot sequence and shows the 5 GSPS spur
+positions on both boards.
+
+## 10. `mimo_mts_iq` at 5 GSPS with `wave_gen` / `wave_cap`
+
+**State.** `ZCU208/mimo_mts_iq` runs at 4 GSPS with the older data path: `dac_streamer` from a BRAM player and 9
+`adc_capture` + `axi_bram_ctrl` captures (`MIMO_IQ_ZCU208` in `config.py`).
+
+**Goal.** The same sampling scheme and data path as `mimo_mts_5g`: 5 GSPS, the waveform generator (per DAC once item 2
+step 4 is done) and banked captures (`axi_wave_cap`, 2:1 width conversion to 320 bits at 250 MHz), with the capture
+interrupt and one-shot captures.
+
+**Steps.**
+- Decide what stays specific to `mimo_mts_iq` (its I/Q stream arrangement, decimation and mixer modes) and what
+  follows `mimo_mts_5g`; then migrate the block design with a script as for `mimo_mts_5g` (replace `adc_capture` +
+  `blk_mem_gen` + `axi_bram_ctrl` by `axi_wave_cap`, the player by `wave_gen`), re-export with `write_bd_tcl`.
+- `MIMO_IQ_ZCU208` at 5 GSPS (CLK104 5 GHz TCS files), PV reference regenerated.
+- Hardware check with `test_mimo5g.py` (or a variant) and a notebook like `doc/zcu208/mimo_mts_5g.ipynb`.
+
+**Done when** `mimo_mts_iq` passes the same hardware checks as `mimo_mts_5g`.
+
 ## Related open work
 
-- ADC interleaving calibration (MR !37): `AlsLlrfLBL208` now freezes, restarts the ADC tiles with the DAC disabled
-  and restores. Verify on the LBL208 (step 15 with a muted restart, plus a carrier-phase sweep against 0.1°).
-  Longer term: pilot-tone injection (one spare DAC, splitter, a coupler per phase-critical ADC) for training at boot.
+- ADC calibration, longer term: pilot-tone injection (one spare DAC, splitter, a coupler per phase-critical ADC)
+  for training at boot (item 9 covers the reruns).
 - LBL208 analog front end: the ADC-to-RX-slice mapping is apparently reversed on the hardware (loopback on ADC7 is
   controlled by slice 4, attenuators 0/1, which `doc/lbl208/als_llrf_mts_ffe.ipynb` maps to ADC0). Verify all channels,
   fix the map, and add a per-ADC attenuation helper to `FrontendControl` (and IOC PVs) that uses the verified
   mapping, configurable per board.
-- ADC calibration notebooks (`doc/zcu208/`, `doc/lbl208/adc_calibration.ipynb`) duplicate their helpers (capture with
-  trigger-delay wait, spectrum, interleaving-spur levels, front-end attenuation); move them into a small module,
-  e.g. `mimo_mts/utils/adc_cal_test.py`, once the procedure settles.
 
 ## References
 

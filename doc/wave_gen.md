@@ -1,8 +1,18 @@
-# Waveform generator (`wave_gen`)
+# Waveform generator and capture (`wave_gen`, `wave_cap`)
 
-Design notes for the arbitrary-waveform DAC source: the core `designs/ip/rtl/wave_gen.v` and its two bus wrappers,
-`axi_wave_gen.v` (full AXI4) and `axil_wave_gen.v` (AXI4-Lite with control registers). Testbenches:
-`designs/ip/tb/axi_wave_gen`, `designs/ip/tb/axil_wave_gen`.
+Design notes for the arbitrary-waveform DAC source and the matching ADC capture, which share one banked memory.
+Modules in `designs/ip/rtl/`:
+
+| Module | Role |
+|---|---|
+| `banked_mem.v` | the banks; port A: bus side, byte addressed, address-mapped writes (with strobes) and reads; port B: one row per clock, read or write |
+| `axi4_mem_port.v` | AXI4 memory slave (INCR/FIXED/WRAP bursts, narrow transfers, reads) driving port A |
+| `wave_gen.v` | `banked_mem` + playback (port B reads rows to `m_axis`) |
+| `wave_cap.v` | `banked_mem` + capture (port B writes rows from `s_axis`) |
+| `axi_wave_gen.v`, `axi_wave_cap.v` | `axi4_mem_port` + core |
+| `axil_wave_gen.v` | AXI4-Lite wrapper with control registers + `wave_gen` |
+
+Testbenches: `designs/ip/tb/axi_wave_gen`, `axil_wave_gen`, `axi_wave_cap`.
 
 ## Widths and clocks
 
@@ -134,14 +144,52 @@ not needed for loading. Not covered by `base`: the stalled-stream case (`adc_cap
 4-to-5 lane mapping (64-bit bus, 256-bit output); both are covered by the testbenches and remain to be seen on
 `mimo_mts_5g`.
 
-## Planned: the same memory for ADC capture
+## Hardware test on `mimo_mts_5g`
+
+ZCU208 with 8 DAC-to-ADC loopback cables, `mimo_mts_5g` with all 17 captures on `axi_wave_cap` (8 November 2026,
+`mimo_mts/tests/test_mimo5g.py` and `doc/zcu208/mimo_mts_5g.ipynb`):
+
+- DAC copy (generator → 160-bit broadcast stream → 2:1 converter → `axi_wave_cap`) bit-exact from row 0, i.e. from
+  the trigger; capture-done interrupt every trigger (0.1 s).
+- ADC captures gap-free: phase continuity of a 200 MHz tone within 0.2–0.3° over the full 8.2 µs on all 8 channels,
+  with the tone from the DAC NCO and from the generator.
+- Loopback latency 205.6 ns on all channels; carrier-phase skew vs ADC0 −10 to −45 ps (ADC7 −110 ps), repeatable to
+  ≤0.7 ps over captures and identical between two bitstreams (cables and channels).
+- No CPU stall while rewriting the waveform during playback (slowest write 87 µs); capture counters one per trigger;
+  generator busy 0.02 % of the time (16.4 µs per 0.1 s trigger). `test_mimo5g.py --repeat 3 --nco`: 52/52 passed.
+
+The first builds showed a phase step in half the captures and random DAC-capture offsets. The debug status added to
+`axil_wave_gen` (tready, tvalid, play row) traced it to the `wave_length = 0` bug below, not to the stream or the
+captures.
+
+## ADC capture (`wave_cap`)
 
 The 5 GSPS ADC path has the mirror-image problem: the RFDC delivers 160 bits at 500 MHz, and the CPU reads through a
 power-of-two AXI port. `mimo_mts_5g` converts 20 → 32 bytes in an `axis_dwidth_converter` at 500 MHz, a non-integer
-ratio that fails timing, and then captures 256 bits at 250 MHz (64 Gb/s), less than the 80 Gb/s from the ADC. With
-the banked memory, the stream is converted 2:1 to 320 bits at 250 MHz (exactly 80 Gb/s), each row is written to all
-five banks at once, and the CPU reads it through the same address mapping (`wave_gen` port A read-back). Plan:
-[development_plan.md](development_plan.md), item 2.
+ratio that fails timing, and then captures 256 bits at 250 MHz (64 Gb/s), less than the 80 Gb/s from the ADC.
+
+`wave_cap` uses the same banked memory in the other direction. The stream is converted 2:1 to 320 bits at 250 MHz
+(an integer ratio, exactly 80 Gb/s) in front of it; each valid beat is written as one row to all five banks at once
+(port B), and the CPU reads the capture as a flat int16 array in sample order through the address mapping (port A),
+row r holding samples 20r to 20r + 19.
+
+Capture control, as `adc_capture` (same `axis_clk`, `axis_aresetn`, `s_axis`, `trigger`, `n_rows`, `write_done` ports in
+`axi_wave_cap`): on `trigger` (ignored while capturing) the next min(`n_rows`, DEPTH) valid beats go to rows 0, 1, …;
+`write_done` pulses after the last row; `n_rows` = 0 ignores the trigger; `s_axis_tready` is always 1. The first row
+is the beat one clock after the trigger. Unlike `adc_capture`, which advanced the address on every clock of its
+window, the row address advances only on valid beats, so a gap in `tvalid` leaves no hole (a testbench mutant of the
+old behaviour fails `test_capture_with_gaps`).
+
+Implementation (`axi_wave_cap`, 320-bit rows, DEPTH 2048, `RAM_STYLE = "block"`, xczu48dr-2, out of context, placed
+and routed at 250 MHz): 20 BRAM36, 1 DSP, about 1070 LUTs and 1900 registers; WNS +1.42 ns, worst path the row
+counter fanning out to the BRAM address pins (routing only; register it per bank if it gets tight in the overlay).
+
+In `mimo_mts_5g` (8 Nov 2026) all 17 capture paths (16 ADC streams and `hier_dac_cap`) use `axi_wave_cap` with
+`RAM_STYLE = "block"` and DEPTH 2048 (8.2 µs at 5 GSPS), replacing `adc_capture` + `blk_mem_gen` + `axi_bram_ctrl`,
+with a 20 → 40-byte converter in front. The overlay meets timing (WNS +0.072 ns at 500 MHz, +0.141 ns at 250 MHz;
+the 1 Aug build failed by −0.057 ns in a receiver converter): URAM 73 → 5, BRAM36 21.5 → 361.5, LUTs 95k → 57k. The
+tightest path is now the DAC broadcaster's register slice driving a DAC tile across the die, which the per-channel
+generators remove. On-board check: `mimo_mts/tests/test_mimo5g.py`.
 
 ## History: why the gearbox core hung the PS
 
@@ -158,6 +206,12 @@ testbench before the redesign:
    `ctrl_flush` was also tied to `enable`, flushing a partial row after every beat.
 4. **Back-pressure corrupted playback.** The RAM read and data pipeline advanced every cycle while the valid pipeline
    held, so data and valid slipped apart whenever `m_axis_tready` dropped.
+
+5. **`wave_length = 0` played forever** (found on `mimo_mts_5g`, November 2026, in the redesigned core too).
+   `rd_addr == rd_length - 1` is evaluated at 32 bits, so 0 − 1 is 0xFFFFFFFF and the 12-bit row address never
+   matches: the generator looped over the memory, kept `busy` set and ignored triggers. Symptoms: captures starting
+   at random rows, and a phase step at every wrap of a tone that is not periodic in the memory. Fixed by a last-row
+   index at the row-address width (`test_wave_length_zero_plays_full_depth_once`).
 
 Testbench cases for each: `test_read_completes`, `test_write_completes_while_stream_stalled`,
 `test_cpu_style_narrow_writes` (`axi_wave_gen`), `test_32bit_writes_shuffled` (`axil_wave_gen`) and

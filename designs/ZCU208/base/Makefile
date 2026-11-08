@@ -11,5 +11,6 @@ RTL_SRC    += $(RTL_DIR)/axil_csr.v
 RTL_SRC    += $(RTL_DIR)/pulse_gen.v
 RTL_SRC    += $(RTL_DIR)/axil_wave_gen.v
 RTL_SRC    += $(RTL_DIR)/wave_gen.v
+RTL_SRC    += $(RTL_DIR)/banked_mem.v
 
 include $(SCRIPT_DIR)/common.mk
