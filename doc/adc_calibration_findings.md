@@ -162,6 +162,10 @@ Same procedure through the LBL analog front end (`ALS_LLRF_LBL208`, CI overlay f
 - From the first overlay reload on, the carrier was -56 to -65 dBFS, below the -40 dBFS GCB/TSCB need. Steps 5-10
   ran at -37 dBFS (marginal) and reached about -65 dBc image level, against -80 to -85 dBc on the ZCU208 at -29 dBFS.
 - The `FrontendControl` driver now sets all RX attenuators to 31.5 dB on every overlay load (known, safe state).
+- Front-end channel mapping (run 2, step 3b): the loopback on **ADC7** is controlled by **slice 4, attenuators 0/1**,
+  which `doc/lbl208/als_llrf_mts_ffe.ipynb` maps to ADC0. The board appears to have a **reversed** ADC-to-slice
+  mapping (front-end channel n feeding ADC 7-n); one loopback cannot prove the full pattern. Nothing in `mimo_mts`
+  uses the per-ADC map yet; any per-channel attenuation (driver helper, IOC PV) must use the verified mapping.
 
 **Training level.** GCB/TSCB estimate the mismatch from the input signal and stop working below -40 dBFS (PG269). The
 data are consistent with a level dependence (ZCU208 at -29 dBFS: -81 to -85 dBc; LBL208 at -37 dBFS: about -65 dBc;
