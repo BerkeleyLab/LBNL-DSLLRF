@@ -1,5 +1,9 @@
 //-----------------------------------------------------------------------------
-// Wrapper with full AXI4 write interface and AXI-Stream output
+// Wrapper with a full AXI4 slave (memory-mapped waveform buffer) and AXI-Stream output
+//
+// The slave behaves like a memory, as axi_bram_ctrl does: INCR, FIXED and WRAP bursts, narrow transfers and WSTRB
+// are supported, and reads return the stored data. One transaction is processed at a time (writes first). The
+// slave never waits on playback, so the PS cannot hang on it. See doc/wave_gen.md.
 //-----------------------------------------------------------------------------
 
 module axi_wave_gen #(
@@ -41,7 +45,7 @@ module axi_wave_gen #(
     output wire                           s_axi_bvalid,
     input  wire                           s_axi_bready,
 
-    // AXI4 Read Address Channel (stub - no read support)
+    // AXI4 Read Address Channel
     input  wire [AXI_ID_WIDTH-1:0]        s_axi_arid,
     input  wire [AXI_ADDR_WIDTH-1:0]      s_axi_araddr,
     input  wire [7:0]                     s_axi_arlen,
@@ -50,7 +54,7 @@ module axi_wave_gen #(
     input  wire                           s_axi_arvalid,
     output wire                           s_axi_arready,
 
-    // AXI4 Read Data Channel (stub)
+    // AXI4 Read Data Channel
     output wire [AXI_ID_WIDTH-1:0]        s_axi_rid,
     output wire [AXI_DATA_WIDTH-1:0]      s_axi_rdata,
     output wire [1:0]                     s_axi_rresp,
@@ -61,7 +65,6 @@ module axi_wave_gen #(
     // Control Interface
     input  wire                           ctrl_trigger,
     input  wire [$clog2(BANK_DEPTH)-1:0]  ctrl_wave_length,
-    input  wire                           ctrl_flush,
     output wire                           ctrl_busy,
 
     // AXI-Stream Master Output
@@ -76,109 +79,137 @@ module axi_wave_gen #(
     //-------------------------------------------------------------------------
 
     localparam SAMPLE_ADDR_WIDTH = $clog2(BANK_DEPTH);
+    localparam CORE_ADDR_WIDTH   = SAMPLE_ADDR_WIDTH + $clog2(OUT_DATA_WIDTH/8);
     localparam AXI_BYTES         = AXI_DATA_WIDTH / 8;
 
     //-------------------------------------------------------------------------
-    // AXI Write State Machine
+    // Transaction state machine
     //-------------------------------------------------------------------------
 
-    localparam [1:0] WR_IDLE     = 2'b00;
-    localparam [1:0] WR_DATA     = 2'b01;
-    localparam [1:0] WR_RESP     = 2'b10;
+    localparam [2:0] ST_IDLE    = 3'd0;
+    localparam [2:0] ST_WDATA   = 3'd1;
+    localparam [2:0] ST_WRESP   = 3'd2;
+    localparam [2:0] ST_RISSUE  = 3'd3;
+    localparam [2:0] ST_RWAIT   = 3'd4;
+    localparam [2:0] ST_RDATA   = 3'd5;
 
-    reg [1:0]                   wr_state;
-    reg [AXI_ID_WIDTH-1:0]      wr_id;
-    reg [AXI_ADDR_WIDTH-1:0]    wr_addr;
-    reg [7:0]                   wr_len;
-    reg [7:0]                   wr_count;
-    reg [2:0]                   wr_size;
-    reg [1:0]                   wr_burst;
+    reg [2:0]                   state;
+    reg [AXI_ID_WIDTH-1:0]      t_id;
+    reg [AXI_ADDR_WIDTH-1:0]    t_addr;
+    reg [7:0]                   t_len;
+    reg [7:0]                   t_count;
+    reg [2:0]                   t_size;
+    reg [1:0]                   t_burst;
+    reg [AXI_DATA_WIDTH-1:0]    r_data;
 
-    // Internal write interface to waveform generator
-    wire                        int_wr_en;
-    wire [AXI_ADDR_WIDTH-1:0]   int_wr_addr;
-    wire [AXI_DATA_WIDTH-1:0]   int_wr_data;
-    wire [AXI_DATA_WIDTH/8-1:0] int_wr_strb;
-    wire                        int_wr_ready;
+    wire                        core_rd_valid;
+    wire [AXI_DATA_WIDTH-1:0]   core_rd_data;
 
-    // AXI Write Channel Outputs
-    assign s_axi_awready = (wr_state == WR_IDLE);
-    assign s_axi_wready  = (wr_state == WR_DATA) && int_wr_ready;
-    assign s_axi_bid     = wr_id;
-    assign s_axi_bresp   = 2'b00;  // OKAY
-    assign s_axi_bvalid  = (wr_state == WR_RESP);
-
-    // Read channel stub (no read support)
-    assign s_axi_arready = 1'b0;
-    assign s_axi_rid     = {AXI_ID_WIDTH{1'b0}};
-    assign s_axi_rdata   = {AXI_DATA_WIDTH{1'b0}};
-    assign s_axi_rresp   = 2'b00;
-    assign s_axi_rlast   = 1'b0;
-    assign s_axi_rvalid  = 1'b0;
-
-    // Internal write signals
-    assign int_wr_en   = (wr_state == WR_DATA) && s_axi_wvalid && int_wr_ready;
-    assign int_wr_addr = wr_addr;
-    assign int_wr_data = s_axi_wdata;
-    assign int_wr_strb = s_axi_wstrb;
-
-    // Calculate address increment based on burst type and size
+    // Address of the next beat (AXI4 A3.4.1): INCR/WRAP step from the size-aligned address; WRAP stays inside the
+    // (len+1) * 2**size aligned window; FIXED repeats the address.
     function automatic [AXI_ADDR_WIDTH-1:0] next_addr;
         input [AXI_ADDR_WIDTH-1:0] addr;
-        input [2:0] size;
-        input [1:0] burst;
+        input [2:0]                size;
+        input [1:0]                burst;
+        input [7:0]                len;
+        reg   [AXI_ADDR_WIDTH-1:0] incr, aligned, wrap_mask;
         begin
+            incr      = {{(AXI_ADDR_WIDTH-1){1'b0}}, 1'b1} << size;
+            aligned   = addr & ~(incr - 1'b1);
+            wrap_mask = ({{(AXI_ADDR_WIDTH-9){1'b0}}, ({1'b0, len} + 9'd1)} << size) - 1'b1;
             case (burst)
-                2'b00: next_addr = addr;                           // FIXED
-                2'b01: next_addr = addr + (1 << size);             // INCR
-                2'b10: next_addr = addr + (1 << size);             // WRAP (simplified)
-                default: next_addr = addr;
+                2'b01:   next_addr = aligned + incr;                                            // INCR
+                2'b10:   next_addr = (addr & ~wrap_mask) | ((aligned + incr) & wrap_mask);     // WRAP
+                default: next_addr = addr;                                                      // FIXED
             endcase
         end
     endfunction
 
-    // Write state machine
-    always @(posedge clk or negedge rst_n) begin
+    wire aw_take = (state == ST_IDLE) && s_axi_awvalid;
+    wire ar_take = (state == ST_IDLE) && !s_axi_awvalid && s_axi_arvalid;
+    wire w_beat  = (state == ST_WDATA) && s_axi_wvalid;
+    wire w_last  = (t_count == t_len);
+    wire r_beat  = (state == ST_RDATA) && s_axi_rready;
+    wire r_last  = (t_count == t_len);
+
+    assign s_axi_awready = (state == ST_IDLE);
+    assign s_axi_wready  = (state == ST_WDATA);
+    assign s_axi_bid     = t_id;
+    assign s_axi_bresp   = 2'b00;  // OKAY
+    assign s_axi_bvalid  = (state == ST_WRESP);
+
+    assign s_axi_arready = (state == ST_IDLE) && !s_axi_awvalid;
+    assign s_axi_rid     = t_id;
+    assign s_axi_rdata   = r_data;
+    assign s_axi_rresp   = 2'b00;  // OKAY
+    assign s_axi_rlast   = (state == ST_RDATA) && r_last;
+    assign s_axi_rvalid  = (state == ST_RDATA);
+
+    always @(posedge clk) begin
         if (!rst_n) begin
-            wr_state <= WR_IDLE;
-            wr_id    <= {AXI_ID_WIDTH{1'b0}};
-            wr_addr  <= {AXI_ADDR_WIDTH{1'b0}};
-            wr_len   <= 8'd0;
-            wr_count <= 8'd0;
-            wr_size  <= 3'd0;
-            wr_burst <= 2'd0;
+            state   <= ST_IDLE;
+            t_id    <= {AXI_ID_WIDTH{1'b0}};
+            t_addr  <= {AXI_ADDR_WIDTH{1'b0}};
+            t_len   <= 8'd0;
+            t_count <= 8'd0;
+            t_size  <= 3'd0;
+            t_burst <= 2'd0;
+            r_data  <= {AXI_DATA_WIDTH{1'b0}};
         end else begin
-            case (wr_state)
-                WR_IDLE: begin
-                    if (s_axi_awvalid && s_axi_awready) begin
-                        wr_state <= WR_DATA;
-                        wr_id    <= s_axi_awid;
-                        wr_addr  <= s_axi_awaddr;
-                        wr_len   <= s_axi_awlen;
-                        wr_count <= 8'd0;
-                        wr_size  <= s_axi_awsize;
-                        wr_burst <= s_axi_awburst;
+            case (state)
+                ST_IDLE: begin
+                    t_count <= 8'd0;
+                    if (aw_take) begin
+                        state   <= ST_WDATA;
+                        t_id    <= s_axi_awid;
+                        t_addr  <= s_axi_awaddr;
+                        t_len   <= s_axi_awlen;
+                        t_size  <= s_axi_awsize;
+                        t_burst <= s_axi_awburst;
+                    end else if (ar_take) begin
+                        state   <= ST_RISSUE;
+                        t_id    <= s_axi_arid;
+                        t_addr  <= s_axi_araddr;
+                        t_len   <= s_axi_arlen;
+                        t_size  <= s_axi_arsize;
+                        t_burst <= s_axi_arburst;
                     end
                 end
 
-                WR_DATA: begin
-                    if (s_axi_wvalid && s_axi_wready) begin
-                        wr_addr  <= next_addr(wr_addr, wr_size, wr_burst);
-                        wr_count <= wr_count + 1;
+                ST_WDATA: begin
+                    if (w_beat) begin
+                        t_addr  <= next_addr(t_addr, t_size, t_burst, t_len);
+                        t_count <= t_count + 8'd1;
+                        if (w_last) state <= ST_WRESP;   // WLAST is not needed: AWLEN defines the burst
+                    end
+                end
 
-                        if (s_axi_wlast || (wr_count == wr_len)) begin
-                            wr_state <= WR_RESP;
+                ST_WRESP: begin
+                    if (s_axi_bready) state <= ST_IDLE;
+                end
+
+                ST_RISSUE: state <= ST_RWAIT;
+
+                ST_RWAIT: begin
+                    if (core_rd_valid) begin
+                        r_data <= core_rd_data;
+                        state  <= ST_RDATA;
+                    end
+                end
+
+                ST_RDATA: begin
+                    if (r_beat) begin
+                        if (r_last) begin
+                            state <= ST_IDLE;
+                        end else begin
+                            t_addr  <= next_addr(t_addr, t_size, t_burst, t_len);
+                            t_count <= t_count + 8'd1;
+                            state   <= ST_RISSUE;
                         end
                     end
                 end
 
-                WR_RESP: begin
-                    if (s_axi_bvalid && s_axi_bready) begin
-                        wr_state <= WR_IDLE;
-                    end
-                end
-
-                default: wr_state <= WR_IDLE;
+                default: state <= ST_IDLE;
             endcase
         end
     end
@@ -198,15 +229,18 @@ module axi_wave_gen #(
         .clk            (clk),
         .rst_n          (rst_n),
 
-        .axi_wr_en      (int_wr_en),
-        .axi_wr_addr    (int_wr_addr),
-        .axi_wr_data    (int_wr_data),
-        .axi_wr_strb    (int_wr_strb),
-        .axi_wr_ready   (int_wr_ready),
+        .axi_wr_en      (w_beat),
+        .axi_wr_addr    (t_addr[CORE_ADDR_WIDTH-1:0]),
+        .axi_wr_data    (s_axi_wdata),
+        .axi_wr_strb    (s_axi_wstrb),
+        .axi_wr_ready   (),
+        .axi_rd_en      (state == ST_RISSUE),
+        .axi_rd_addr    (t_addr[CORE_ADDR_WIDTH-1:0]),
+        .axi_rd_data    (core_rd_data),
+        .axi_rd_valid   (core_rd_valid),
 
         .trigger        (ctrl_trigger),
         .wave_length    (ctrl_wave_length),
-        .flush_wr       (ctrl_flush),
         .busy           (ctrl_busy),
 
         .m_axis_tdata   (m_axis_tdata),
@@ -214,5 +248,10 @@ module axi_wave_gen #(
         .m_axis_tlast   (m_axis_tlast),
         .m_axis_tready  (m_axis_tready)
     );
+
+    initial begin
+        if (AXI_ADDR_WIDTH < CORE_ADDR_WIDTH)
+            $error("AXI_ADDR_WIDTH must cover the waveform memory (%0d bits)", CORE_ADDR_WIDTH);
+    end
 
 endmodule

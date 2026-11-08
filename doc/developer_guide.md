@@ -39,9 +39,9 @@ sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc   # entry points in pyproject.tom
 `mimo_mts/tests/*.py` are on-board scripts (argparse `main()`), not pytest tests; they need real hardware. The RTL
 testbenches under `designs/ip/tb` are the CI-run tests.
 
-CI (`.gitlab-ci.yml`): lint always; `rtl_test` only when `designs/ip/**` changes; synthesis jobs only when RTL, xdc or
-tcl files change. Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` to skip the ruff-migration commit in
-`git blame`.
+CI (`.gitlab-ci.yml`): lint always; `rtl_test` only when `designs/ip/**` changes; synthesis jobs (currently disabled as
+hidden `.bitfile_synthesis_*` jobs) only when RTL, xdc or tcl files change. Run `git config blame.ignoreRevsFile
+.git-blame-ignore-revs` to skip the ruff-migration commit in `git blame`.
 
 ## Editor and static analysis
 

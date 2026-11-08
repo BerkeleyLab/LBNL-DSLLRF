@@ -78,10 +78,10 @@ module axil_wave_gen #(
 
     // Register address map (each register occupies one AXI-data-width
     // aligned word, i.e. register index = addr[ADDR_LSB +: 2]):
-    // index 0: Control Register (trigger, flush)
+    // index 0: Control Register (bit 0 trigger, bit 1 reserved, bit 2 trigger_mode)
     // index 1: Wave Length Register
     // index 2: Status Register (busy)
-    // index 3 and above: Waveform data memory (write-only)
+    // index 3 and above: Waveform data memory (write-only; any size/order, see doc/wave_gen.md)
     localparam [1:0] ADDR_CTRL   = 2'h0;
     localparam [1:0] ADDR_LENGTH = 2'h1;
     localparam [1:0] ADDR_STATUS = 2'h2;
@@ -91,9 +91,9 @@ module axil_wave_gen #(
     // Write State Machine States
     //-------------------------------------------------------------------------
     // WR_IDLE : waiting for both address and data phases to complete
-    // WR_PROC : address+data captured; for waveform writes wait for wave_gen
-    //           to accept (int_wr_ready); for control writes this state is
-    //           skipped in the same cycle the write is performed
+    // WR_PROC : address+data captured; waveform writes are handed to wave_gen,
+    //           which always accepts them (int_wr_ready = 1, no stall); for
+    //           control writes this state is skipped
     // WR_RESP : drive bvalid/bresp until master asserts bready
 
     localparam [1:0] WR_IDLE = 2'b00;
@@ -130,7 +130,6 @@ module axil_wave_gen #(
     reg ctrl_trigger;
     reg ctrl_trigger_mode;
     reg [SAMPLE_ADDR_WIDTH-1:0] ctrl_wave_length;
-    reg ctrl_flush;
     wire ctrl_busy;
 
     // Write interface to wave_gen
@@ -306,7 +305,7 @@ module axil_wave_gen #(
                 // Decode address and read appropriate register
                 case (axi_araddr[ADDR_LSB+:2])
                     ADDR_CTRL: begin
-                        axi_rdata <= {{C_S_AXI_DATA_WIDTH-3{1'b0}}, ctrl_trigger_mode, ctrl_flush, ctrl_trigger};
+                        axi_rdata <= {{C_S_AXI_DATA_WIDTH-3{1'b0}}, ctrl_trigger_mode, 1'b0, ctrl_trigger};
                     end
                     ADDR_LENGTH: begin
                         axi_rdata <= {{C_S_AXI_DATA_WIDTH-SAMPLE_ADDR_WIDTH{1'b0}}, ctrl_wave_length};
@@ -335,11 +334,9 @@ module axil_wave_gen #(
             ctrl_trigger <= 1'b0;
             ctrl_trigger_mode <= 1'b0;
             ctrl_wave_length <= {SAMPLE_ADDR_WIDTH{1'b0}};
-            ctrl_flush <= 1'b0;
         end else begin
-            // Auto-clear trigger and flush after one cycle
+            // Auto-clear trigger after one cycle
             ctrl_trigger <= 1'b0;
-            ctrl_flush <= 1'b0;
 
             // Perform the register write exactly once, on the cycle the
             // state machine decides this is a control-register write
@@ -347,10 +344,9 @@ module axil_wave_gen #(
             if (wr_state == WR_IDLE && wr_addr_valid && wr_data_valid && ~wr_is_waveform) begin
                 case (wr_addr[ADDR_LSB+:2])
                     ADDR_CTRL: begin
-                        // Bit 0: trigger, Bit 1: flush, Bit 2: trigger_mode
+                        // Bit 0: trigger, Bit 2: trigger_mode (bit 1 reserved)
                         if (wr_strb[0]) begin
                             ctrl_trigger <= wr_data[0];
-                            ctrl_flush <= wr_data[1];
                             ctrl_trigger_mode <= wr_data[2];
                         end
                     end
@@ -389,11 +385,14 @@ module axil_wave_gen #(
         .axi_wr_data(int_wr_data),
         .axi_wr_strb(int_wr_strb),
         .axi_wr_ready(int_wr_ready),
+        .axi_rd_en(1'b0),
+        .axi_rd_addr({AXI_ADDR_WIDTH{1'b0}}),
+        .axi_rd_data(),
+        .axi_rd_valid(),
 
         // Control interface
         .trigger(ctrl_trigger_mode ? trigger : ctrl_trigger),
         .wave_length(ctrl_wave_length),
-        .flush_wr(ctrl_flush),
         .busy(ctrl_busy),
 
         // Output AXI-Stream
