@@ -64,20 +64,35 @@ class AlsLlrfLBL208(MimoMtsIoc):
     def init_adc_cal(self):
         """
         ALS LLRF drives a 5 us pulse at 6 x f_ref (~2998 MHz = 3 Fs/4, with Fs = 8 x f_ref and
-        f_ref = 499.64 MHz). The pulse is shorter than the ~7 us freeze/resume
-        time and the ADC input is below -40 dBFS between pulses, so GCB/TSCB cannot track it (PG269).
-        Instead, coefficients trained once with a CW signal are restored and frozen at every start.
-        Train and save with the adc_cal:* PVs or ``ol.adc_cal`` (see doc/zcu208/adc_calibration.ipynb).
+        f_ref = 499.64 MHz). At this ratio the gain/time-skew interleaving image folds onto the carrier, so any
+        calibration error is a carrier phase error, and GCB/TSCB cannot track the pulse (it ruins the calibration).
+        Boot sequence (doc/adc_calibration_findings.md, "Boot options"): freeze, re-run the foreground calibration
+        with the input muted (``restart_adc_tiles()``; TSCB stays frozen near zero), then restore GCB/TSCB from the
+        board's calibration file if there is one. Train and save with the adc_cal:* PVs or ``ol.adc_cal``
+        (see doc/lbl208/adc_calibration.ipynb).
         """
+        self.ol.adc_cal.freeze()
+        self._restart_adc_tiles_muted()
         if not self.adc_cal_file.exists():
-            # Tracking on the pulse pattern degrades the image by ~30 dB within minutes (ZCU208 test),
-            # so freeze at the startup values rather than leave it tracking.
-            self.ol.adc_cal.freeze()
-            self.adc_cal_status = f"no {self.adc_cal_file}; frozen at startup values"
+            self.adc_cal_status = f"no {self.adc_cal_file}; frozen after tile restart"
             logger.warning("ADC calibration: %s", self.adc_cal_status)
             return
         self.restore_adc_cal()
         logger.info("ADC calibration: %s", self.adc_cal_status)
+
+    def _restart_adc_tiles_muted(self):
+        """
+        Run ``restart_adc_tiles()`` with the DAC drive disabled. The RX attenuators are already at 31.5 dB: the
+        FrontendControl driver sets them on every overlay load, and init_adc_cal() runs right after the load.
+        Signals not driven by this board (e.g. the master-oscillator reference) are only attenuated, not removed.
+        """
+        dac_enable = self.llrf_register_map.dac_enable
+        enabled = int(dac_enable.dac_enable)
+        dac_enable.dac_enable = 0
+        try:
+            self.ol.restart_adc_tiles()
+        finally:
+            dac_enable.dac_enable = enabled
 
     def create_ioc(self):
         super().create_ioc()
