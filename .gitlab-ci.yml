@@ -62,8 +62,8 @@ pv_docs:
         - designs/ip/rtl/*.json
         - pyproject.toml
 
-# ZCU216 overlay synthesis is disabled for now (a leading dot makes a job hidden; remove it to re-enable the job).
-.bitfile_synthesis_zcu216:
+# ZCU216 overlays: built when their RTL, constraints, block design or Makefile change, and on every tag.
+bitfile_synthesis_zcu216:
   before_script:
     - cd designs/ZCU216/${OVERLAY}
   stage: synthesis
@@ -75,10 +75,12 @@ pv_docs:
     - python3 designs/scripts/vivado_reports.py designs/ZCU216/${OVERLAY} -o designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}_report.json
       --junit designs/ZCU216/${OVERLAY}/_xilinx/${OVERLAY}_timing.xml || true
   rules:
+    - if: $CI_COMMIT_TAG
     - changes:
         - designs/ip/rtl/*
         - designs/ZCU216/*/*.xdc
         - designs/ZCU216/*/*.tcl
+        - designs/ZCU216/*/Makefile
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
     expire_in: 4 weeks
@@ -97,7 +99,7 @@ pv_docs:
       - OVERLAY: [mimo_mts]
 
 # ZCU208/LBL208 overlays: built when their RTL, constraints, block design or Makefile change, and on every tag
-# (for the release below). Other 208 overlays (mimo_mts, als_llrf_mts, config_evr) are built locally.
+# (for the release below). The matrix lists the overlays released for each board's IOCs; others are built locally.
 bitfile_synthesis_208:
   before_script:
     - cd designs/${BOARD}/${OVERLAY}
@@ -132,9 +134,9 @@ bitfile_synthesis_208:
   parallel:
     matrix:
       - BOARD: [ZCU208]
-        OVERLAY: [base, mimo_mts_5g, mimo_mts_iq]
+        OVERLAY: [mimo_mts, mimo_mts_5g]
       - BOARD: [LBL208]
-        OVERLAY: [base]
+        OVERLAY: [als_llrf_mts]
 
 # On a tag: publish the overlays built above as a GitLab release (files kept with the job, linked from the release).
 # Tag only after the synthesis jobs can pass, e.g. `git tag -a v2026.2 -m "..." && git push origin v2026.2`.
