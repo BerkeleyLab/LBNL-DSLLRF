@@ -184,9 +184,11 @@ proc run_synthesis {} {
     file mkdir $project_dir
 
     # Check if source file exists
-    if {![file exists $source_file]} {
-        puts "ERROR: Source file not found: $source_file"
-        exit 1
+    foreach f $source_file {
+        if {![file exists $f]} {
+            puts "ERROR: Source file not found: $f"
+            exit 1
+        }
     }
     if {![file exists $wrapper_file]} {
         puts "ERROR: Source file not found: $wrapper_file"

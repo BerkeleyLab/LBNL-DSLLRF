@@ -34,6 +34,24 @@
                 "bit_width": 1,
                 "access": "read-only",
                 "description": "Playback running"
+            },
+            "m_axis_tready": {
+                "bit_offset": 1,
+                "bit_width": 1,
+                "access": "read-only",
+                "description": "Debug: output stream tready"
+            },
+            "m_axis_tvalid": {
+                "bit_offset": 2,
+                "bit_width": 1,
+                "access": "read-only",
+                "description": "Debug: output stream tvalid"
+            },
+            "play_row": {
+                "bit_offset": 16,
+                "bit_width": 16,
+                "access": "read-only",
+                "description": "Debug: next row to read in the playback"
             }
         }
     },

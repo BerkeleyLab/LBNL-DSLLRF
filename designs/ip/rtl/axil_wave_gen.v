@@ -133,6 +133,7 @@ module axil_wave_gen #(
     wire ctrl_busy;
 
     // Write interface to wave_gen
+    wire [SAMPLE_ADDR_WIDTH-1:0] play_row;
     wire int_wr_en;
     wire [AXI_ADDR_WIDTH-1:0] int_wr_addr;
     wire [AXI_DATA_WIDTH-1:0] int_wr_data;
@@ -311,7 +312,9 @@ module axil_wave_gen #(
                         axi_rdata <= {{C_S_AXI_DATA_WIDTH-SAMPLE_ADDR_WIDTH{1'b0}}, ctrl_wave_length};
                     end
                     ADDR_STATUS: begin
-                        axi_rdata <= {{C_S_AXI_DATA_WIDTH-1{1'b0}}, ctrl_busy};
+                        // bit 0 busy; debug: bit 1 m_axis_tready, bit 2 m_axis_tvalid, bits 16+ play_row
+                        axi_rdata <= {{C_S_AXI_DATA_WIDTH-16-SAMPLE_ADDR_WIDTH{1'b0}}, play_row,
+                                      13'b0, m_axis_tvalid, m_axis_tready, ctrl_busy};
                     end
                     default: begin
                         axi_rdata <= {C_S_AXI_DATA_WIDTH{1'b0}};
@@ -394,6 +397,7 @@ module axil_wave_gen #(
         .trigger(ctrl_trigger_mode ? trigger : ctrl_trigger),
         .wave_length(ctrl_wave_length),
         .busy(ctrl_busy),
+        .play_row(play_row),
 
         // Output AXI-Stream
         .m_axis_tdata(m_axis_tdata),

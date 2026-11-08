@@ -1,7 +1,7 @@
 include ../../../../../dir_list.mk
 
 VERILOG_WRAPPER = $(RTL_DIR)/axi_wave_gen.v
-VERILOG_SOURCE  = $(RTL_DIR)/wave_gen.v
+VERILOG_SOURCE  = $(RTL_DIR)/wave_gen.v $(RTL_DIR)/banked_mem.v $(RTL_DIR)/axi4_mem_port.v
 
 .PHONY: all clean
 
@@ -18,7 +18,7 @@ all: $(VERILOG_SOURCE) $(VERILOG_WRAPPER)
 	-axi_width $(AXI_DATA_WIDTH) -out_width $(OUT_DATA_WIDTH) \
 	-granule $(GRANULE) -bank_depth $(BANK_DEPTH) \
 	-read_latency $(READ_LATENCY) -ram_style $(RAM_STYLE) \
-	-source_file $(VERILOG_SOURCE) -wrapper_file $(VERILOG_WRAPPER)
+	-source_file "$(VERILOG_SOURCE)" -wrapper_file $(VERILOG_WRAPPER)
 
 clean:
 	rm -rf vivado_synth vivado*.log vivado*.jou

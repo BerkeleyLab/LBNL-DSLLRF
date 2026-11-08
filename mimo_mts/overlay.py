@@ -1,5 +1,6 @@
 import functools
 import logging
+import time
 from pathlib import Path
 from pprint import pformat
 
@@ -228,15 +229,22 @@ class MimoMtsOverlay(Overlay):
         elif hasattr(self, "wave_gen"):
             self.dac_player = self.wave_gen.wave_mem
 
-        if "transmitter/hier_dac_cap/axi_bram_ctrl_0" in self.mem_dict:
-            self.dac_capture = self._memdict_to_view("transmitter/hier_dac_cap/axi_bram_ctrl_0")
+        if self._has_capture("transmitter/hier_dac_cap"):
+            self.dac_capture = self._capture_view("transmitter/hier_dac_cap")
 
         adc_streams = {xrfdc.MIXER_MODE_R2C: [0, 1, 2, 3], xrfdc.MIXER_MODE_C2C: [0, 1]}
 
         self.adc_bufs = []
         for tile in range(self.board.num_adc_tiles):
             for i in adc_streams[self.adc_mixer_mode]:
-                self.adc_bufs.append(self._memdict_to_view(f"receiver/m{tile}{i}/axi_bram_ctrl_0"))
+                self.adc_bufs.append(self._capture_view(f"receiver/m{tile}{i}"))
+
+        # Control/status registers of the banked captures (axi_wave_cap), last 32-bit word of each AXI window
+        self._capture_csrs = [
+            MMIO(info["phys_addr"] + info["addr_range"] - 32, 4)
+            for path, info in self.ip_dict.items()
+            if path.endswith("/axi_wave_cap_0")
+        ]
 
     def _initialize_mts(self):
         """
@@ -293,6 +301,66 @@ class MimoMtsOverlay(Overlay):
                 self.rfdc.adc_tiles[tile].Reset()
         self._initialize_mts()
         self._initialize_mixers()
+
+    # Banked-capture control (axi_wave_cap CSR: bit 0 oneshot, bit 1 arm/armed, bit 2 done, bits 31:16 count)
+    # The CSR exists from mimo_mts_5g build b751729 on; on older axi_wave_cap bitstreams these reads return junk.
+
+    def _require_capture_csrs(self):
+        if not getattr(self, "_capture_csrs", None):
+            raise RuntimeError("no axi_wave_cap control register in this overlay (older bitstream?)")
+
+    @property
+    def capture_oneshot(self) -> bool:
+        """One-shot mode of all captures: capture once per arm_captures() instead of on every trigger."""
+        self._require_capture_csrs()
+        return bool(self._capture_csrs[0].read(0) & 1)
+
+    @capture_oneshot.setter
+    def capture_oneshot(self, value: bool):
+        self._require_capture_csrs()
+        for csr in self._capture_csrs:
+            csr.write(0, int(bool(value)))
+
+    def arm_captures(self):
+        """Arm every capture for one capture on the next trigger (one-shot mode)."""
+        self._require_capture_csrs()
+        for csr in self._capture_csrs:
+            csr.write(0, 0b11)
+
+    def capture_status(self):
+        """List of (oneshot, armed, done, count) per capture."""
+        self._require_capture_csrs()
+        out = []
+        for csr in self._capture_csrs:
+            v = csr.read(0)
+            out.append((bool(v & 1), bool(v & 2), bool(v & 4), v >> 16))
+        return out
+
+    def wait_captures(self, timeout_s=1.0):
+        """Wait until every armed capture is done; returns False on timeout (no trigger?)."""
+        t_end = time.monotonic() + timeout_s
+        while not all(done for _, _, done, _ in self.capture_status()):
+            if time.monotonic() > t_end:
+                return False
+            time.sleep(1e-3)
+        return True
+
+    def _has_capture(self, hier):
+        return f"{hier}/axi_bram_ctrl_0" in self.mem_dict or f"{hier}/axi_wave_cap_0" in self.ip_dict
+
+    def _capture_view(self, hier, dtype="int16"):
+        """
+        Capture buffer of hierarchy ``hier`` as a flat sample array: ``axi_bram_ctrl_0`` (mem_dict, adc_capture designs)
+        or ``axi_wave_cap_0`` (ip_dict, banked capture, doc/wave_gen.md). For axi_wave_cap the view covers the
+        DEPTH x ROW_WIDTH capture memory, not the whole (power-of-two) address window.
+        """
+        if f"{hier}/axi_bram_ctrl_0" in self.mem_dict:
+            return self._memdict_to_view(f"{hier}/axi_bram_ctrl_0", dtype)
+        info = self.ip_dict[f"{hier}/axi_wave_cap_0"]
+        params = info.get("parameters", {})
+        nbytes = int(params.get("DEPTH", 2048)) * int(params.get("ROW_WIDTH", 320)) // 8
+        mmio = MMIO(info["phys_addr"], info["addr_range"])
+        return mmio.array.view(np.uint8)[:nbytes].view(dtype)
 
     def _memdict_to_view(self, ip, dtype="int16"):
         """Configures access to internal memory via MMIO."""
