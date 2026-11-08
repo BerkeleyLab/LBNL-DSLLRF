@@ -1,12 +1,15 @@
-# RF-ADC interleaving calibration: ZCU208 findings
+# RF-ADC interleaving calibration: findings
 
-Hardware investigation for the ADC calibration support in `mimo_mts` (branch `feature/adc-interleaving-cal`,
-MR !37), November 2026. Notebooks with the raw outputs:
+How the RF-ADC interleaving calibration (PG269) behaves in the ALS LLRF configuration, and what that means for
+`mimo_mts` (`ol.adc_cal`, `drivers/adc_calibration.py`) and the IOCs. The calibration mechanics and the conclusions
+apply to any overlay and board using the RFSoC Gen 3 RF-ADC at the ALS clock ratio; the measurements are per board.
+Hardware investigation for MR !37, November 2026. Notebooks with the raw outputs:
 
-- `doc/zcu208/adc_calibration.ipynb`: calibration states, pulsed tracking, training at 3·Fs/4, restore tests.
-- `doc/zcu208/adc_reload_variability.ipynb`: load-to-load variability, tile restarts, clock re-programming.
+- `doc/zcu208/adc_calibration.ipynb`: ZCU208, calibration states, pulsed tracking, training at 3·Fs/4, restore tests.
+- `doc/zcu208/adc_reload_variability.ipynb`: ZCU208, load-to-load variability, tile restarts, clock re-programming.
+- `doc/lbl208/adc_calibration.ipynb`: LBL208 version, with the analog front end (see "LBL208" below).
 
-## Setup
+## Setup (ZCU208 measurements)
 
 - ZCU208, overlay `ALS_LLRF_ZCU208`: Fs = 4 GSPS, ADC NCO 3000 MHz in the 2nd Nyquist zone, RFDC decimation 8
   (captures at 500 MSPS, ±250 MHz).
@@ -147,6 +150,23 @@ findings:
      (`0x144 = 0xFF`). This matters only while the two LMXs use separate references; single-LMX clocking or the
      `_DIST` configuration (dividers /1, available on CLK104A) avoids it.
 4. Decide the boot policy for `AlsLlrfLBL208` from item 1.
+
+## LBL208
+
+Same procedure through the LBL analog front end (`ALS_LLRF_LBL208`, CI overlay from pipeline 19508). Run 1
+(`doc/lbl208/adc_calibration.ipynb` in commit c73a64e) is **not valid for the calibration questions**:
+
+- The loopback arrived on ADC7, but the front-end attenuators mapped to ADC7 (slice 7, attenuators 2/3, per
+  `doc/lbl208/als_llrf_mts_ffe.ipynb`) did not change its level; the path is apparently through other attenuators.
+  The notebook's step 3b now measures which attenuators are in the path.
+- From the first overlay reload on, the carrier was -56 to -65 dBFS, below the -40 dBFS GCB/TSCB need. Steps 5-10
+  ran at -37 dBFS (marginal) and reached about -65 dBc image level, against -80 to -85 dBc on the ZCU208 at -29 dBFS.
+- The `FrontendControl` driver now sets all RX attenuators to 31.5 dB on every overlay load (known, safe state).
+
+**Training level.** GCB/TSCB estimate the mismatch from the input signal and stop working below -40 dBFS (PG269). The
+data are consistent with a level dependence (ZCU208 at -29 dBFS: -81 to -85 dBc; LBL208 at -37 dBFS: about -65 dBc;
+below -40 dBFS: -34 to -44 dBc), but the boards differ, so this is not yet a clean comparison. Train at about -15 dBFS;
+a training-level sweep on one board (-40 to -10 dBFS) would quantify it.
 
 ## Pitfalls found on the way
 
