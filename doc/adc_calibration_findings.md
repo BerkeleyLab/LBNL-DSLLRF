@@ -42,8 +42,10 @@ Hardware investigation for MR !37, November 2026. Notebooks with the raw outputs
 Background calibration must be frozen during ALS operation. Calibration coefficients should be trained on an
 off-carrier CW tone (about 60 s) and frozen. GCB can be restored at boot, TSCB cannot, and the decisive test (LBL208
 run 2, step 15) showed that **restore-and-freeze does not reproduce the trained performance after a reboot**. Only
-retraining on an offset tone does; freeze + `restart_adc_tiles()` + restore is a consistent intermediate. The boot
-policy for `AlsLlrfLBL208` follows from the required precision and from whether a training tone is available at boot.
+retraining on an offset tone does; freeze + `restart_adc_tiles()` + restore is a consistent intermediate and is the
+boot policy now implemented in `AlsLlrfLBL208`. Against the ALS requirement of 0.1° phase stability it is marginal
+(see "Phase error budget"); the lasting fixes are a training (pilot) tone at boot or sampling at Fs = 10·f_ref, where
+the interleaving products no longer fall on the carrier.
 
 | Element | Status |
 |---|---|
@@ -57,8 +59,8 @@ Boot options for `AlsLlrfLBL208` (LBL208 run 2; error on the ALS carrier):
 | Boot sequence | Image | Carrier error | Needs |
 |---|---|---|---|
 | freeze at startup values | -36 to -60 dBc | up to 1.5 % / 0.9° | nothing |
-| restore and freeze (current code) | about the same | about the same | calibration file |
-| freeze → `restart_adc_tiles()` (input muted) → restore | -54 to -60 dBc | about 0.2 % / 0.1° | RF off at boot |
+| restore and freeze | about the same | about the same | calibration file |
+| freeze → `restart_adc_tiles()` (input muted) → restore (**current code**) | -54 to -60 dBc | about 0.2 % / 0.1° | RF off at boot |
 | retrain ~60 s on an offset tone, then freeze | about -72 dBc | about 0.03 % / 0.015° | training tone at boot |
 
 Why it matters at the ALS carrier: trained calibration (about -80 dBc) means about 0.01 % / 0.006° carrier error;
@@ -115,14 +117,89 @@ straight through.
 
 ## Policy for `AlsLlrfLBL208` (current code)
 
-Restore GCB/TSCB from the board's calibration file and freeze; without a file, freeze at startup values. Given the
-findings:
+`AlsLlrfLBL208.init_adc_cal()` runs right after the overlay load:
 
-- Freezing is required in all cases.
-- Freezing at startup values is the worst option (TSCB near its limits). Freezing and then running
-  `restart_adc_tiles()` gives TSCB near zero (about -55 dBc measured in a bad clock state).
-- Restoring helps GCB only. Good calibration needs about 60 s of training on an off-carrier tone after each boot,
-  which needs a way to inject such a tone in the installed system.
+1. Freeze GCB/TSCB on all channels.
+2. Disable the DAC drive (`dac_enable`) and run `restart_adc_tiles()`, which repeats the RF-ADC foreground
+   calibration. The RX attenuators are already at 31.5 dB (FrontendControl sets them on every load). The freeze
+   survives the tile reset, so TSCB stays frozen near zero instead of near its limits.
+3. Restore GCB/TSCB from the board's calibration file if there is one (only GCB takes effect) and stay frozen.
+
+Signals not driven by this board, such as the master-oscillator reference line, are only attenuated by the RX
+attenuators during step 2, not removed; PG269 asks for no input energy at k·Fs/N during foreground calibration. The
+LBL208 run 2 numbers for this sequence (-54 to -60 dBc) were measured with the CW tone *on* during the restart, so
+they are a pessimistic estimate; a re-run with the input muted is an open item.
+
+## Phase error budget (0.1° requirement)
+
+ALS LLRF needs 0.1° phase stability. Clock jitter is not the limit: the measured additive jitter of CLK104A plus
+RF-DAC is 43 fs RMS over [1 Hz, 1 MHz], i.e. 0.046° at 2998 MHz, and the intra-pulse band of a 5 µs pulse
+(about [200 kHz, 10 MHz], SSB phase noise -144.25 dBc/Hz at 1 MHz offset) integrates to much less.
+
+At Fs = 8·f_ref the gain/skew mismatch ε adds an image ε·x* exactly on the carrier. The measured phase becomes
+φ + |ε|·sin(2φ + θ): a detector nonlinearity of up to ±|ε| rad that changes with the carrier phase relative to the
+sample clock (e.g. reference-line drift, phase set-point changes). It does not cancel between the cavity and the
+reference channel because each ADC channel has its own ε. Peak error per image level:
+
+| Image | Peak phase error | Boot sequence giving it |
+|---|---|---|
+| -36 dBc | 0.9° | freeze at startup values (worst load) |
+| -54 dBc | 0.11° | freeze → restart → restore (worst load, input not muted) |
+| -60 dBc | 0.06° | freeze → restart → restore (best load) |
+| -72 dBc | 0.014° | retrain on an offset tone |
+
+The restart sequence is therefore marginal against 0.1° in the worst load measured so far; a phase sweep of the
+carrier (to see the full ±|ε| swing rather than one point) with a muted restart will settle it. Frozen coefficients
+do not follow temperature drift.
+
+## Alternative: sample at Fs = 10·f_ref (non-IQ)
+
+The fold onto the carrier is a property of the clock ratio: at Fs = 8·f_ref the carrier sits at 3·Fs/4 (IQ sampling)
+and every interleaving product lies on the Fs/8 grid, which includes the carrier. Products for the ALS carrier
+(6·f_ref) at the integer ratios within the 5 GSPS RF-ADC limit (8 sub-ADCs, products at k·Fs/8 and k·Fs/8 − f_in):
+
+| Fs | Carrier | Nearest offset spur | Nearest gain/skew image | Harmonics on the carrier | Decimation to f_ref |
+|---|---|---|---|---|---|
+| 8·f_ref = 3997.1 MSPS (now) | 3·Fs/4 | on the carrier | on the carrier | HD3, HD5 | ÷8 |
+| 9·f_ref = 4496.8 MSPS | 2·Fs/3 | 187 MHz away | 187 MHz away | HD2, HD4, HD5 | ÷9 not supported |
+| 10·f_ref = 4996.4 MSPS | 3·Fs/5 | 125 MHz away | 250 MHz away | HD4 | ÷10 (supported on Gen 3) |
+
+At **Fs = 10·f_ref** the residual interleaving errors become spurs 125 and 250 MHz from the carrier, which the
+`llrf_dsp` I/Q averager and the loop bandwidth reject (a 125 MHz tone averaged over 5 µs leaves about 10⁻³ of its
+amplitude). Calibration quality then sets only the SFDR, not the carrier phase, and even the untrained startup state
+would meet 0.1°. Decimation by 10 gives the same 499.64 MSPS output as ÷8 today, so the PL clocking, DSP and IOC
+timing are unchanged. Also: about 1 dB more SNR in the same bandwidth from the extra oversampling.
+
+What it does not change: tracking on pulses still corrupts the calibration (it did so with an off-carrier probe too),
+so calibration stays frozen in operation; HD4 still lands on the carrier, but it is static (amplitude-dependent, not
+boot-dependent); the LMX2594 ÷2 ambiguity remains (9992.8 MHz VCO ÷ 2).
+
+Costs: RFDC reconfiguration (ADC 4996.4 MSPS, ÷10) and rebuilt ALS overlays; for single-LMX clocking (OUTA/OUTB share
+the channel divider) the DAC also moves to 10·f_ref with ×10 interpolation (the carrier stays in the DAC's 2nd
+Nyquist zone, mix-mode; its image at 1998.6 MHz is outside the 3 GHz BPF); new LMX `.tcs` files and a SYSREF/MTS
+check (`MIMO5G_ZCU208` with `LMX2594_5G.tcs` is the starting point); 4996.4 MSPS is within 0.07 % of the RF-ADC
+maximum, so check the speed-grade limit and tile power. A first check needs no rebuild: on the existing 5 GSPS
+overlay, apply a tone at 3·Fs/5 and confirm the spurs 125 and 250 MHz away. The 5 GSPS work is item 2 of
+[development_plan.md](development_plan.md).
+
+## Training (pilot) tone at boot
+
+A tone injected through a directional coupler in front of each ADC (as for BPM pilot tones), driven by a spare DAC
+channel, allows retraining at every boot (about 60 s, then freeze), which gave -72 to -74 dBc on the LBL208.
+
+- **It is needed on every ADC channel whose phase matters.** Each RF-ADC channel is a separate interleaved converter
+  with its own offset, gain and time-skew mismatches, and GCB/TSCB/OCB coefficients are per channel (the calibration
+  file stores them per channel; images differed per channel and per load). Training coefficients cannot be copied from
+  one channel to another. At least the cavity probe(s) and the master-oscillator reference line, since cavity phase is
+  measured against it; forward/reflected channels if their phase is used. One DAC channel and a 1:N splitter can feed
+  all couplers; all channels train in parallel.
+- **Level and frequency.** GCB/TSCB need more than -40 dBFS at each ADC; size the coupler and splitter loss for it.
+  Use an offset frequency inside the 3 GHz BPF whose image is off the carrier, e.g. 2973 MHz (image 3027 MHz), as in
+  the tests. Training must not run with the 3·Fs/4 carrier present, so drive RF off during training.
+- **Later extension, drift tracking:** with a continuous pilot tone, calibration could track between pulses and be
+  frozen shortly before each pulse via the PL `cal_freeze` port (`DisableFreezePin = 0`, freeze takes about 7 µs),
+  timed from an EVR pre-trigger. This follows temperature drift but needs firmware and has not been tested.
+- At Fs = 10·f_ref the pilot tone is not needed for phase accuracy.
 
 ## Open items
 
@@ -159,7 +236,9 @@ findings:
    - **LMK04828 dividers:** in PLL2 mode the LMX references come from /5 DCLKout dividers excluded from SYNC
      (`0x144 = 0xFF`). This matters only while the two LMXs use separate references; single-LMX clocking or the
      `_DIST` configuration (dividers /1, available on CLK104A) avoids it.
-4. Decide the boot policy for `AlsLlrfLBL208` from item 1.
+4. Boot policy: done (freeze → muted `restart_adc_tiles()` → restore). To verify on the LBL208: repeat step 15 with
+   the DAC disabled during the restart, and sweep the carrier phase to measure the peak error against 0.1°.
+5. Longer term: pilot-tone injection for training at boot, or Fs = 10·f_ref (sections above).
 
 ## LBL208
 

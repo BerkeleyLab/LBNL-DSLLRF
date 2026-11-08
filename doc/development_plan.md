@@ -47,6 +47,11 @@ with the default 320-bit output, so moving from `base` to `mimo_mts_5g` also rai
 Both have testbenches (`designs/ip/tb/axi_wave_gen`, `axil_wave_gen`) with a synthesis check (`synth/`). 5 GSPS ADC
 and DAC sampling has already passed MTS on hardware with either wrapper.
 
+5 GSPS also matters for ALS LLRF: at Fs = 10·f_ref = 4996.4 MSPS the RF-ADC interleaving products move 125 and
+250 MHz away from the carrier instead of folding onto it at Fs = 8·f_ref, so the 0.1° phase requirement no longer
+depends on the interleaving calibration (`doc/adc_calibration_findings.md`, "Alternative: sample at Fs = 10·f_ref").
+A quick check on `mimo_mts_5g`: a tone at 3·Fs/5 should show those spurs and none on the tone.
+
 Note on the timing failure: the only local `mimo_mts_5g` build (1 Aug, before the last design change on 4 Aug) fails
 in the ADC receiver, not the waveform generator: `receiver/m32/axis_dwidth_converter_0` at 500 MHz, a high-fanout
 clock enable with 89 % routing delay (WNS -0.057 ns, 54 endpoints). Rebuild the current design before drawing
@@ -164,7 +169,9 @@ CLK104 configuration and the PS stay running, so MTS alignment and the ADC calib
 
 ## Related open work
 
-- ADC interleaving calibration (MR !37): restore-after-reboot test on LBL208 with single-LMX clocking.
+- ADC interleaving calibration (MR !37): `AlsLlrfLBL208` now freezes, restarts the ADC tiles with the DAC disabled
+  and restores. Verify on the LBL208 (step 15 with a muted restart, plus a carrier-phase sweep against 0.1°).
+  Longer term: pilot-tone injection (one spare DAC, splitter, a coupler per phase-critical ADC) for training at boot.
 - LBL208 analog front end: the ADC-to-RX-slice mapping is apparently reversed on the hardware (loopback on ADC7 is
   controlled by slice 4, attenuators 0/1, which `doc/lbl208/als_llrf_mts_ffe.ipynb` maps to ADC0). Verify all channels,
   fix the map, and add a per-ADC attenuation helper to `FrontendControl` (and IOC PVs) that uses the verified
