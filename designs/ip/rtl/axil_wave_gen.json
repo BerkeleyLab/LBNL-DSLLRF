@@ -10,12 +10,6 @@
                 "access": "read-write",
                 "description": "Trigger waveform output"
             },
-            "flush": {
-                "bit_offset": 1,
-                "bit_width": 1,
-                "access": "read-write",
-                "description": "Flush write accumulator"
-            },
             "trigger_mode": {
                 "bit_offset": 2,
                 "bit_width": 1,
@@ -28,7 +22,7 @@
         "address_offset": 8,
         "access": "read-write",
         "size": 64,
-        "description": "Number of samples to output on trigger"
+        "description": "Number of output words (OUT_DATA_WIDTH bits each) to play on trigger; 0 plays BANK_DEPTH words"
     },
     "status": {
         "address_offset": 16,
@@ -39,7 +33,7 @@
                 "bit_offset": 0,
                 "bit_width": 1,
                 "access": "read-only",
-                "description": "Generator is busy (reading or writing)"
+                "description": "Playback running"
             }
         }
     },
@@ -47,6 +41,6 @@
         "address_offset": 24,
         "size": 64,
         "access": "write-only",
-        "description": "Base address for waveform memory writes"
+        "description": "Base address of the waveform memory: a flat byte array in output order, any write size or order"
     }
 }

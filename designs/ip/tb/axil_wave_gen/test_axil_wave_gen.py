@@ -6,7 +6,7 @@ from pathlib import Path
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles, RisingEdge
+from cocotb.triggers import ClockCycles, RisingEdge, with_timeout
 from cocotbext.axi import AxiLiteBus, AxiLiteMaster, AxiStreamBus, AxiStreamSink
 
 
@@ -135,23 +135,9 @@ class AxilWaveGenTB:
 
         await self.write_waveform_data(data, address)
 
-    async def flush_and_wait(self, timeout_cycles=5000):
-        """Flush write accumulator and wait for completion"""
-        self.log.info("Flushing write accumulator...")
-
-        # Write flush bit to control register
-        await self.write_register(self.ADDR_CTRL, 0x2)  # Bit 1 = flush
-
-        # Wait for busy to clear
-        success = await self._wait_not_busy(timeout_cycles)
-        if not success:
-            # Debug: print state
-            status = await self.read_status()
-            self.log.error("Timeout waiting for flush completion")
-            self.log.error(f"  Status = 0x{status:08x}")
-        assert success, "Timeout waiting for flush completion"
-
-        self.log.info("Flush complete, DUT idle")
+    async def wait_idle(self, timeout_cycles=5000):
+        """Wait until playback is not running (writes need no flush)"""
+        assert await self._wait_not_busy(timeout_cycles), "Timeout waiting for idle"
 
     async def trigger_waveform(self, length: int):
         """Trigger waveform output"""
@@ -168,7 +154,7 @@ class AxilWaveGenTB:
         mode_bit = 0x4 if external else 0x0
         # We read-modify-write if we wanted to be safe, but here we know the bits.
         # However, it's safer to just set the bit since we know the mapping.
-        # Current mapping: Bit 0 = trigger (auto-clear), Bit 1 = flush (auto-clear), Bit 2 = trigger_mode
+        # Current mapping: Bit 0 = trigger (auto-clear), Bit 1 reserved, Bit 2 = trigger_mode
         await self.write_register(self.ADDR_CTRL, mode_bit)
         self.log.info(f"Trigger mode set to {'external' if external else 'internal'}")
 
@@ -303,7 +289,7 @@ async def test_basic_write_read(dut):
     tb.log.warning(f"Test: {len(axi_words)} AXI words -> {num_samples} samples")
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
     assert tb.verify_samples(received, expected_samples), "Sample verification failed"
@@ -348,7 +334,7 @@ async def test_random_data(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
@@ -368,7 +354,7 @@ async def test_multiple_triggers(dut):
 
     # Write once
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     # Trigger multiple times
     for iteration in range(3):
@@ -395,7 +381,7 @@ async def test_partial_length(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     # Read only first 10 samples
     num_read_samples = 10
@@ -425,7 +411,7 @@ async def test_conversion_boundary(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
@@ -444,7 +430,7 @@ async def test_single_sample(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
@@ -463,7 +449,7 @@ async def test_tlast_assertion(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
 
@@ -500,7 +486,7 @@ async def test_large_waveform(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
@@ -519,7 +505,7 @@ async def test_external_trigger(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     # Enable external trigger mode
     await tb.set_trigger_mode(external=True)
@@ -547,3 +533,33 @@ async def test_external_trigger(dut):
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
     assert tb.verify_samples(received, expected_samples), "Internal trigger failed after switching back"
+
+
+@cocotb.test(timeout_time=20, timeout_unit="us")
+async def test_write_completes_while_stream_stalled(dut):
+    """A waveform write must complete even when playback is stalled by m_axis_tready = 0 (no CPU hang)."""
+    tb = AxilWaveGenTB(dut)
+    await tb.reset()
+    samples = tb.generate_test_pattern(4, "counter")
+    await tb.write_waveform_words(tb.samples_to_axi_words(samples))
+    tb.axis_sink.pause = True
+    await tb.trigger_waveform(4)
+    await with_timeout(tb.write_waveform_data(bytes(8)), 2, "us")
+
+
+@cocotb.test(timeout_time=50, timeout_unit="us")
+async def test_32bit_writes_shuffled(dut):
+    """32-bit stores (half of WSTRB) in random order, as a CPU memcpy may issue, give the same waveform."""
+    tb = AxilWaveGenTB(dut)
+    await tb.reset()
+    rng = random.Random(3)
+    num_samples = 9
+    samples = tb.generate_test_pattern(num_samples, "random")
+    data = b"".join(w.to_bytes(tb.axi_bytes, "little") for w in tb.samples_to_axi_words(samples))
+    offsets = list(range(0, len(data), 4))
+    rng.shuffle(offsets)
+    for off in offsets:
+        await tb.axil_master.write(tb.WAVEFORM_BASE_ADDR + off, data[off : off + 4])
+    await tb.trigger_waveform(num_samples)
+    received = await tb.collect_output(num_samples)
+    assert tb.verify_samples(received, samples), "32-bit shuffled writes corrupted the waveform"

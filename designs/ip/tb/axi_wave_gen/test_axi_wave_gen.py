@@ -4,7 +4,7 @@ import random
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles, RisingEdge
+from cocotb.triggers import ClockCycles, RisingEdge, with_timeout
 from cocotbext.axi import AxiBus, AxiMaster, AxiStreamBus, AxiStreamSink
 
 
@@ -65,7 +65,6 @@ class AxiWaveGenTB:
         self.dut.rst_n.value = 0
         self.dut.ctrl_trigger.value = 0
         self.dut.ctrl_wave_length.value = 0
-        self.dut.ctrl_flush.value = 0
 
         # Clear any pending data in sink
         while not self.axis_sink.empty():
@@ -105,24 +104,9 @@ class AxiWaveGenTB:
 
         await self.write_waveform_data(data, address)
 
-    async def flush_and_wait(self, timeout_cycles=5000):
-        """Flush write accumulator and wait for completion"""
-        self.log.info("Flushing write accumulator...")
-
-        # Pulse flush signal
-        self.dut.ctrl_flush.value = 1
-        await ClockCycles(self.dut.clk, 5)
-        self.dut.ctrl_flush.value = 0
-
-        # Wait for busy to clear
-        success = await self._wait_not_busy(timeout_cycles)
-        if not success:
-            # Debug: print state
-            self.log.error("Timeout waiting for flush completion")
-            self.log.error(f"  ctrl_busy = {self.dut.ctrl_busy.value}")
-        assert success, "Timeout waiting for flush completion"
-
-        self.log.info("Flush complete, DUT idle")
+    async def wait_idle(self, timeout_cycles=5000):
+        """Wait until playback is not running (writes need no flush)"""
+        assert await self._wait_not_busy(timeout_cycles), "Timeout waiting for idle"
 
     async def trigger_waveform(self, length: int):
         """Trigger waveform output"""
@@ -257,7 +241,7 @@ async def test_basic_write_read(dut):
     tb.log.warning(f"Test: {len(axi_words)} AXI words -> {num_samples} samples")
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
     assert tb.verify_samples(received, expected_samples), "Sample verification failed"
@@ -275,7 +259,7 @@ async def test_random_data(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
@@ -295,7 +279,7 @@ async def test_multiple_triggers(dut):
 
     # Write once
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     # Trigger multiple times
     for iteration in range(3):
@@ -322,7 +306,7 @@ async def test_partial_length(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     # Read only first 10 samples
     num_read_samples = 10
@@ -352,7 +336,7 @@ async def test_conversion_boundary(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
@@ -371,7 +355,7 @@ async def test_single_sample(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
@@ -390,7 +374,7 @@ async def test_tlast_assertion(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
 
@@ -427,9 +411,124 @@ async def test_large_waveform(dut):
     axi_words = tb.samples_to_axi_words(expected_samples)
 
     await tb.write_waveform_words(axi_words, address=0)
-    await tb.flush_and_wait()
+    await tb.wait_idle()
 
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
 
     assert tb.verify_samples(received, expected_samples), "Large waveform test failed"
+
+
+# =============================================================================
+# Bus behaviour seen from the PS (the CPU must never wait forever on this slave)
+# =============================================================================
+
+
+@cocotb.test(timeout_time=20, timeout_unit="us")
+async def test_read_completes(dut):
+    """A read of the slave must complete (any data); the PS has no AXI timeout, a lost read hangs the CPU."""
+    tb = AxiWaveGenTB(dut)
+    await tb.reset()
+    await with_timeout(tb.axi_master.read(0, 32), 2, "us")
+
+
+@cocotb.test(timeout_time=20, timeout_unit="us")
+async def test_write_completes_while_stream_stalled(dut):
+    """A write must complete even when playback is stalled by m_axis_tready = 0 (e.g. DAC path in reset)."""
+    tb = AxiWaveGenTB(dut)
+    await tb.reset()
+    samples = tb.generate_test_pattern(8, "counter")
+    await tb.write_waveform_words(tb.samples_to_axi_words(samples), address=0)
+    await tb.wait_idle()
+    tb.axis_sink.pause = True  # downstream never ready
+    await tb.trigger_waveform(8)
+    await with_timeout(tb.axi_master.write(0, bytes(32)), 2, "us")
+
+
+@cocotb.test(timeout_time=50, timeout_unit="us")
+async def test_cpu_style_narrow_writes(dut):
+    """
+    The PS writes through a 128-bit HPM port and the CPU stores at most 16 bytes per transaction, so the slave sees
+    single-beat transfers with AWSIZE <= 4 and partial WSTRB. The waveform must still come out intact.
+    """
+    tb = AxiWaveGenTB(dut)
+    await tb.reset()
+    num_samples = 8
+    samples = tb.generate_test_pattern(num_samples, "counter")
+    data = b"".join(w.to_bytes(tb.axi_bytes, "little") for w in tb.samples_to_axi_words(samples))
+    for addr in range(0, len(data), 16):
+        await tb.axi_master.write(addr, data[addr : addr + 16], size=4)
+    await tb.wait_idle()
+    await tb.trigger_waveform(num_samples)
+    received = await tb.collect_output(num_samples)
+    assert tb.verify_samples(received, samples), "Narrow (CPU-style) writes corrupted the waveform"
+
+
+def _random_pause(p_pause=0.3, seed=1):
+    rng = random.Random(seed)
+    while True:
+        yield rng.random() < p_pause
+
+
+@cocotb.test(timeout_time=200, timeout_unit="us")
+async def test_random_order_sizes_readback_backpressure(dut):
+    """
+    Write a waveform in random order with mixed transfer sizes and burst lengths, read it back through AXI, then play
+    it with random m_axis_tready back-pressure. Address-based writes make order and size irrelevant.
+    """
+    tb = AxiWaveGenTB(dut)
+    await tb.reset()
+    rng = random.Random(7)
+    num_samples = 37  # not a multiple of the 4:5 beat/row ratio
+    samples = tb.generate_test_pattern(num_samples, "random")
+    data = b"".join(w.to_bytes(tb.axi_bytes, "little") for w in tb.samples_to_axi_words(samples))
+
+    # Chunks of 8/16/32 bytes, single beat or short INCR bursts, shuffled
+    chunks = []
+    addr = 0
+    while addr < len(data):
+        size = rng.choice((3, 4, 5))
+        nbytes = (1 << size) * rng.choice((1, 1, 2, 4))
+        nbytes = min(nbytes, len(data) - addr)
+        nbytes -= nbytes % (1 << size) or 0
+        if nbytes == 0:
+            size, nbytes = 3, min(8, len(data) - addr)
+        chunks.append((addr, size, data[addr : addr + nbytes]))
+        addr += nbytes
+    rng.shuffle(chunks)
+    for a, size, chunk in chunks:
+        await tb.axi_master.write(a, chunk, size=size)
+
+    readback = (await tb.axi_master.read(0, len(data))).data
+    assert bytes(readback) == data, "AXI read-back differs from what was written"
+
+    tb.axis_sink.set_pause_generator(_random_pause())
+    await tb.trigger_waveform(num_samples)
+    received = await tb.collect_output(num_samples)
+    assert tb.verify_samples(received, samples), "Playback with back-pressure corrupted the waveform"
+
+
+@cocotb.test(timeout_time=50, timeout_unit="us")
+async def test_unaligned_and_wrap_bursts(dut):
+    """An unaligned INCR start and a WRAP burst land where AXI4 says they should (checked by read-back)."""
+    from cocotbext.axi import AxiBurstType
+
+    tb = AxiWaveGenTB(dut)
+    await tb.reset()
+    mem = bytearray(256)
+    await tb.axi_master.write(0, bytes(mem))  # the RAM keeps data across resets
+
+    # Unaligned INCR burst of 16-byte beats starting at byte 40
+    payload = bytes(range(1, 49))
+    await tb.axi_master.write(40, payload, size=4)
+    mem[40:88] = payload
+
+    # WRAP burst: 4 x 16 bytes starting at 0x90, wrapping inside the 64-byte window 0x80..0xbf
+    payload = bytes(range(100, 164))
+    await tb.axi_master.write(0x90, payload, size=4, burst=AxiBurstType.WRAP)
+    order = [0x90, 0xA0, 0xB0, 0x80]
+    for i, a in enumerate(order):
+        mem[a : a + 16] = payload[16 * i : 16 * (i + 1)]
+
+    readback = (await tb.axi_master.read(0, len(mem))).data
+    assert bytes(readback) == bytes(mem), "Unaligned/WRAP burst landed in the wrong place"

@@ -1,3 +1,4 @@
+import functools
 import logging
 from pathlib import Path
 from pprint import pformat
@@ -184,8 +185,9 @@ class MimoMtsOverlay(Overlay):
         if "frontend_control_axi_0" in self.ip_dict:
             self.ffe = self.frontend_control_axi_0
 
-        if "transmitter/hier_dac_play/axil_wave_gen_0" in self.ip_dict:
-            self.wave_gen = self.transmitter.hier_dac_play.axil_wave_gen_0
+        wave_gen_paths = [path for path in self.ip_dict if path.split("/")[-1] == "axil_wave_gen_0"]
+        if wave_gen_paths:  # transmitter/hier_dac_play/ in mimo_mts_5g, hier_llrf/ in base
+            self.wave_gen = functools.reduce(getattr, wave_gen_paths[0].split("/"), self)
 
         for path in self.interrupt_pins.keys():
             if path.endswith("xpm_cdc_irq/dest_pulse") or path.endswith("write_done"):
@@ -477,9 +479,6 @@ class MimoMtsOverlay(Overlay):
         assert q_buffer.size == self.dac_player.size // 2, "q_buffer size must be half of the DAC player buffer size."
         self.dac_player[0::2] = i_buffer.astype(np.int16)
         self.dac_player[1::2] = q_buffer.astype(np.int16)
-
-        if hasattr(self, "wave_gen"):
-            self.wave_gen.flush()
 
     def write_dac_complex(self, c_buffer):
         """Writes complex DAC samples to all channels"""

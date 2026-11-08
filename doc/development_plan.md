@@ -7,7 +7,7 @@ first steps and open questions. Update this file as items progress; repository c
 | # | Item | Depends on | Size |
 |---|---|---|---|
 | 1 | Upgrade cocotb to 2.1 | – | small |
-| 2 | Complete the waveform generator and enable 5 GSPS | – | medium |
+| 2 | 5 GSPS with a waveform generator per DAC channel | – | large |
 | 3 | LLRF logic in the MIMO overlays, CW mode | 2 (DAC path) | medium |
 | 4 | Upgrade to PYNQ 4.0 (Vivado 2025.2) | – | large |
 | 5 | Partial reconfiguration of the LLRF logic | 3, 4 | large |
@@ -30,49 +30,94 @@ with Verilator (`cocotb_inc.mk`) locally and in the `rtl_test` CI job. The lates
 
 **Done when** all 9 testbenches pass locally and in CI with no deprecation warnings.
 
-## 2. Complete the waveform generator and enable 5 GSPS
+## 2. 5 GSPS with a waveform generator per DAC channel
 
-**State.** Two wrappers around the common `wave_gen.v` core:
+**Goal.** This repository serves MIMO applications, so each DAC channel gets its own arbitrary waveform generator
+(`wave_gen`), loaded independently and started by a common trigger, in `ZCU208/mimo_mts_5g` at 5 GSPS with ADC
+capture and MTS working. The ADC capture path uses the same banked, address-mapped memory as the generator.
 
-| Module | Interface | Status |
-|---|---|---|
-| `axi_wave_gen.v` | full AXI4 (256-bit data, burst writes), AXI-Stream out | used first in `ZCU208/mimo_mts_5g`; met timing, but the CPU stalled in the hardware test |
-| `axil_wave_gen.v` | AXI4-Lite, AXI-Stream out | now in `ZCU208/mimo_mts_5g` and in `ZCU208/base` / `LBL208/base`; `mimo_mts_5g` fails timing |
+**State.**
 
-`axil_wave_gen` uses its default 64-bit AXI4-Lite data width in both block designs (`C_S_AXI_DATA_WIDTH` is not
-overridden; set it to 32 if a 32-bit interface is intended). In `base` it runs entirely on the 100 MHz `pl_clk0` with
-a 256-bit output; in `mimo_mts_5g` the whole module, including its AXI-Lite slave, runs on the 250 MHz stream clock
-with the default 320-bit output, so moving from `base` to `mimo_mts_5g` also raises its clock 2.5×.
+- `wave_gen` core redesigned on branch `fix/axi-wave-gen` (design notes in [wave_gen.md](wave_gen.md)):
+  address-mapped writes replace the gearbox, so writes of any size and order work, never stall and need no flush
+  (the flush register is removed), and playback handles back-pressure. The CPU stall of `axi_wave_gen` had three
+  causes, all reproduced in the testbench and fixed: reads were never answered, writes blocked while playback was
+  stalled, and narrow CPU writes were stored as full beats. The `WaveGen` driver's memory view was 72 bytes off
+  (fixed).
+- `ZCU208/base` with `axil_wave_gen` (256-bit output, 100 MHz) meets timing and passes all 6 on-board checks of
+  `mimo_mts/tests/test_wave_gen.py` (8 Nov 2026): bulk and shuffled 16/32-bit writes captured bit-exactly, no stall
+  while rewriting during playback, CPU write rate 153.5 MB/s (results in [wave_gen.md](wave_gen.md)).
+- `ZCU208/mimo_mts_5g` has **one** `axil_wave_gen` (320 bits at 250 MHz) → clock converter → width converter
+  (160 bits at 500 MHz) → `axis_broadcaster_0` with 9 outputs: the 8 DACs and `hier_dac_cap`. All DACs play the
+  same waveform.
+- ADC side of `mimo_mts_5g`: 16 receivers (`receiver/mXY`), each RFDC stream 160 bits at 500 MHz → `axis_dwidth_converter`
+  20 → 32 bytes at 500 MHz → clock converter → `adc_capture` and `axi_bram_ctrl` at 256 bits, 250 MHz. Two problems:
+  the 20 → 32-byte converter is not an integer ratio and is the path that fails timing (below); and 256 bits ×
+  250 MHz = 64 Gb/s is less than 160 bits × 500 MHz = 80 Gb/s, while the RFDC ignores `tready`, so long captures
+  probably lose samples once the clock-converter FIFO is full (to verify: phase continuity of a captured tone).
+- Resources: `mimo_mts_5g` uses 73 of 80 URAM (17 capture buffers of 4096 rows × 256 bits = 4 URAM, 5 for
+  `wave_gen`) and 2 % of the block RAM. See the resource budget below.
 
-Both have testbenches (`designs/ip/tb/axi_wave_gen`, `axil_wave_gen`) with a synthesis check (`synth/`). 5 GSPS ADC
-and DAC sampling has already passed MTS on hardware with either wrapper.
+`axil_wave_gen` uses its default 64-bit AXI4-Lite data width (`C_S_AXI_DATA_WIDTH` is not overridden). In `base` it
+runs on the 100 MHz `pl_clk0` with a 256-bit output; in `mimo_mts_5g` the whole module, including its AXI-Lite slave,
+runs on the 250 MHz stream clock with the 320-bit output.
 
 5 GSPS also matters for ALS LLRF: at Fs = 10·f_ref = 4996.4 MSPS the RF-ADC interleaving products move 125 and
 250 MHz away from the carrier instead of folding onto it at Fs = 8·f_ref, so the 0.1° phase requirement no longer
 depends on the interleaving calibration (`doc/adc_calibration_findings.md`, "Alternative: sample at Fs = 10·f_ref").
 A quick check on `mimo_mts_5g`: a tone at 3·Fs/5 should show those spurs and none on the tone.
 
+**Resource budget (decided).** Every buffer becomes a banked 320-bit memory (5 banks × 64 bits): the 8 DAC
+generators and the 16 ADC capture streams (8 ADCs, I and Q kept, R2C at decimation 1). `hier_dac_cap` is dropped:
+each generator's memory can be read back. A URAM288 is 4096 × 72 bits, so a 64-bit bank costs one URAM at any depth
+up to 4096 rows (5 URAM per memory); a BRAM36 bank costs 4 (2048 rows, as 2K × 18) or 8 (4096 rows). ZU48DR: 80 URAM,
+1080 BRAM36.
+
+| Layout (24 memories) | URAM | BRAM36 | |
+|---|---|---|---|
+| 4096 rows, all URAM | 120 | – | does not fit |
+| 4096 rows, all BRAM | – | 960 (89 %) | not practical |
+| 4096 rows, 15 in URAM + 9 in BRAM | 75 (94 %) | 360 (33 %) | URAM nearly full |
+| **2048 rows: DAC generators in URAM, ADC captures in BRAM** | **40 (50 %)** | **320 (30 %)** | **chosen** |
+
+2048 rows × 20 samples = 40,960 samples = **8.2 µs at 5 GSPS** per channel, for playback and for capture.
+(Halving the depth saves no URAM; it halves the BRAM.)
+
 Note on the timing failure: the only local `mimo_mts_5g` build (1 Aug, before the last design change on 4 Aug) fails
 in the ADC receiver, not the waveform generator: `receiver/m32/axis_dwidth_converter_0` at 500 MHz, a high-fanout
-clock enable with 89 % routing delay (WNS -0.057 ns, 54 endpoints). Rebuild the current design before drawing
-conclusions.
+clock enable with 89 % routing delay (WNS -0.057 ns, 54 endpoints).
 
 **Steps.**
-- Test `axil_wave_gen` in `ZCU208/base` first (100 MHz AXI clock, timing met): write a waveform through PYNQ, trigger
-  it, check the captured output and that the CPU stays responsive during large writes.
-- Rebuild `mimo_mts_5g` and locate the failing paths with `designs/scripts/vivado_reports.py` (per-clock slack) and
-  the timing report. Candidates: the width converter's clock enable (pipeline it, or convert on a slower clock), and
-  the wave generator itself at 250 MHz; consider clocking its AXI-Lite side on the AXI clock with a clock-domain
-  crossing to the stream side.
-- `axi_wave_gen` CPU stall: likely an AXI4 handshake or burst issue (for example `WLAST`, `BVALID`/`BREADY`, an
-  unsupported burst type or a write that never completes). Reproduce in the testbench with `cocotbext-axi`'s AXI master
-  using the same burst lengths and sizes as the PS; consider an AXI protocol checker (Xilinx `axi_protocol_checker`)
-  in a debug build.
-- Choose one flavor for 5 GSPS: `axil_wave_gen` is simpler but each waveform write is a 32-bit single beat;
-  `axi_wave_gen` gives faster loading once the stall is fixed.
 
-**Done when** `mimo_mts_5g` meets timing and plays a loaded waveform at 5 GSPS on hardware, with ADC capture and MTS
-working, and an IOC (or notebook) loads waveforms without stalling the CPU.
+1. ~~**Hardware test in `ZCU208/base`**~~: done, 6/6 passed (8 Nov 2026).
+2. **ADC capture with the banked memory** (the 5 → 4 direction of the same mapping):
+   - Factor the memory out of `wave_gen.v` into `banked_mem.v`: the 5 × 64-bit banks, port A (AXI byte port:
+     address-mapped writes with `WSTRB`, reads) and port B (one full row per cycle). `wave_gen` = `banked_mem` +
+     playback control (port B read); the new capture core = `banked_mem` + capture control (port B write).
+   - Capture core (e.g. `wave_cap.v`, AXI4 wrapper `axi_wave_cap.v`): replaces `adc_capture` + `blk_mem_gen` +
+     `axi_bram_ctrl` in each `receiver/mXY`, with the same `trigger`, `n_rows` and `write_done` ports so the block
+     design wiring stays. `RAM_STYLE = "block"`, BANK_DEPTH 2048.
+   - In front of it: a 2:1 width converter at 500 MHz (20 → 40 bytes, an integer ratio) and the clock converter to
+     250 MHz, replacing the 20 → 32-byte converter. 320 bits × 250 MHz carries the full 80 Gb/s.
+   - AXI read side: the bus sees each capture as a flat int16 array in sample order (row r holds samples 20r to
+     20r + 19), so `capture_adc_iq_buf()` keeps working with the new buffer length. Pipeline the read bursts in the
+     AXI4 slave (today one beat per ~9 cycles) if DMA readout is wanted.
+   - Testbench: stream rows in at full rate, trigger, read back over AXI with mixed sizes, compare.
+3. **Rebuild `mimo_mts_5g`** with the new capture path and check timing with `designs/scripts/vivado_reports.py`.
+   Hardware test: MTS, captures of a tone without gaps, the generator played through the broadcaster, CPU
+   responsive with the DAC stream stopped.
+4. **Per-channel generators**: one `wave_gen` per DAC (8 instances, URAM, BANK_DEPTH 2048), replacing the broadcaster
+   and `hier_dac_cap`; a shared trigger and start-time alignment across channels; one
+   control interface (per-channel `wave_length`, a common trigger/arm register) rather than eight AXI-Lite slaves if
+   the interconnect gets large. Driver and IOC: `ol.wave_gens[ch]`, per-channel waveform PVs.
+5. **Choose the bus flavour**: `axil_wave_gen` (registers included, CPU writes) or `axi_wave_gen` (256-bit memory
+   like `axi_bram_ctrl`, DMA bursts, read-back; needs a driver and separate control). Loading eight channels does not
+   need DMA: 8 × 80 KB take about 4 ms at the measured 153.5 MB/s.
+6. Optional: DDR4-backed playback or capture for longer records (as in `ZCU216/mimo_mts_ddr4`).
+
+**Done when** `mimo_mts_5g` meets timing and plays an independent waveform on each of the 8 DACs at 5 GSPS, captures
+all ADC channels without lost samples, with MTS working, and an IOC (or notebook) loads the waveforms without stalling
+the CPU.
 
 ## 3. LLRF logic in the MIMO overlays; CW mode
 
