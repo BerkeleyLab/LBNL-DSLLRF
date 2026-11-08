@@ -40,16 +40,26 @@ Hardware investigation for MR !37, November 2026. Notebooks with the raw outputs
 ## Conclusion
 
 Background calibration must be frozen during ALS operation. Calibration coefficients should be trained on an
-off-carrier CW tone (about 60 s), frozen and saved. GCB can be restored at boot; TSCB cannot be restored through the
-driver override, so whether restore-and-freeze reproduces the trained performance after a reboot is the remaining
-question, to be tested on the LBL208 with single-LMX clocking (`adc_calibration.ipynb` step 15).
+off-carrier CW tone (about 60 s) and frozen. GCB can be restored at boot, TSCB cannot, and the decisive test (LBL208
+run 2, step 15) showed that **restore-and-freeze does not reproduce the trained performance after a reboot**. Only
+retraining on an offset tone does; freeze + `restart_adc_tiles()` + restore is a consistent intermediate. The boot
+policy for `AlsLlrfLBL208` follows from the required precision and from whether a training tone is available at boot.
 
 | Element | Status |
 |---|---|
-| Freeze during operation | Supported: tracking on pulses -82 → -52 dBc in 2 min; at 3·Fs/4 TSCB runs to its limits |
-| Train on an off-carrier tone | Supported: 60 s at 2973 MHz -79.7 dBc vs 60 s at 3000 MHz -49.6 dBc |
+| Freeze during operation | Confirmed on both boards: tracking on pulses -82 → -52 dBc (ZCU208), -74 → -45 dBc (LBL208) |
+| Train on an off-carrier tone | Confirmed: 2973 vs 3000 MHz: -79.7 vs -49.6 dBc (ZCU208), -70.0 vs -39.1 dBc (LBL208) |
 | Save coefficients | Works for all four blocks |
-| Restore after reboot reproduces the trained state | **Not demonstrated**: only GCB restores; startup TSCB is near its limits; reload + restore was equal to the startup state in run 3 and 10 dB worse in run 4 |
+| Restore after reboot reproduces the trained state | **No** (LBL208 run 2): reference -72.5 dBc; restore -36 to -71 dBc, no better than startup values; freeze + restart + restore -54 to -60 dBc; retraining -74 dBc |
+
+Boot options for `AlsLlrfLBL208` (LBL208 run 2; error on the ALS carrier):
+
+| Boot sequence | Image | Carrier error | Needs |
+|---|---|---|---|
+| freeze at startup values | -36 to -60 dBc | up to 1.5 % / 0.9° | nothing |
+| restore and freeze (current code) | about the same | about the same | calibration file |
+| freeze → `restart_adc_tiles()` (input muted) → restore | -54 to -60 dBc | about 0.2 % / 0.1° | RF off at boot |
+| retrain ~60 s on an offset tone, then freeze | about -72 dBc | about 0.03 % / 0.015° | training tone at boot |
 
 Why it matters at the ALS carrier: trained calibration (about -80 dBc) means about 0.01 % / 0.006° carrier error;
 startup TSCB (down to -38 dBc) means up to about 1.3 % / 0.7°, depending on the carrier phase. Frozen coefficients do
@@ -166,6 +176,37 @@ Same procedure through the LBL analog front end (`ALS_LLRF_LBL208`, CI overlay f
   which `doc/lbl208/als_llrf_mts_ffe.ipynb` maps to ADC0. The board appears to have a **reversed** ADC-to-slice
   mapping (front-end channel n feeding ADC 7-n); one loopback cannot prove the full pattern. Nothing in `mimo_mts`
   uses the per-ADC map yet; any per-channel attenuation (driver helper, IOC PV) must use the verified mapping.
+
+**Run 2 (valid)**, commit 4959442: CLK104A with the LMK in distribution mode, a 3 GHz band-pass filter in the
+front-end loopback, path through slice 4 attenuators 0/1 for ADC7, carrier **-17.0 to -18.2 dBFS over all 8 overlay
+reloads**. The constant level confirms that the ZCU208 level jumps came from the unfiltered loopback (DAC image on the
+probe's ADC bin) with independent clock dividers.
+
+| Check | LBL208 run 2 | ZCU208 |
+|---|---|---|
+| TSCB write | override bit set, value and image unchanged | same |
+| GCB zeroed vs trained | -60.1 vs -71.1 dBc | -61.5 vs -80.8 dBc |
+| tracking on 5 µs pulses (2 min) | -73.5 → **-44.7 dBc**; frozen: -70.9 | -81.7 → -51.7 dBc |
+| training 60 s at 3·Fs/4 vs 2973 MHz | **-39.1** vs -70.0 dBc | -49.6 vs -79.7 dBc |
+
+**Decisive restore test** (step 15, trained reference -72.5 dBc, image at 3027 MHz):
+
+| Reboot | startup, frozen | + restore | freeze + `restart_adc_tiles()` + restore |
+|---|---|---|---|
+| 0 | -49.9 | -53.6 | -59.7 |
+| 1 | -60.3 | -70.6 | -57.7 |
+| 2 | -48.1 | -46.1 | -54.1 |
+| 3 | -48.9 | -52.2 | -58.3 |
+| 4 | -36.3 | -35.7 | -54.3 |
+
+- **Restore-and-freeze does not reproduce the trained state.** GCB is restored exactly, TSCB stays 163-214 LSB from
+  the trained values, and the image is no better than the (unpredictable) startup values.
+- Freeze + `restart_adc_tiles()` + restore is consistently better (-54 to -60 dBc) but 13-18 dB above the
+  reference. The TSCB distance is unchanged by the restart (frozen TSCB survives it), so the gain is not explained;
+  this restart also ran with the CW tone on, while PG269 wants the input muted for the foreground calibration.
+- Only retraining on the offset tone reaches the reference (-74.3 dBc after 60 s).
+- Trained states bottom out at about -70 to -74 dBc here, against -81 to -85 dBc on the ZCU208. One unverified
+  candidate: a DAC spur at Fs/2 + 1027 MHz = 3027 MHz, inside the 3 GHz filter's passband.
 
 **Training level.** GCB/TSCB estimate the mismatch from the input signal and stop working below -40 dBFS (PG269). The
 data are consistent with a level dependence (ZCU208 at -29 dBFS: -81 to -85 dBc; LBL208 at -37 dBFS: about -65 dBc;
