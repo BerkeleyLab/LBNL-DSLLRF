@@ -14,9 +14,17 @@ from softioc import asyncio_dispatcher, builder, softioc
 
 from mimo_mts.drivers.adc_calibration import DEFAULT_CAL_FILE
 from mimo_mts.overlay import MimoMtsOverlay
+from mimo_mts.utils.rfdc_freq import nco_to_rf, rf_to_nco
 
 logging.basicConfig(level=logging.INFO, format="%(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+DESC_LEN = 40  # EPICS DESC field: 40 characters
+
+
+def desc(text: str) -> str:
+    """Record description, cut to the 40 characters of the EPICS DESC field."""
+    return text[:DESC_LEN]
 
 
 class MimoMtsIoc:
@@ -168,28 +176,81 @@ class MimoMtsIoc:
 
         name = "ADC:TWF"  # in ns
         self.pvs_in[name] = builder.WaveformIn(
-            name, np.arange(0, self.n_samples / self.adc_fs_ghz, 1 / self.adc_fs_ghz)
+            name,
+            np.arange(0, self.n_samples / self.adc_fs_ghz, 1 / self.adc_fs_ghz),
+            DESC=desc("Time axis of the ADC waveforms"),
+            EGU="ns",
         )
         name = "DSP:TWF"  # in ns, after decimation
         self.pvs_in[name] = builder.WaveformIn(
-            name, np.arange(0, self.n_dsp_samples / self.dsp_fs_ghz, 1 / self.dsp_fs_ghz)
+            name,
+            np.arange(0, self.n_dsp_samples / self.dsp_fs_ghz, 1 / self.dsp_fs_ghz),
+            DESC=desc("Time axis of the DSP waveforms"),
+            EGU="ns",
         )
 
         for ix in range(self.n_adc):
             name = f"ADC{ix}:IWF"
-            self.pvs_in[name] = builder.WaveformIn(name, self.adc_bufs_i[ix])
+            self.pvs_in[name] = builder.WaveformIn(
+                name, self.adc_bufs_i[ix], DESC=desc(f"ADC{ix} captured I samples"), EGU="cnt"
+            )
             name = f"ADC{ix}:QWF"
-            self.pvs_in[name] = builder.WaveformIn(name, self.adc_bufs_q[ix])
+            self.pvs_in[name] = builder.WaveformIn(
+                name, self.adc_bufs_q[ix], DESC=desc(f"ADC{ix} captured Q samples"), EGU="cnt"
+            )
             name = f"DSP:ADC{ix}:AWF"
-            self.pvs_in[name] = builder.WaveformIn(name, np.abs(self.adc_bufs_mean[ix]))
+            self.pvs_in[name] = builder.WaveformIn(
+                name, np.abs(self.adc_bufs_mean[ix]), DESC=desc(f"ADC{ix} amplitude, decimated"), EGU="cnt"
+            )
             name = f"DSP:ADC{ix}:PWF"
-            self.pvs_in[name] = builder.WaveformIn(name, np.angle(self.adc_bufs_mean[ix], deg=True))
+            self.pvs_in[name] = builder.WaveformIn(
+                name, np.angle(self.adc_bufs_mean[ix], deg=True), DESC=desc(f"ADC{ix} phase, decimated"), EGU="deg"
+            )
 
         self.add_mixer_pvs()
+        self.add_dac_wfm_pvs()
         self.add_rf_control_pvs()
         self.add_pulse_pvs()
         if hasattr(self.ol, "adc_cal"):
             self.add_adc_cal_pvs()
+
+    def add_dac_wfm_pvs(self):
+        """
+        DAC arbitrary waveform (I/Q baseband, int16), shared by all DACs (one waveform memory):
+            DAC:IWF, DAC:QWF   write a waveform; both are written to the memory on every update
+            DAC:TWF            time axis in ns at the complex input rate (DAC rate / interpolation)
+        A write shorter than the memory is padded with zeros. Per-channel waveforms follow with one generator
+        per DAC (doc/development_plan.md, item 2).
+        """
+        player = getattr(self.ol, "dac_player", None)
+        if player is None:
+            return
+        n = player.size // 2
+        if getattr(self, "dac_i", None) is None or self.dac_i.size != n:
+            self.dac_i = np.zeros(n, dtype=np.int16)
+            self.dac_q = np.zeros(n, dtype=np.int16)
+        fs_iq_ghz = self.dac_fs_ghz / self.ol.ol_info["rfdc"]["dac_interpolation_factor"]
+        self.pvs_in["DAC:TWF"] = builder.WaveformIn(
+            "DAC:TWF", np.arange(n) / fs_iq_ghz, DESC=desc("Time axis of the DAC waveform"), EGU="ns"
+        )
+        for part in ("I", "Q"):
+            name = f"DAC:{part}WF"
+            self.pvs_out[name] = builder.WaveformOut(
+                name,
+                self.dac_i if part == "I" else self.dac_q,
+                on_update=lambda _value: self._on_dac_wfm(),
+                DESC=desc(f"DAC waveform {part}, all DACs"),
+                EGU="cnt",
+            )
+
+    def _on_dac_wfm(self):
+        n = self.dac_i.size
+        wfm = []
+        for part in ("I", "Q"):
+            v = np.asarray(self.pvs_out[f"DAC:{part}WF"].get(), dtype=np.int16)[:n]
+            wfm.append(np.pad(v, (0, n - v.size)))
+        self.write_dac(*wfm)
+        logger.info("DAC waveform written (%d I/Q samples)", n)
 
     def add_adc_cal_pvs(self, prefix="adc_cal:"):
         """
@@ -206,6 +267,7 @@ class MimoMtsIoc:
         cal = self.ol.adc_cal
         self.pvs_out[prefix + "freeze"] = builder.boolOut(
             prefix + "freeze",
+            DESC=desc("Freeze GCB/TSCB calibration, all ADCs"),
             ZNAM="tracking",
             ONAM="frozen",
             always_update=True,
@@ -215,24 +277,37 @@ class MimoMtsIoc:
             name = f"{prefix}ADC{ch}:freeze"
             self.pvs_out[name] = builder.boolOut(
                 name,
+                DESC=desc(f"Freeze GCB/TSCB calibration, ADC{ch}"),
                 ZNAM="tracking",
                 ONAM="frozen",
                 always_update=True,
                 on_update=lambda v, ch=ch: self._adc_cal_action("freeze" if v else "unfreeze", ch),
             )
             name = f"{prefix}ADC{ch}:frozen:RBV"
-            self.pvs_in[name] = builder.boolIn(name, ZNAM="tracking", ONAM="frozen")
+            self.pvs_in[name] = builder.boolIn(
+                name, DESC=desc(f"ADC{ch} calibration freeze status"), ZNAM="tracking", ONAM="frozen"
+            )
 
+        action_desc = {
+            "save": "Save calibration coefficients to file",
+            "restore": "Restore GCB/TSCB from file and freeze",
+            "release_override": "Return calibration to the engine",
+        }
         for action in ("save", "restore", "release_override"):
             self.pvs_out[prefix + action] = builder.boolOut(
                 prefix + action,
+                DESC=desc(action_desc[action]),
                 ZNAM="idle",
                 ONAM="run",
                 always_update=True,
                 on_update=lambda v, action=action: v and self._adc_cal_action(action),
             )
-        self.pvs_in[prefix + "file"] = builder.longStringIn(prefix + "file", initial_value=str(self.adc_cal_file))
-        self.pvs_in[prefix + "status"] = builder.longStringIn(prefix + "status", initial_value=self.adc_cal_status)
+        self.pvs_in[prefix + "file"] = builder.longStringIn(
+            prefix + "file", initial_value=str(self.adc_cal_file), DESC=desc("Calibration file on the board")
+        )
+        self.pvs_in[prefix + "status"] = builder.longStringIn(
+            prefix + "status", initial_value=self.adc_cal_status, DESC=desc("Result of the last calibration action")
+        )
 
     def _adc_cal_action(self, action, ch=None):
         cal = self.ol.adc_cal
@@ -279,42 +354,88 @@ class MimoMtsIoc:
             rfdc_mixer:dac_mixer_nco_nyquist
             rfdc_mixer:dac_mixer_nco_phase
         """
+        units = {"freq_mhz": ("NCO frequency", "MHz"), "nyquist": ("Nyquist zone", ""), "phase": ("NCO phase", "deg")}
+
+        def add(name, value, what):
+            key = name.rsplit("_", 1)[-1] if not name.endswith("freq_mhz") else "freq_mhz"
+            text, egu = units[key]
+            self.pvs_in[prefix + name + ":RBV"] = builder.aIn(
+                prefix + name + ":RBV", initial_value=value, DESC=desc(f"{what} {text}"), EGU=egu
+            )
+            self.pvs_out[prefix + name] = builder.aOut(
+                prefix + name,
+                initial_value=value,
+                on_update_name=self.on_update_name,
+                DESC=desc(f"{what} {text}"),
+                EGU=egu,
+            )
+
         # Global PVs (apply to all channels at once)
         for name, value in self.ol.mixer_cfg.items():
-            self.pvs_in[prefix + name + ":RBV"] = builder.aIn(prefix + name + ":RBV", initial_value=value)
-            self.pvs_out[prefix + name] = builder.aOut(
-                prefix + name, initial_value=value, on_update_name=self.on_update_name
-            )
+            add(name, value, "All ADCs" if name.startswith("adc") else "All DACs")
 
         # Per-channel ADC mixer PVs
         for ch, cfg in self.adc_mixer_cfg.items():
             for key in cfg.keys():
-                name = f"ADC{ch}:nco_{key}"
-                value = self.adc_mixer_cfg[ch][key]
-                self.pvs_in[prefix + name + ":RBV"] = builder.aIn(prefix + name + ":RBV", initial_value=value)
-                self.pvs_out[prefix + name] = builder.aOut(
-                    prefix + name, initial_value=value, on_update_name=self.on_update_name
-                )
+                add(f"ADC{ch}:nco_{key}", self.adc_mixer_cfg[ch][key], f"ADC{ch}")
 
         # Per-channel DAC mixer PVs
         for ch, cfg in self.dac_mixer_cfg.items():
             for key in cfg.keys():
-                name = f"DAC{ch}:nco_{key}"
-                value = self.dac_mixer_cfg[ch][key]
-                self.pvs_in[prefix + name + ":RBV"] = builder.aIn(prefix + name + ":RBV", initial_value=value)
-                self.pvs_out[prefix + name] = builder.aOut(
-                    prefix + name, initial_value=value, on_update_name=self.on_update_name
-                )
+                add(f"DAC{ch}:nco_{key}", self.dac_mixer_cfg[ch][key], f"DAC{ch}")
+
+        # Operator view: RF frequency only; NCO frequency and Nyquist zone follow (mimo_mts/utils/rfdc_freq.py)
+        def add_rf(name, rf_mhz, what, fs_hz):
+            self.pvs_in[prefix + name + ":RBV"] = builder.aIn(
+                prefix + name + ":RBV", initial_value=rf_mhz, DESC=desc(f"{what} RF frequency"), EGU="MHz", PREC=3
+            )
+            self.pvs_out[prefix + name] = builder.aOut(
+                prefix + name,
+                initial_value=rf_mhz,
+                on_update_name=self.on_update_name,
+                DESC=desc(f"{what} RF frequency (sets NCO, zone)"),
+                EGU="MHz",
+                PREC=3,
+                DRVL=0,
+                DRVH=fs_hz / 1e6,
+            )
+
+        add_rf(
+            "adc_rf_freq_mhz",
+            self._rf_mhz("adc", self.ol.mixer_cfg, "adc_mixer_nco_"),
+            "All ADCs",
+            self.ol.adc_sampling_rate,
+        )
+        add_rf(
+            "dac_rf_freq_mhz",
+            self._rf_mhz("dac", self.ol.mixer_cfg, "dac_mixer_nco_"),
+            "All DACs",
+            self.ol.dac_sampling_rate,
+        )
+        for ch, cfg in self.adc_mixer_cfg.items():
+            add_rf(f"ADC{ch}:rf_freq_mhz", self._rf_mhz("adc", cfg), f"ADC{ch}", self.ol.adc_sampling_rate)
+        for ch, cfg in self.dac_mixer_cfg.items():
+            add_rf(f"DAC{ch}:rf_freq_mhz", self._rf_mhz("dac", cfg), f"DAC{ch}", self.ol.dac_sampling_rate)
+
+    @staticmethod
+    def _rf_mhz(converter, cfg, key_prefix=""):
+        """RF frequency of a mixer configuration (dict with freq_mhz/nyquist, optionally prefixed)."""
+        return nco_to_rf(cfg[key_prefix + "freq_mhz"], int(cfg[key_prefix + "nyquist"]), converter)
 
     def add_rf_control_pvs(self, prefix="rf_control:"):
         """
         Add RF control related PVs to the IOC.
         """
-        for name in self.ol.rf_control._registers.keys():
-            value = getattr(self.llrf_register_map, name)
-            self.pvs_in[prefix + name + ":RBV"] = builder.longIn(prefix + name + ":RBV", initial_value=value)
+        for name, reg in self.ol.rf_control._registers.items():
+            value = int(getattr(self.llrf_register_map, name))
+            text = reg.get("description", name)
+            self.pvs_in[prefix + name + ":RBV"] = builder.longIn(
+                prefix + name + ":RBV", initial_value=value, DESC=desc(text)
+            )
+            if reg.get("access") == "read-only":
+                continue
             self.pvs_out[prefix + name] = builder.longOut(
-                prefix + name, initial_value=value, on_update_name=self.on_update_name
+                prefix + name, initial_value=value, on_update_name=self.on_update_name, DESC=desc(text)
             )
 
     def add_pulse_pvs(self, prefix="pulse_stat:"):
@@ -331,13 +452,23 @@ class MimoMtsIoc:
             for s in ["start_ns", "end_ns"]:
                 name = f"DSP:ADC{ix}:{prefix}{s}"
                 self.pvs_out[name] = builder.longOut(
-                    name, DRVL=0, DRVH=16380, EGU="ns", initial_value=1000, on_update_name=self.on_update_name
+                    name,
+                    DRVL=0,
+                    DRVH=16380,
+                    EGU="ns",
+                    initial_value=1000,
+                    on_update_name=self.on_update_name,
+                    DESC=desc(f"ADC{ix} pulse window {s.split('_')[0]}"),
                 )
             for p in ["mean", "std"]:
                 name = f"DSP:ADC{ix}:{prefix}amp:{p}"
-                self.pvs_in[name] = builder.aIn(name, LOPR=0, HOPR=32768, EGU="cnt", initial_value=0)
+                self.pvs_in[name] = builder.aIn(
+                    name, LOPR=0, HOPR=32768, EGU="cnt", initial_value=0, DESC=desc(f"ADC{ix} pulse amplitude {p}")
+                )
                 name = f"DSP:ADC{ix}:{prefix}phs:{p}"
-                self.pvs_in[name] = builder.aIn(name, LOPR=-180, HOPR=180, EGU="deg", initial_value=0)
+                self.pvs_in[name] = builder.aIn(
+                    name, LOPR=-180, HOPR=180, EGU="deg", initial_value=0, DESC=desc(f"ADC{ix} pulse phase {p}")
+                )
 
     def start_ioc(self):
         loop = asyncio.get_event_loop()  # required for IRQ!
@@ -394,6 +525,14 @@ class MimoMtsIoc:
                 for key in cfg.keys():
                     self.pvs_in[f"rfdc_mixer:DAC{ch}:nco_{key}:RBV"].set(cfg[key])
 
+            # RF frequency RBVs, derived from the NCO settings
+            mix = self.ol.mixer_cfg
+            self.pvs_in["rfdc_mixer:adc_rf_freq_mhz:RBV"].set(self._rf_mhz("adc", mix, "adc_mixer_nco_"))
+            self.pvs_in["rfdc_mixer:dac_rf_freq_mhz:RBV"].set(self._rf_mhz("dac", mix, "dac_mixer_nco_"))
+            for conv, configs in (("adc", self.adc_mixer_cfg), ("dac", self.dac_mixer_cfg)):
+                for ch, cfg in configs.items():
+                    self.pvs_in[f"rfdc_mixer:{conv.upper()}{ch}:rf_freq_mhz:RBV"].set(self._rf_mhz(conv, cfg))
+
             if hasattr(self.ol, "adc_cal"):
                 self.update_adc_cal_pvs()
 
@@ -412,6 +551,9 @@ class MimoMtsIoc:
 
         elif pv_name.startswith(f"{self.prefix}:rfdc_mixer:"):
             field = pv_name.removeprefix(f"{self.prefix}:rfdc_mixer:")
+            if field.endswith("rf_freq_mhz"):
+                self._set_rf_freq(field, value)
+                return
 
             # Per-channel ADC/DAC: e.g., "ADC0:nco_freq_mhz"
             match = re.match(r"^(?P<type>ADC|DAC)(?P<ch>\d+):nco_(?P<param>freq_mhz|nyquist|phase)$", field)
@@ -482,6 +624,39 @@ class MimoMtsIoc:
                     self.adc_pulse_end_ns[ch] = value
                 logger.info("Updated %s ch%d pulse_stat %s to %s", ch_type, ch, param, value)
 
+    def _set_rf_freq(self, field, rf_mhz):
+        """Apply an RF frequency PV: derive NCO frequency and Nyquist zone, keep the phase, update the NCO PVs."""
+        m = re.match(r"^(?:(?P<all>adc|dac)_rf_freq_mhz|(?P<type>ADC|DAC)(?P<ch>\d+):rf_freq_mhz)$", field)
+        if not m:
+            logger.warning("Unknown RF frequency PV %s", field)
+            return
+        conv = (m.group("all") or m.group("type")).lower()
+        fs_mhz = (self.ol.adc_sampling_rate if conv == "adc" else self.ol.dac_sampling_rate) / 1e6
+        try:
+            nco, zone = rf_to_nco(rf_mhz, fs_mhz, conv)
+        except ValueError as e:
+            logger.error("%s: %s", field, e)
+            return
+        logger.info("%s = %s MHz -> NCO %s MHz, Nyquist zone %d", field, rf_mhz, nco, zone)
+        if m.group("all"):
+            phase = getattr(self.ol, f"{conv}_mixer_nco_phase")
+            getattr(self.ol, f"set_{conv}_mixer")(nco, zone, phase)
+            configs = self.adc_mixer_cfg if conv == "adc" else self.dac_mixer_cfg
+            for ch, cfg in configs.items():
+                cfg.update(freq_mhz=nco, nyquist=zone, phase=phase)
+                self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_freq_mhz"].set(nco)
+                self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_nyquist"].set(zone)
+                self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:rf_freq_mhz"].set(rf_mhz)
+            self.pvs_out[f"rfdc_mixer:{conv}_mixer_nco_freq_mhz"].set(nco)
+            self.pvs_out[f"rfdc_mixer:{conv}_mixer_nco_nyquist"].set(zone)
+        else:
+            ch = int(m.group("ch"))
+            cfg = (self.adc_mixer_cfg if conv == "adc" else self.dac_mixer_cfg)[ch]
+            cfg.update(freq_mhz=nco, nyquist=zone)
+            getattr(self.ol, f"set_{conv}_mixer_ch")(ch, nco, zone, cfg["phase"])
+            self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_freq_mhz"].set(nco)
+            self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_nyquist"].set(zone)
+
     def drive_test_awg(self):
         """Drive DAC with a test arbitrary waveform"""
         assert self.ol.dac_player is not None, "DAC player buffer not initialized."
@@ -494,14 +669,20 @@ class MimoMtsIoc:
         dac_wfm = dac_wfm[::2]  # decimate by 2
         dac_i = (dac_wfm.real).astype(np.int16)
         dac_q = (dac_wfm.imag).astype(np.int16)
-        self.ol.write_dac_iq_buf(dac_i, dac_q)
+        self.write_dac(dac_i, dac_q)
 
     def drive_ones_awg(self):
         """Drive DAC with all ones, for testing purposes."""
         assert self.ol.dac_player is not None, "DAC player buffer not initialized."
         dac_i = np.ones(self.ol.dac_player.size // 2, dtype=np.int16) * 32767
         dac_q = np.zeros_like(dac_i)
-        self.ol.write_dac_iq_buf(dac_i, dac_q)
+        self.write_dac(dac_i, dac_q)
+
+    def write_dac(self, dac_i, dac_q):
+        """Write the DAC waveform (shared by all DACs) and remember it for the DAC:IWF/QWF PVs."""
+        self.dac_i = np.asarray(dac_i, dtype=np.int16)
+        self.dac_q = np.asarray(dac_q, dtype=np.int16)
+        self.ol.write_dac_iq_buf(self.dac_i, self.dac_q)
 
 
 def mimo_auto_ioc():

@@ -11,7 +11,7 @@ first steps and open questions. Update this file as items progress; repository c
 | 3 | LLRF logic in the MIMO overlays, CW mode | 2 (DAC path) | medium |
 | 4 | Upgrade to PYNQ 4.0 (Vivado 2025.2) | – | large |
 | 5 | Partial reconfiguration of the LLRF logic | 3, 4 | large |
-| 6 | Complete EPICS PV reference (`PVs.md`) | – | small |
+| 6 | Complete EPICS PV reference (`PVs.md`) — done | – | small |
 
 Items 4 and 5 both change the Vivado flow; doing the tool upgrade first avoids building the DFX flow twice. Item 6
 is independent and can be done at any time; items 2, 3 and 5 add PVs, so generating the reference (below) pays off.
@@ -109,7 +109,8 @@ clock enable with 89 % routing delay (WNS -0.057 ns, 54 endpoints).
 4. **Per-channel generators**: one `wave_gen` per DAC (8 instances, URAM, BANK_DEPTH 2048), replacing the broadcaster
    and `hier_dac_cap`; a shared trigger and start-time alignment across channels; one
    control interface (per-channel `wave_length`, a common trigger/arm register) rather than eight AXI-Lite slaves if
-   the interconnect gets large. Driver and IOC: `ol.wave_gens[ch]`, per-channel waveform PVs.
+   the interconnect gets large. Driver and IOC: `ol.wave_gens[ch]`, and per-channel waveform PVs `DAC{n}:IWF` /
+   `DAC{n}:QWF` next to today's shared `DAC:IWF` / `DAC:QWF`.
 5. **Choose the bus flavour**: `axil_wave_gen` (registers included, CPU writes) or `axi_wave_gen` (256-bit memory
    like `axi_bram_ctrl`, DMA bursts, read-back; needs a driver and separate control). Loading eight channels does not
    need DMA: 8 × 80 KB take about 4 ms at the measured 153.5 MB/s.
@@ -182,35 +183,16 @@ CLK104 configuration and the PS stay running, so MTS alignment and the ADC calib
 
 ## 6. Complete EPICS PV reference
 
-**State.** `mimo_mts/ioc/PVs.md` documents only the LBL208 telemetry PVs (`pmbus:*`); its "RF control PVs" section is
-`TODO`. The IOC creates about 230 PVs for an 8-ADC board (`$P` is the IOC prefix, e.g. `ALS_LLRF_LBL208`):
+**Done** (branch `feature/pv-docs`). `doc/PVs.md` has usage notes per group and a reference generated from
+the IOC code by `python -m mimo_mts.ioc.gen_pv_docs`: every IOC class is built off-board against a stand-in overlay,
+its records written with softioc's `WriteRecords` and rendered as tables (channels collapsed to `ADC{n}`, a column for
+the IOC classes that have each PV). The `pv_docs` CI job runs it with `--check`. Every record has a `DESC` and units;
+the `rf_control:*` descriptions come from `axil_rf_control.json` (the `dac_enable` copy-paste fixed); read-only
+registers have only `:RBV`; the `mimo5g-zcu208-ioc` entry point now uses the `MIMO5G_ZCU208` overlay (it named a
+configuration that did not exist). `--list <IOC class>` prints the full names for comparing with `dbl()` on the board.
 
-| Group | PVs | Created in |
-|---|---|---|
-| Time axes | `ADC:TWF`, `DSP:TWF` | `MimoMtsIoc.create_ioc()` |
-| ADC waveforms | `ADC{n}:IWF`, `ADC{n}:QWF`, `DSP:ADC{n}:AWF`, `DSP:ADC{n}:PWF` | `create_ioc()` |
-| RFDC mixers | `rfdc_mixer:{adc,dac}_mixer_nco_{freq_mhz,nyquist,phase}`, `rfdc_mixer:{ADC,DAC}{n}:nco_*`, each with `:RBV` | `add_mixer_pvs()` |
-| RF control | `rf_control:<register>` and `:RBV` for the 21 registers in `axil_rf_control.json` | `add_rf_control_pvs()` |
-| Pulse statistics | `DSP:ADC{n}:pulse_stat:{start_ns,end_ns,amp:mean,amp:std,phs:mean,phs:std}` | `add_pulse_pvs()` |
-| Telemetry (LBL208) | `pmbus:*` (documented) | `AlsLlrfLBL208.add_pmbus_pvs()` |
-| IOC statistics | standard `devIocStats` records under `<overlay>:ioc` | `start_ioc()` |
-| ADC calibration | `adc_cal:*` (documented on the MR !37 branch) | `add_adc_cal_pvs()` |
-
-**Steps.**
-- Generate the reference from the code rather than by hand: create the records off-board with a stand-in overlay (no
-  PYNQ hardware; `softioc` is in the development environment) and write them out with `softioc.builder.WriteRecords`,
-  then render a table per group: name, record type, direction (setpoint / readback), units (`EGU`), limits,
-  description. A small script (e.g. `mimo_mts/ioc/gen_pv_docs.py`) can be run in CI to flag a stale `PVs.md`.
-- Give every record a `DESC` (40 characters max); take the register descriptions for `rf_control:*` from
-  `axil_rf_control.json`. Fix the `dac_enable` description there, which reads "Pulse length" (copy-paste).
-- Per-IOC differences: which PVs exist per IOC class and overlay (pmbus only on LBL208, channel counts per board).
-- While there: `add_rf_control_pvs()` creates writable `longOut` PVs also for the read-only status registers
-  (`rf_status`, `amp_measured`, `amp_loop_err`, `phs_measured`, `phs_loop_err`); create only the `:RBV` input for
-  those (the JSON `access` field says which are read-only).
-- Keep the hand-written parts (meaning, typical values, how to use) next to the generated tables, and update the
-  Phoebus screens (`epics/*.bob`) if PV names change.
-
-**Done when** `PVs.md` lists every PV of every IOC class and a check fails when the code and the document disagree.
+The Phoebus screens (`epics/*.bob`) use none of the removed read-only setpoints. Open: compare `--list` with `dbl()`
+from a running IOC.
 
 ## Related open work
 

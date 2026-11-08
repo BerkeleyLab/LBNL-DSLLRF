@@ -46,6 +46,21 @@ rtl_test:
     - changes:
         - designs/ip/**/*
 
+pv_docs:
+  stage: test
+  before_script:
+    - python3 -m venv .venv
+    - source .venv/bin/activate
+    - pip install -e .
+  script:
+    # doc/PVs.md must match the PVs the IOC code creates
+    - python -m mimo_mts.ioc.gen_pv_docs --check
+  rules:
+    - changes:
+        - mimo_mts/**/*
+        - designs/ip/rtl/*.json
+        - pyproject.toml
+
 # Overlay synthesis is disabled for now (November 2026): the RTL is checked by rtl_test, and overlays are built
 # locally while the 5 GSPS designs change. A leading dot makes a job hidden; remove it to re-enable a job.
 .bitfile_synthesis_zcu216:
