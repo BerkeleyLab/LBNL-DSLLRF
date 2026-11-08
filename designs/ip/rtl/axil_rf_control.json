@@ -2,37 +2,37 @@
     "trig_sel": {
         "address_offset": 0,
         "access": "read-write",
-        "description": "Trigger select, 0: internal, 1: EVR, 2: external",
+        "description": "Trigger: 0 internal, 1 EVR, 2 external",
         "size": 32
     },
     "trig_period": {
         "address_offset": 4,
         "access": "read-write",
-        "description": "Internal trigger period in clock cycles; 0 disables the internal trigger",
+        "description": "Internal trigger period, cycles; 0 = off",
         "size": 32
     },
     "trig_delay": {
         "address_offset": 8,
         "access": "read-write",
-        "description": "Trigger delay",
+        "description": "Trigger delay in clock cycles",
         "size": 32
     },
     "trig_divide": {
         "address_offset": 12,
         "access": "read-write",
-        "description": "Trigger divide",
+        "description": "Trigger divider: use every n-th trigger",
         "size": 32
     },
     "pulse_length": {
         "address_offset": 16,
         "access": "read-write",
-        "description": "Pulse length",
+        "description": "Pulse length in clock cycles",
         "size": 32
     },
     "dac_enable": {
         "address_offset": 20,
         "access": "read-write",
-        "description": "Pulse length",
+        "description": "Bit 0 DAC enable, bit 1 pulse enable",
         "size": 32,
         "fields": {
             "dac_enable": {
@@ -112,7 +112,7 @@
     "rf_status": {
         "address_offset": 64,
         "access": "read-only",
-        "description": "Status register",
+        "description": "Status register (bit 0 RF permit)",
         "size": 32,
         "fields": {
             "rf_permit": {
@@ -126,25 +126,25 @@
     "amp_measured": {
         "address_offset": 68,
         "access": "read-only",
-        "description": "amplitude monitor",
+        "description": "Amplitude monitor",
         "size": 32
     },
     "amp_loop_err": {
         "address_offset": 72,
         "access": "read-only",
-        "description": "amplitude loop error",
+        "description": "Amplitude loop error",
         "size": 32
     },
     "phs_measured": {
         "address_offset": 76,
         "access": "read-only",
-        "description": "phase monitor",
+        "description": "Phase monitor",
         "size": 32
     },
     "phs_loop_err": {
         "address_offset": 80,
         "access": "read-only",
-        "description": "phase loop error",
+        "description": "Phase loop error",
         "size": 32
     }
 }

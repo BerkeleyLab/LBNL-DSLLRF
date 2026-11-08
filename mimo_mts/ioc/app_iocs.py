@@ -9,9 +9,29 @@ from softioc import builder
 
 from mimo_mts.drivers.telemetry.max31785 import Max31785
 from mimo_mts.drivers.telemetry.mcrps_device import McrpsDevice
-from mimo_mts.ioc.base_ioc import MimoMtsIoc
+from mimo_mts.ioc.base_ioc import MimoMtsIoc, desc
 
 logger = logging.getLogger(__name__)
+
+# Descriptions of the M-CRPS sensors (PMBus READ_* commands) for the pmbus:psu_* PVs
+PSU_SENSOR_DESC = {
+    "VOUT": "output voltage",
+    "VIN": "AC input voltage",
+    "VCAP": "bulk capacitor voltage",
+    "IOUT": "output current",
+    "IIN": "AC input current",
+    "POUT": "output power",
+    "PIN": "input power",
+    "FREQUENCY": "AC input frequency",
+    "DUTY_CYCLE": "fan duty cycle",
+    "TEMPERATURE_1": "temperature 1",
+    "TEMPERATURE_2": "temperature 2",
+    "TEMPERATURE_3": "temperature 3",
+    "FAN_SPEED_1": "fan 1 speed",
+    "FAN_SPEED_2": "fan 2 speed",
+    "FAN_SPEED_3": "fan 3 speed",
+    "FAN_SPEED_4": "fan 4 speed",
+}
 
 
 class AlsLlrfZCU208(MimoMtsIoc):
@@ -107,22 +127,30 @@ class AlsLlrfLBL208(MimoMtsIoc):
         # Use a 1-based index in the PV name for consistency with the psu_* PVs
         for i in range(self.n_fans):
             name = f"chassis_fan_speed_{i + 1}"
-            self.pvs_in[name] = builder.aIn(prefix + name + ":RBV", initial_value=-1, EGU="RPM")
+            self.pvs_in[name] = builder.aIn(
+                prefix + name + ":RBV", initial_value=-1, EGU="RPM", DESC=desc(f"Chassis fan {i + 1} speed")
+            )
             self.pvs_out[name] = builder.aOut(
                 prefix + name,
                 initial_value=-1,
                 on_update_name=self.on_update_fan_speed,
                 EGU="RPM",
+                DESC=desc(f"Chassis fan {i + 1} speed setpoint"),
             )
 
         # M-CRPS power supply sensors
         for k in self.mcrps.supported_sensors:
-            self.pvs_in[k] = builder.aIn(f"{prefix}psu_{k.lower()}", initial_value=-1, EGU=McrpsDevice.UNITS[k])
+            self.pvs_in[k] = builder.aIn(
+                f"{prefix}psu_{k.lower()}",
+                initial_value=-1,
+                EGU=McrpsDevice.UNITS[k],
+                DESC=desc(f"Power supply {PSU_SENSOR_DESC.get(k, k.lower().replace('_', ' '))}"),
+            )
 
         # M-CRPS power supply status words (error flags)
         self.pvs_in["PSU_STATUS"] = builder.mbbIn(
             prefix + "psu_status",
-            DESC="M-CRPS power supply status-word",
+            DESC=desc("Power supply status word"),
         )
 
     def start_ioc(self):
@@ -187,7 +215,7 @@ class MimoZCU208(MimoMtsIoc):
 class AlsMimo5GZCU208(MimoMtsIoc):
     def __init__(self, **kwargs):
         assert os.environ["BOARD"] == "ZCU208", "This IOC is only for ZCU208 board."
-        kwargs.setdefault("ol_name", "ALS_MIMO5G_ZCU208")
+        kwargs.setdefault("ol_name", "MIMO5G_ZCU208")
         super().__init__(**kwargs)
 
     def init_rf_control(self):
