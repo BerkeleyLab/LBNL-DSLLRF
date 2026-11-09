@@ -38,6 +38,7 @@ module axil_rf_control #(
     output wire rf_permit_out,
     output wire dac_enable,
     output wire pulse_enable,
+    output wire cw_apply,           // one-cycle pulse on a 0 -> 1 write of dac_enable bit 2 (wave_gen apply)
     output wire [15:0] pulse_length,
     output wire amp_loop_enable,
     output wire amp_loop_reset,
@@ -122,6 +123,11 @@ module axil_rf_control #(
     assign pulse_length     = csr_out_regs[4][15:0];
     assign dac_enable       = csr_out_regs[5][0];
     assign pulse_enable     = csr_out_regs[5][1];
+
+    // Common apply strobe for the waveform generators: rising edge of dac_enable bit 2
+    reg cw_apply_d = 1'b0;
+    always @(posedge s_axi_aclk) cw_apply_d <= csr_out_regs[5][2];
+    assign cw_apply = csr_out_regs[5][2] && !cw_apply_d;
     assign amp_loop_enable  = csr_out_regs[6][0];
     assign amp_loop_setpoint= csr_out_regs[7][KW-1:0];
     assign amp_loop_reset   = csr_out_regs[8][0];

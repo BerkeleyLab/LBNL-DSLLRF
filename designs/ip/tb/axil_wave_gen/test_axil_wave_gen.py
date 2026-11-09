@@ -82,6 +82,7 @@ class AxilWaveGenTB:
 
         self.dut.s_axi_aresetn.value = 0
         self.dut.trigger.value = 0
+        self.dut.cw_apply.value = 0
 
         # Clear any pending data in sink
         while not self.axis_sink.empty():
@@ -171,13 +172,13 @@ class AxilWaveGenTB:
         return await self.read_register(self.ADDR_STATUS)
 
     async def collect_output(self, num_samples: int):
-        """Collect output samples from AXI-Stream with timeout"""
-        samples = []
-
-        self.log.warning(f"Collecting {num_samples} output samples...")
-        samples = await self.axis_sink.read()
-        self.log.warning(f"Successfully collected {len(samples)} samples")
-        return samples
+        """The playback rows of the next frame (up to tlast); any beat before them must be zero."""
+        frame = await self.axis_sink.recv()
+        data = list(frame.tdata)
+        idle, rows = data[: len(data) - num_samples], data[len(data) - num_samples :]
+        assert all(x == 0 for x in idle), f"non-zero idle beat before the playback: {[hex(x) for x in idle if x][:4]}"
+        self.log.info(f"collected {len(rows)} rows after {len(idle)} idle beats")
+        return rows
 
     def generate_test_pattern(self, num_samples: int, pattern: str = "counter") -> list:
         """Generate test pattern data"""
@@ -461,7 +462,7 @@ async def test_tlast_assertion(dut):
         await RisingEdge(dut.s_axi_aclk)
         timeout -= 1
 
-        if dut.m_axis_tvalid.value == 1 and dut.m_axis_tready.value == 1:
+        if play_beat(dut):
             sample_count += 1
             is_last = int(dut.m_axis_tlast.value)
 
@@ -563,3 +564,152 @@ async def test_32bit_writes_shuffled(dut):
     await tb.trigger_waveform(num_samples)
     received = await tb.collect_output(num_samples)
     assert tb.verify_samples(received, samples), "32-bit shuffled writes corrupted the waveform"
+
+
+# =============================================================================
+# Modes (register map version 2): single, loop, CW; staged values active on apply
+# =============================================================================
+
+MODE_SINGLE, MODE_LOOP, MODE_CW = 0, 1, 2
+
+
+async def set_mode(tb, mode, cw_i=0, cw_q=0, apply="ctrl"):
+    """Stage mode and CW value; apply with the ctrl bit, the cw_apply pin, or not at all (apply=None)."""
+    await tb.write_register(tb.registers["mode"]["address_offset"], mode)
+    await tb.write_register(tb.registers["cw_iq"]["address_offset"], ((cw_q & 0xFFFF) << 16) | (cw_i & 0xFFFF))
+    if apply == "ctrl":
+        await tb.write_register(tb.ADDR_CTRL, 0x8)
+    elif apply == "pin":
+        tb.dut.cw_apply.value = 1
+        await RisingEdge(tb.dut.s_axi_aclk)
+        tb.dut.cw_apply.value = 0
+    await ClockCycles(tb.dut.s_axi_aclk, 2)
+
+
+def play_beat(dut):
+    """An accepted beat that is a playback row (CW beats are valid too)."""
+    return dut.m_axis_tvalid.value == 1 and dut.m_axis_tready.value == 1 and dut.u_wave_gen.play_valid.value == 1
+
+
+async def beats(tb, cycles, playback=False):
+    """Accepted output beats over a number of cycles (only playback rows if playback): list of (tdata, tlast)."""
+    out = []
+    for _ in range(cycles):
+        await RisingEdge(tb.dut.s_axi_aclk)
+        if playback and not play_beat(tb.dut):
+            continue
+        if tb.dut.m_axis_tvalid.value == 1 and tb.dut.m_axis_tready.value == 1:
+            out.append((int(tb.dut.m_axis_tdata.value), int(tb.dut.m_axis_tlast.value)))
+    return out
+
+
+def cw_row(tb, i, q):
+    pair = ((q & 0xFFFF) << 16) | (i & 0xFFFF)
+    return sum(pair << (32 * k) for k in range(tb.out_data_width // 32))
+
+
+@cocotb.test(timeout_time=20, timeout_unit="us")
+async def test_version_register(dut):
+    """Register map version 2 is readable (the driver uses it to tell old bitstreams apart)."""
+    tb = AxilWaveGenTB(dut)
+    await tb.reset()
+    v = await tb.read_register(tb.registers["version"]["address_offset"])
+    assert v & 0xFFFFFFFF == 0x00020000, f"version 0x{v:08x}"
+
+
+@cocotb.test(timeout_time=50, timeout_unit="us")
+async def test_cw_mode(dut):
+    """CW: every cycle a valid row of the repeated I/Q pair, no tlast; status shows mode 2; triggers do nothing."""
+    tb = AxilWaveGenTB(dut)
+    await tb.reset()
+    await set_mode(tb, MODE_CW, cw_i=12345, cw_q=-2222)
+    st = await tb.read_status()
+    assert (st >> 4) & 3 == MODE_CW and st & 1 == 0, f"status 0x{st:x}"
+    out = await beats(tb, 50)
+    assert len(out) == 50, f"{len(out)} valid beats in 50 cycles"
+    assert all(d == cw_row(tb, 12345, -2222) and last == 0 for d, last in out)
+    await tb.trigger_waveform(8)  # ignored in CW
+    out = await beats(tb, 20)
+    assert all(d == cw_row(tb, 12345, -2222) for d, _ in out) and len(out) == 20
+
+
+@cocotb.test(timeout_time=50, timeout_unit="us")
+async def test_staged_until_apply(dut):
+    """Mode and CW value stay staged until apply; the common cw_apply pin applies them too."""
+    tb = AxilWaveGenTB(dut)
+    await tb.reset()
+    await set_mode(tb, MODE_CW, cw_i=100, cw_q=200, apply=None)
+    assert (await tb.read_status() >> 4) & 3 == MODE_SINGLE
+    assert not await beats(tb, 20), "output before apply"
+    await set_mode(tb, MODE_CW, cw_i=100, cw_q=200, apply="pin")
+    out = await beats(tb, 20)
+    assert len(out) == 20 and all(d == cw_row(tb, 100, 200) for d, _ in out)
+    # a new staged value does not change the output until the next apply
+    await set_mode(tb, MODE_CW, cw_i=7, cw_q=8, apply=None)
+    assert all(d == cw_row(tb, 100, 200) for d, _ in await beats(tb, 10))
+    await set_mode(tb, MODE_CW, cw_i=7, cw_q=8, apply="pin")
+    assert all(d == cw_row(tb, 7, 8) for d, _ in await beats(tb, 10))
+
+
+@cocotb.test(timeout_time=100, timeout_unit="us")
+async def test_loop_mode(dut):
+    """Loop: one trigger plays the waveform pass after pass (tlast per pass); leaving loop completes the pass."""
+    tb = AxilWaveGenTB(dut)
+    await tb.reset()
+    n = 6
+    samples = tb.generate_test_pattern(n, "random")
+    await tb.write_waveform_words(tb.samples_to_axi_words(samples))
+    await set_mode(tb, MODE_LOOP)
+    await tb.trigger_waveform(n)
+    out = await beats(tb, 10 * n, playback=True)
+    assert len(out) >= 4 * n, f"only {len(out)} beats"
+    first = next(k for k, (d, _) in enumerate(out) if d == samples[0])
+    for k, (d, last) in enumerate(out[first:]):
+        assert d == samples[k % n], f"beat {k}: wrong row"
+        assert last == (k % n == n - 1), f"beat {k}: tlast {last}"
+    await set_mode(tb, MODE_SINGLE)
+    assert await tb._wait_not_busy(4 * n + 50), "loop did not stop after leaving loop mode"
+    tail = await beats(tb, 3 * n)
+    assert not tail, "output after the loop stopped"
+
+
+@cocotb.test(timeout_time=100, timeout_unit="us")
+async def test_cw_entry_stops_playback(dut):
+    """Applying CW during a playback stops it at once; back in single mode a trigger plays from row 0."""
+    tb = AxilWaveGenTB(dut)
+    await tb.reset()
+    n = 64
+    samples = tb.generate_test_pattern(n, "random")
+    await tb.write_waveform_words(tb.samples_to_axi_words(samples))
+    await tb.trigger_waveform(n)
+    await ClockCycles(tb.dut.s_axi_aclk, 10)
+    await set_mode(tb, MODE_CW, cw_i=1, cw_q=-1)
+    assert (await tb.read_status()) & 1 == 0, "playback still busy in CW"
+    assert all(d == cw_row(tb, 1, -1) for d, _ in await beats(tb, 10))
+    await set_mode(tb, MODE_SINGLE)
+    assert not await beats(tb, 10), "output in single mode without a trigger"
+    trig = cocotb.start_soon(beats(tb, n + 40, playback=True))
+    await tb.trigger_waveform(n)
+    out = await trig
+    assert [d for d, _ in out] == samples, "playback after CW not from row 0"
+
+
+@cocotb.test(timeout_time=50, timeout_unit="us")
+async def test_no_beats_between_playbacks(dut):
+    """
+    Outside playback and CW, tvalid is low: no beats before or after a single playback, so the clock-crossing FIFO
+    behind the generator empties and every playback starts with the same latency (axis_idle_zero at the DAC input
+    makes the gaps zero). Status bit 2 marks playback rows.
+    """
+    tb = AxilWaveGenTB(dut)
+    await tb.reset()
+    n = 8
+    samples = tb.generate_test_pattern(n, "random")
+    await tb.write_waveform_words(tb.samples_to_axi_words(samples))
+    assert (await tb.read_status() >> 2) & 1 == 0, "playback valid before a trigger"
+    trig = cocotb.start_soon(beats(tb, n + 60))
+    await tb.trigger_waveform(n)
+    out = await trig
+    assert [d for d, _ in out] == samples, f"{len(out)} beats; expected exactly the {n} playback rows"
+    assert [last for _, last in out] == [0] * (n - 1) + [1], "tlast only on the last row"
+    assert (await tb.read_status() >> 2) & 1 == 0, "playback valid after the playback"

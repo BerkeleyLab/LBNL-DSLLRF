@@ -77,7 +77,7 @@ ol_configs = {
         },
         "ioc": {"decimation": 16},
     },
-    "MIMO5G_ZCU208": {
+    "MIMO_5G_ZCU208": {
         "bitfile_name": files(overlays).joinpath("zcu208/mimo_mts_5g.bit"),
         "board": zcu208,
         "sampling_rate_hz": {
@@ -109,7 +109,7 @@ ol_configs = {
         },
         "ioc": {"decimation": 20},
     },
-    "MIMO_ZCU208_MAX": {
+    "MIMO_MAX_ZCU208": {
         "bitfile_name": files(overlays).joinpath("zcu208/mimo_mts_max.bit"),
         "board": zcu208,
         "sampling_rate_hz": {

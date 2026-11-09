@@ -177,7 +177,7 @@ boot-dependent); the LMX2594 ÷2 ambiguity remains (9992.8 MHz VCO ÷ 2).
 Costs: RFDC reconfiguration (ADC 4996.4 MSPS, ÷10) and rebuilt ALS overlays; for single-LMX clocking (OUTA/OUTB share
 the channel divider) the DAC also moves to 10·f_ref with ×10 interpolation (the carrier stays in the DAC's 2nd
 Nyquist zone, mix-mode; its image at 1998.6 MHz is outside the 3 GHz BPF); new LMX `.tcs` files and a SYSREF/MTS
-check (`MIMO5G_ZCU208` with `LMX2594_5G.tcs` is the starting point); 4996.4 MSPS is within 0.07 % of the RF-ADC
+check (`MIMO_5G_ZCU208` with `LMX2594_5G.tcs` is the starting point); 4996.4 MSPS is within 0.07 % of the RF-ADC
 maximum, so check the speed-grade limit and tile power. A first check needs no rebuild: on the existing 5 GSPS
 overlay, apply a tone at 3·Fs/5 and confirm the spurs 125 and 250 MHz away. The 5 GSPS work is item 2 of
 [development_plan.md](development_plan.md).

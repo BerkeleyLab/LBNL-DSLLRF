@@ -33,7 +33,7 @@ cd designs/<BOARD>/<design> && make           # BOARD in ZCU208|LBL208|ZCU216; `
 make block_design                             # only create the project and block design, no synthesis
 
 # Run an IOC on the board (production)
-sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc   # entry points in pyproject.toml (also mimo5g-zcu208-ioc)
+sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc   # entry points in pyproject.toml (also mimo-5g-zcu208-ioc)
 ```
 
 `mimo_mts/tests/*.py` are on-board scripts (argparse `main()`), not pytest tests; they need real hardware. The RTL

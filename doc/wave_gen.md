@@ -108,9 +108,20 @@ narrow and unaligned transfers and `WSTRB`, and reads return the stored data. It
 writes first, at one write beat per clock; reads take about 9 clocks per beat (read-back is for checking, not speed).
 All responses are OKAY: an error response to a CPU store raises an asynchronous SError on the A53.
 
-**`axil_wave_gen`** (AXI4-Lite, 64-bit, PYNQ driver `mimo_mts/drivers/wave_gen.py`): registers `ctrl` (0x00:
-bit 0 trigger, bit 1 reserved (was flush), bit 2 trigger_mode), `wave_length` (0x08), `status` (0x10: busy); waveform memory from 0x18
-(`waveform_data` in `axil_wave_gen.json`). Waveform reads are not implemented here and return a register value.
+**`axil_wave_gen`** (AXI4-Lite, 64-bit, PYNQ driver `mimo_mts/drivers/wave_gen.py`, `axil_wave_gen.json`). Register
+map v2 (`version` = 0x00020000):
+
+| Offset | Register | Fields |
+|---|---|---|
+| 0x00 | `ctrl` | bit 0 trigger, bit 1 reserved (was flush), bit 2 trigger_mode, bit 3 apply (pulse) |
+| 0x08 | `wave_length` | rows to play |
+| 0x10 | `status` | bit 0 busy, bit 1 tready, bit 2 playback row valid, bits 5:4 active mode, bits 16+ play row |
+| 0x18 | `mode` | staged mode: 0 single, 1 loop, 2 CW |
+| 0x20 | `cw_iq` | staged CW value: I in 15:0, Q in 31:16 |
+| 0x38 | `version` | 0x00020000; reads 0 on v1 bitstreams, whose waveform memory starts at 0x18 |
+| 0x40 | `waveform_data` | waveform memory |
+
+Waveform reads are not implemented here and return a register value.
 
 Both wrappers complete every write in a bounded time, whatever the state of playback or of the downstream stream.
 
@@ -123,6 +134,48 @@ Both wrappers complete every write in a bounded time, whatever the state of play
 
 No flush is needed: the flush register, port and driver methods were removed with the gearbox. `wait_idle()` waits
 until playback has finished (with a timeout).
+
+## Modes, CW and one generator per DAC
+
+`wave_gen` has three modes:
+
+- **single** (0): a trigger plays `wave_length` rows once.
+- **loop** (1): a trigger starts playback, which wraps from the last row to row 0 until the mode changes.
+- **CW** (2): the output is the constant `cw_iq` sample ({Q, I} repeated across the row) with `tvalid` high, and
+  triggers are ignored. Entering CW stops any playback.
+
+`mode` and `cw_iq` are staged. They take effect together on an apply pulse: `ctrl.apply` for one generator, or the
+common `cw_apply` input for all of them. The CW value or mode of every DAC can therefore be changed in the same clock.
+`status.mode` reads back the active mode.
+
+**Idle output.** The RF-DAC converts one word every cycle and ignores `tvalid`, so when the generator stops sending,
+the DAC keeps converting the last row: in single mode a pulse did not end unless the waveform ended in zeros (found
+with the IOC, whose startup waveform is constant). `axis_idle_zero` at each DAC input (after the register slice, at
+500 MHz) outputs the incoming word when it is valid and zero otherwise, with `tvalid` always high, like the earlier
+`dac_streamer`. The generator itself keeps gaps in `tvalid` between playbacks (CW: always valid): a first version
+sent zero beats from the generator instead, which kept the clock-crossing FIFO behind it full, added 92 ns of
+trigger-to-DAC latency and left the latency set by the FIFO level at startup (it moved by 3 ns between two loads
+of the same bitstream). With the gaps the FIFO empties and every playback starts with the shortest, fixed latency.
+`status` bit 2 shows whether the current beat is a playback row.
+
+In `mimo_mts_5g` (feature/per-dac-cw) each DAC has its own `axil_wave_gen` (`transmitter/dac0` … `dac7`, at
+0xA0280000 + n × 0x40000) feeding its RFDC stream directly. The broadcaster and the DAC loopback capture
+(`hier_dac_cap`) are gone. All generators share the trigger, and `axil_rf_control` drives their common `cw_apply`
+from the rising edge of `dac_enable` bit 2.
+
+Software (`mimo_mts/overlay.py`, driver `WaveGen`):
+
+| Call | Effect |
+|---|---|
+| `ol.wave_gens` | generators sorted by DAC number; `ol.wave_gen` is DAC 0 |
+| `ol.write_dac_iq_buf(i, q)` | same waveform to every DAC |
+| `ol.write_dac_iq_buf_ch(n, i, q)` | waveform of DAC n |
+| `wg.mode = WaveGen.MODE_LOOP` | stage a mode |
+| `wg.set_cw(i, q)`, `wg.set_cw_amp_phase(amp, deg)` | stage a CW value (amp 0…1 of full scale) |
+| `ol.apply_dac_settings()` | apply all staged settings at once (common pulse; per-generator `apply()` as a fallback) |
+
+The IOC exposes `DAC{n}:IWF`, `DAC{n}:QWF`, `DAC{n}:mode`, `DAC{n}:mode:RBV`, `DAC{n}:cw:amp`, `DAC{n}:cw:phase` and
+`DAC:apply` (see `doc/PVs.md`).
 
 ## Hardware test
 
@@ -158,6 +211,31 @@ ZCU208 with 8 DAC-to-ADC loopback cables, `mimo_mts_5g` with all 17 captures on 
 - No CPU stall while rewriting the waveform during playback (slowest write 87 µs); capture counters one per trigger;
   generator busy 0.02 % of the time (16.4 µs per 0.1 s trigger). `test_mimo5g.py --repeat 3 --nco`: 52/52 passed.
 
+Per-DAC build (`transmitter/dac0` … `dac7`, 8 November 2026; WNS +0.103 ns at 500 MHz, +0.197 ns at 250 MHz,
+URAM 40, BRAM36 333), `test_mimo5g.py --nco` 45/45:
+
+- DAC n plays its own tone (100 + 25n MHz) and ADC n sees it, on all 8 channels.
+- CW on all DACs from one common apply, carrier from the DAC NCO at 200 MHz: commanded phase steps of 30n° measured
+  within 0.06°, halving the amplitude halves the ADC amplitude (ratio 0.499–0.501).
+- Loop mode, 1024 rows (4.096 µs) with a whole number of tone cycles: the 8.2 µs captures are continuous across the
+  wraps (≤ 0.4°); playback stops after leaving loop mode.
+- Captures continuous within 0.4° with the tone from the generator and from the NCO; slowest write during playback
+  75–272 µs; no DAC FIFO flags.
+
+A first run failed the loop check on one channel with a single 62° phase step: the test read a free-running capture
+while the next trigger overwrote it. The free-running loop shifts the tone phase by 67.5° per 0.1 s trigger, so a torn
+read shows; with a trigger-locked tone it is invisible. The test now reads captures in one-shot mode (arm, wait,
+read); the IOC still reads free-running (development plan item 11).
+
+Final build with `axis_idle_zero` at the DAC inputs (9 November 2026; WNS +0.123 ns at 500 MHz, +0.139 ns at
+250 MHz, URAM 40, BRAM36 333, LUTs 64.6k): `test_mimo5g.py --nco` 45/45 on two loads of the bitstream, trigger to
+ADC 190 ns on all channels in both (188 ns before, plus the zero-fill register; 278–281 ns with the idle zeros sent
+from the generator). Through the IOC (`mimo-5g-zcu208-ioc`), `mimo_mts/tests/test_ioc_dac.py` 34/34: shared and
+per-DAC waveforms, a 1 µs pulse on DAC3 only (996 ns, then zero), mode staging and `DAC:apply`, CW phase step
++89.99° with amplitude ratio 0.500, 45°·n on one apply within 0.12°, CW phase stable to 0.02°, loop vs single.
+Running it found two IOC bugs, both fixed: the IOC never set the generators' `trigger_mode` (they never played),
+and pythonSoftIOC ignores a write of an unchanged value unless the record has `always_update=True`.
+
 The first builds showed a phase step in half the captures and random DAC-capture offsets. The debug status added to
 `axil_wave_gen` (tready, tvalid, play row) traced it to the `wave_length = 0` bug below, not to the stream or the
 captures.
@@ -188,8 +266,8 @@ In `mimo_mts_5g` (8 Nov 2026) all 17 capture paths (16 ADC streams and `hier_dac
 `RAM_STYLE = "block"` and DEPTH 2048 (8.2 µs at 5 GSPS), replacing `adc_capture` + `blk_mem_gen` + `axi_bram_ctrl`,
 with a 20 → 40-byte converter in front. The overlay meets timing (WNS +0.072 ns at 500 MHz, +0.141 ns at 250 MHz;
 the 1 Aug build failed by −0.057 ns in a receiver converter): URAM 73 → 5, BRAM36 21.5 → 361.5, LUTs 95k → 57k. The
-tightest path is now the DAC broadcaster's register slice driving a DAC tile across the die, which the per-channel
-generators remove. On-board check: `mimo_mts/tests/test_mimo5g.py`.
+tightest path was then the DAC broadcaster's register slice driving a DAC tile across the die, which the per-DAC
+generators removed (WNS +0.103 ns at 500 MHz in the per-DAC build). On-board check: `mimo_mts/tests/test_mimo5g.py`.
 
 ## History: why the gearbox core hung the PS
 

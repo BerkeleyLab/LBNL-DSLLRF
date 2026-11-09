@@ -123,13 +123,13 @@ class AxiWaveGenTB:
         await ClockCycles(self.dut.clk, 2)
 
     async def collect_output(self, num_samples: int):
-        """Collect output samples from AXI-Stream with timeout"""
-        samples = []
-
-        self.log.warning(f"Collecting {num_samples} output samples...")
-        samples = await self.axis_sink.read()
-        self.log.warning(f"Successfully collected {len(samples)} samples")
-        return samples
+        """The playback rows of the next frame (up to tlast); any beat before them must be zero."""
+        frame = await self.axis_sink.recv()
+        data = list(frame.tdata)
+        idle, rows = data[: len(data) - num_samples], data[len(data) - num_samples :]
+        assert all(x == 0 for x in idle), f"non-zero idle beat before the playback: {[hex(x) for x in idle if x][:4]}"
+        self.log.info(f"collected {len(rows)} rows after {len(idle)} idle beats")
+        return rows
 
     def generate_test_pattern(self, num_samples: int, pattern: str = "counter") -> list:
         """Generate test pattern data"""
@@ -224,6 +224,11 @@ class AxiWaveGenTB:
 # =============================================================================
 # Test Cases
 # =============================================================================
+
+
+def play_beat(dut):
+    """An accepted beat that is a playback row."""
+    return dut.m_axis_tvalid.value == 1 and dut.m_axis_tready.value == 1 and dut.u_wave_gen.play_valid.value == 1
 
 
 @cocotb.test(timeout_time=5, timeout_unit="us")
@@ -386,7 +391,7 @@ async def test_tlast_assertion(dut):
         await RisingEdge(dut.clk)
         timeout -= 1
 
-        if dut.m_axis_tvalid.value == 1 and dut.m_axis_tready.value == 1:
+        if play_beat(dut):
             sample_count += 1
             is_last = int(dut.m_axis_tlast.value)
 
@@ -557,7 +562,7 @@ async def test_retrigger_stress(dut):
         nonlocal beats, frames
         while True:
             await RisingEdge(dut.clk)
-            if dut.m_axis_tvalid.value == 1 and dut.m_axis_tready.value == 1:
+            if play_beat(dut):
                 beats += 1
                 if dut.m_axis_tlast.value == 1:
                     frames += 1
@@ -593,7 +598,7 @@ async def test_wave_length_zero_plays_full_depth_once(dut):
         nonlocal beats, lasts
         while True:
             await RisingEdge(dut.clk)
-            if dut.m_axis_tvalid.value == 1 and dut.m_axis_tready.value == 1:
+            if play_beat(dut):
                 beats += 1
                 lasts += int(dut.m_axis_tlast.value)
 

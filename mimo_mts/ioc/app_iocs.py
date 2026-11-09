@@ -212,10 +212,10 @@ class MimoZCU208(MimoMtsIoc):
         # self.drive_test_awg()
 
 
-class AlsMimo5GZCU208(MimoMtsIoc):
+class Mimo5GZCU208(MimoMtsIoc):
     def __init__(self, **kwargs):
         assert os.environ["BOARD"] == "ZCU208", "This IOC is only for ZCU208 board."
-        kwargs.setdefault("ol_name", "MIMO5G_ZCU208")
+        kwargs.setdefault("ol_name", "MIMO_5G_ZCU208")
         super().__init__(**kwargs)
 
     def init_rf_control(self):
@@ -263,8 +263,8 @@ def mimo_zcu208_ioc():
     run_app_ioc(MimoZCU208, "MIMO ZCU208 IOC")
 
 
-def mimo5g_zcu208_ioc():
-    run_app_ioc(AlsMimo5GZCU208, "ALS MIMO 5G ZCU208 IOC")
+def mimo_5g_zcu208_ioc():
+    run_app_ioc(Mimo5GZCU208, "MIMO 5G ZCU208 IOC")
 
 
 def mimo_lbl208_ioc():

@@ -32,7 +32,7 @@
     "dac_enable": {
         "address_offset": 20,
         "access": "read-write",
-        "description": "Bit 0 DAC enable, bit 1 pulse enable",
+        "description": "Bit0 DAC, bit1 pulse enable, bit2 apply",
         "size": 32,
         "fields": {
             "dac_enable": {
@@ -46,6 +46,12 @@
                 "bit_width": 1,
                 "access": "read-write",
                 "description": "Pulse enable"
+            },
+            "cw_apply": {
+                "bit_offset": 2,
+                "bit_width": 1,
+                "access": "read-write",
+                "description": "Rising edge: apply the staged wave_gen mode / CW value on all generators"
             }
         }
     },

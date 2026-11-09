@@ -1,6 +1,6 @@
 # EPICS Process Variables
 
-The IOCs (`sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc`, `mimo5g-zcu208-ioc`) publish the PVs below, all under
+The IOCs (`sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc`, `mimo-5g-zcu208-ioc`) publish the PVs below, all under
 the IOC prefix `$P` (the overlay name, e.g. `ALS_LLRF_LBL208`). The tables at the end are generated from the IOC code
 (`python -m mimo_mts.ioc.gen_pv_docs`, checked in CI); the notes here explain how to use each group.
 Setpoints have a matching `:RBV` readback where the hardware can be read back.
@@ -32,12 +32,20 @@ zone 2 above Fs/2, where the spectrum is inverted, so 3 GHz at 4 GSPS becomes DA
 zone 2. The `:RBV` is computed back from the NCO settings. The NCO PVs themselves (`rfdc_mixer:{adc,dac}_mixer_nco_*`,
 `rfdc_mixer:{ADC,DAC}{n}:nco_*`: signed frequency in MHz, Nyquist zone 1 or 2, phase in degrees) remain for experts.
 
-## DAC waveform
+## DAC waveform, modes and CW
 
-`DAC:IWF` and `DAC:QWF` are the I/Q baseband waveform (int16) played by all DACs from one waveform memory; writing
-either writes both to the memory (a shorter array is padded with zeros). `DAC:TWF` is the time axis in ns at the
-complex input rate (DAC rate / interpolation). One waveform per DAC follows with the per-channel generators
-(`doc/development_plan.md`, item 2).
+`DAC:IWF` and `DAC:QWF` are the I/Q baseband waveform (int16) for all DACs; writing either writes both (a shorter
+array is padded with zeros). `DAC:TWF` is the time axis in ns at the complex input rate (DAC rate / interpolation).
+
+On overlays with one waveform generator per DAC (`mimo_mts_5g`), each DAC also has:
+
+- `DAC{n}:IWF` / `DAC{n}:QWF`: its own waveform (the shared `DAC:IWF` / `QWF` still write the same one to all DACs).
+- `DAC{n}:mode`: `single` (play the waveform once per trigger), `loop` (a trigger starts playback that repeats until
+  the mode changes) or `CW` (constant output); `DAC{n}:mode:RBV` is the mode in effect.
+- `DAC{n}:cw:amp` (0–1, fraction of full scale) and `DAC{n}:cw:phase` (degrees): the CW amplitude and phase. The CW
+  frequency is the DAC mixer frequency (`rfdc_mixer:DAC{n}:rf_freq_mhz` or `dac_rf_freq_mhz`).
+- Mode and CW settings are staged: write them for any number of DACs, then `DAC:apply` = 1 makes all of them active
+  on the same clock (phase-coherent changes across channels).
 
 ## RF-ADC calibration
 
@@ -76,22 +84,34 @@ speed, `chassis_fan_speed_{1,2}:RBV` reads it, in rpm.
 | `AlsLlrfZCU208` | `llrf-zcu208-ioc` | `ALS_LLRF_ZCU208` | `ALS_LLRF_ZCU208` | 8 / 8 | 288 |
 | `AlsLlrfLBL208` | `llrf-lbl208-ioc` | `ALS_LLRF_LBL208` | `ALS_LLRF_LBL208` | 8 / 8 | 309 |
 | `MimoZCU208` | `mimo-zcu208-ioc` | `MIMO_ZCU208` | `MIMO_ZCU208` | 8 / 8 | 288 |
-| `AlsMimo5GZCU208` | `mimo5g-zcu208-ioc` | `MIMO5G_ZCU208` | `MIMO5G_ZCU208` | 8 / 8 | 288 |
+| `Mimo5GZCU208` | `mimo-5g-zcu208-ioc` | `MIMO_5G_ZCU208` | `MIMO_5G_ZCU208` | 8 / 8 | 337 |
 | `MimoLBL208` | `mimo-lbl208-ioc` | `MIMO_LBL208` | `MIMO_LBL208` | 8 / 8 | 288 |
 | `MimoZCU216` | `mimo-zcu216-ioc` | `MIMO_ZCU216` | `MIMO_ZCU216` | 16 / 16 | 512 |
 
 `{n}` is the ADC or DAC channel (0 to ADCs − 1 or DACs − 1 of the IOC), `{i}` the chassis fan (1, 2). All names start with `$P:`. Every IOC also has the standard `devIocStats` records under `$P:ioc`.
 
-### Time axes and waveforms
+### DAC waveforms, modes and CW
+
+| PV | Type | Description | Units | IOCs |
+|---|---|---|---|---|
+| `DAC:IWF` | waveform | DAC waveform I, all DACs | cnt | all |
+| `DAC:QWF` | waveform | DAC waveform Q, all DACs | cnt | all |
+| `DAC:TWF` | waveform | Time axis of the DAC waveform | ns | all |
+| `DAC:apply` | bo | Apply staged DAC modes / CW, all DACs |  | `Mimo5GZCU208` |
+| `DAC{n}:IWF` | waveform | DAC{n} waveform I | cnt | `Mimo5GZCU208` |
+| `DAC{n}:QWF` | waveform | DAC{n} waveform Q | cnt | `Mimo5GZCU208` |
+| `DAC{n}:cw:amp` | ao | DAC{n} CW amplitude (fraction of FS) |  | `Mimo5GZCU208` |
+| `DAC{n}:cw:phase` | ao | DAC{n} CW phase | deg | `Mimo5GZCU208` |
+| `DAC{n}:mode` | mbbo | DAC{n} mode (active on DAC:apply) |  | `Mimo5GZCU208` |
+| `DAC{n}:mode:RBV` | mbbi | DAC{n} active mode |  | `Mimo5GZCU208` |
+
+### ADC waveforms and time axes
 
 | PV | Type | Description | Units | IOCs |
 |---|---|---|---|---|
 | `ADC:TWF` | waveform | Time axis of the ADC waveforms | ns | all |
 | `ADC{n}:IWF` | waveform | ADC{n} captured I samples | cnt | all |
 | `ADC{n}:QWF` | waveform | ADC{n} captured Q samples | cnt | all |
-| `DAC:IWF` | waveform | DAC waveform I, all DACs | cnt | all |
-| `DAC:QWF` | waveform | DAC waveform Q, all DACs | cnt | all |
-| `DAC:TWF` | waveform | Time axis of the DAC waveform | ns | all |
 | `DSP:ADC{n}:AWF` | waveform | ADC{n} amplitude, decimated | cnt | all |
 | `DSP:ADC{n}:PWF` | waveform | ADC{n} phase, decimated | deg | all |
 | `DSP:TWF` | waveform | Time axis of the DSP waveforms | ns | all |
@@ -123,8 +143,8 @@ speed, `chassis_fan_speed_{1,2}:RBV` reads it, in rpm.
 | `rf_control:amp_loop_setpoint` | longout | Amplitude loop setpoint |  | all |
 | `rf_control:amp_loop_setpoint:RBV` | longin | Amplitude loop setpoint |  | all |
 | `rf_control:amp_measured:RBV` | longin | Amplitude monitor |  | all |
-| `rf_control:dac_enable` | longout | Bit 0 DAC enable, bit 1 pulse enable |  | all |
-| `rf_control:dac_enable:RBV` | longin | Bit 0 DAC enable, bit 1 pulse enable |  | all |
+| `rf_control:dac_enable` | longout | Bit0 DAC, bit1 pulse enable, bit2 apply |  | all |
+| `rf_control:dac_enable:RBV` | longin | Bit0 DAC, bit1 pulse enable, bit2 apply |  | all |
 | `rf_control:phs_loop_enable` | longout | Phase loop enable |  | all |
 | `rf_control:phs_loop_enable:RBV` | longin | Phase loop enable |  | all |
 | `rf_control:phs_loop_err:RBV` | longin | Phase loop error |  | all |
