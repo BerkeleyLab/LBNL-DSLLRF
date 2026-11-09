@@ -13,6 +13,7 @@ import numpy as np
 from softioc import asyncio_dispatcher, builder, softioc
 
 from mimo_mts.drivers.adc_calibration import DEFAULT_CAL_FILE
+from mimo_mts.drivers.wave_gen import MODE_SINGLE
 from mimo_mts.overlay import MimoMtsOverlay
 from mimo_mts.utils.rfdc_freq import nco_to_rf, rf_to_nco
 
@@ -75,6 +76,7 @@ class MimoMtsIoc:
         self.adc_pulse_start_ns = np.ones(self.n_adc, dtype=np.int32) * 1000
         self.adc_pulse_end_ns = np.ones(self.n_adc, dtype=np.int32) * 1000
         self.init_rf_control()
+        self.init_wave_gens()
         self.update_adc_bufs()
         self._init_per_channel_mixer_cfg()
         if hasattr(self.ol, "adc_cal"):
@@ -123,6 +125,19 @@ class MimoMtsIoc:
         self.llrf_register_map.dac_enable = 1
         self.llrf_register_map.amp_loop_setpoint = 0
 
+    def init_wave_gens(self):
+        """
+        Waveform generators (axil_wave_gen) play on the rf_control trigger, like the captures; their reset default is
+        the software trigger only, so without this they never play. Single mode over the whole memory.
+        """
+        for wg in getattr(self.ol, "wave_gens", []):
+            wg.trigger_mode = 1
+            wg.wave_length = 0
+            if getattr(wg, "version", 0):
+                wg.mode = MODE_SINGLE
+        if getattr(self.ol, "wave_gens", None) and all(getattr(g, "version", 0) for g in self.ol.wave_gens):
+            self.ol.apply_dac_settings()
+
     def init_adc_cal(self):
         """
         RF-ADC calibration policy at IOC start. Default: leave the ADCs as RF-ADC startup
@@ -162,8 +177,11 @@ class MimoMtsIoc:
                 pulse_data = self.adc_bufs_mean[ix][start:end]
                 self.pvs_in[f"DSP:ADC{ix}:pulse_stat:amp:mean"].set(np.abs(pulse_data).mean())
                 self.pvs_in[f"DSP:ADC{ix}:pulse_stat:amp:std"].set(np.abs(pulse_data).std())
-                self.pvs_in[f"DSP:ADC{ix}:pulse_stat:phs:mean"].set(np.angle(pulse_data, deg=True).mean())
-                self.pvs_in[f"DSP:ADC{ix}:pulse_stat:phs:std"].set(np.angle(pulse_data, deg=True).std())
+                # phase of the mean phasor, and spread around it: no wrap error near +-180 deg
+                mean_phasor = pulse_data.mean()
+                phs_dev = np.angle(pulse_data * np.conj(mean_phasor), deg=True)
+                self.pvs_in[f"DSP:ADC{ix}:pulse_stat:phs:mean"].set(np.angle(mean_phasor, deg=True))
+                self.pvs_in[f"DSP:ADC{ix}:pulse_stat:phs:std"].set(phs_dev.std())
 
     def encode_2s_comp(self, val):
         """encode signed integer to 2's complement representation"""
@@ -209,6 +227,7 @@ class MimoMtsIoc:
 
         self.add_mixer_pvs()
         self.add_dac_wfm_pvs()
+        self.add_dac_channel_pvs()
         self.add_rf_control_pvs()
         self.add_pulse_pvs()
         if hasattr(self.ol, "adc_cal"):
@@ -239,9 +258,92 @@ class MimoMtsIoc:
                 name,
                 self.dac_i if part == "I" else self.dac_q,
                 on_update=lambda _value: self._on_dac_wfm(),
+                always_update=True,
                 DESC=desc(f"DAC waveform {part}, all DACs"),
                 EGU="cnt",
             )
+
+    def add_dac_channel_pvs(self):
+        """
+        Per-DAC waveform, mode and CW PVs, on overlays with one waveform generator per DAC (doc/wave_gen.md):
+            DAC{n}:IWF, DAC{n}:QWF        waveform of one DAC (int16 I/Q)
+            DAC{n}:mode, DAC{n}:mode:RBV  staged and active mode: single (playback per trigger), loop, CW
+            DAC{n}:cw:amp, DAC{n}:cw:phase  staged CW amplitude (fraction of full scale) and phase (deg)
+            DAC:apply                     write 1: staged modes and CW values become active on all DACs at once
+        The CW carrier comes from the DAC fine mixer (rfdc_mixer:*:rf_freq_mhz).
+        """
+        gens = getattr(self.ol, "wave_gens", [])
+        if len(gens) < 2 or not all(getattr(g, "version", 0) for g in gens):
+            return
+        self.dac_ch_iq = {}
+        self.dac_cw = {}
+        modes = {"ZRST": "single", "ONST": "loop", "TWST": "CW"}
+        for ch, wg in enumerate(gens):
+            n = wg.wave_mem.size // 2
+            self.dac_ch_iq[ch] = {"I": np.zeros(n, dtype=np.int16), "Q": np.zeros(n, dtype=np.int16)}
+            self.dac_cw[ch] = {"amp": 0.0, "phase": 0.0}
+            for part in ("I", "Q"):
+                self.pvs_out[f"DAC{ch}:{part}WF"] = builder.WaveformOut(
+                    f"DAC{ch}:{part}WF",
+                    self.dac_ch_iq[ch][part],
+                    on_update=lambda _v, ch=ch: self._on_dac_ch_wfm(ch),
+                    always_update=True,  # DAC:IWF/QWF also write this memory: a repeated value must still be written
+                    DESC=desc(f"DAC{ch} waveform {part}"),
+                    EGU="cnt",
+                )
+            self.pvs_out[f"DAC{ch}:mode"] = builder.mbbOut(
+                f"DAC{ch}:mode",
+                initial_value=0,
+                on_update=lambda v, wg=wg: setattr(wg, "mode", int(v)),
+                always_update=True,
+                DESC=desc(f"DAC{ch} mode (active on DAC:apply)"),
+                **modes,
+            )
+            self.pvs_in[f"DAC{ch}:mode:RBV"] = builder.mbbIn(
+                f"DAC{ch}:mode:RBV", initial_value=wg.active_mode, DESC=desc(f"DAC{ch} active mode"), **modes
+            )
+            self.pvs_out[f"DAC{ch}:cw:amp"] = builder.aOut(
+                f"DAC{ch}:cw:amp",
+                initial_value=0.0,
+                on_update=lambda v, ch=ch: self._on_dac_cw(ch, amp=v),
+                always_update=True,
+                DESC=desc(f"DAC{ch} CW amplitude (fraction of FS)"),
+                DRVL=0,
+                DRVH=1,
+                PREC=4,
+            )
+            self.pvs_out[f"DAC{ch}:cw:phase"] = builder.aOut(
+                f"DAC{ch}:cw:phase",
+                initial_value=0.0,
+                on_update=lambda v, ch=ch: self._on_dac_cw(ch, phase=v),
+                always_update=True,
+                DESC=desc(f"DAC{ch} CW phase"),
+                EGU="deg",
+                PREC=2,
+            )
+        self.pvs_out["DAC:apply"] = builder.boolOut(
+            "DAC:apply",
+            ZNAM="idle",
+            ONAM="apply",
+            always_update=True,
+            on_update=lambda v: v and self.ol.apply_dac_settings(),
+            DESC=desc("Apply staged DAC modes / CW, all DACs"),
+        )
+
+    def _on_dac_ch_wfm(self, ch):
+        n = self.dac_ch_iq[ch]["I"].size
+        for part in ("I", "Q"):
+            v = np.asarray(self.pvs_out[f"DAC{ch}:{part}WF"].get(), dtype=np.int16)[:n]
+            self.dac_ch_iq[ch][part] = np.pad(v, (0, n - v.size))
+        self.ol.write_dac_iq_buf_ch(ch, self.dac_ch_iq[ch]["I"], self.dac_ch_iq[ch]["Q"])
+        logger.info("DAC%d waveform written (%d I/Q samples)", ch, n)
+
+    def _on_dac_cw(self, ch, **kw):
+        self.dac_cw[ch].update(kw)
+        try:
+            self.ol.wave_gens[ch].set_cw_amp_phase(self.dac_cw[ch]["amp"], self.dac_cw[ch]["phase"])
+        except ValueError as e:
+            logger.error("DAC%d CW: %s", ch, e)
 
     def _on_dac_wfm(self):
         n = self.dac_i.size
@@ -366,6 +468,7 @@ class MimoMtsIoc:
                 prefix + name,
                 initial_value=value,
                 on_update_name=self.on_update_name,
+                always_update=True,  # global and per-channel PVs set the same NCOs: re-apply a repeated value
                 DESC=desc(f"{what} {text}"),
                 EGU=egu,
             )
@@ -393,6 +496,7 @@ class MimoMtsIoc:
                 prefix + name,
                 initial_value=rf_mhz,
                 on_update_name=self.on_update_name,
+                always_update=True,
                 DESC=desc(f"{what} RF frequency (sets NCO, zone)"),
                 EGU="MHz",
                 PREC=3,
@@ -535,6 +639,11 @@ class MimoMtsIoc:
 
             if hasattr(self.ol, "adc_cal"):
                 self.update_adc_cal_pvs()
+
+            for ch, wg in enumerate(getattr(self.ol, "wave_gens", [])):
+                rbv = self.pvs_in.get(f"DAC{ch}:mode:RBV")
+                if rbv is not None:
+                    rbv.set(wg.active_mode)
 
     def on_update_name(self, value, pv_name):
         """

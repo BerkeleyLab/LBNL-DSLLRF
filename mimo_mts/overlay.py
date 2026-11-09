@@ -1,5 +1,6 @@
 import functools
 import logging
+import re
 import time
 from pathlib import Path
 from pprint import pformat
@@ -186,9 +187,17 @@ class MimoMtsOverlay(Overlay):
         if "frontend_control_axi_0" in self.ip_dict:
             self.ffe = self.frontend_control_axi_0
 
+        # Waveform generators: one per DAC in transmitter/dac{n}/ (mimo_mts_5g), or a single one (hier_llrf/ in base,
+        # transmitter/hier_dac_play/ in older mimo_mts_5g builds). Sorted by DAC number; wave_gen is the first.
         wave_gen_paths = [path for path in self.ip_dict if path.split("/")[-1] == "axil_wave_gen_0"]
-        if wave_gen_paths:  # transmitter/hier_dac_play/ in mimo_mts_5g, hier_llrf/ in base
-            self.wave_gen = functools.reduce(getattr, wave_gen_paths[0].split("/"), self)
+
+        def dac_index(path):
+            m = re.search(r"/dac(\d+)/", path)
+            return int(m.group(1)) if m else 0
+
+        self.wave_gens = [functools.reduce(getattr, p.split("/"), self) for p in sorted(wave_gen_paths, key=dac_index)]
+        if self.wave_gens:
+            self.wave_gen = self.wave_gens[0]
 
         for path in self.interrupt_pins.keys():
             if path.endswith("xpm_cdc_irq/dest_pulse") or path.endswith("write_done"):
@@ -545,8 +554,36 @@ class MimoMtsOverlay(Overlay):
         assert self.dac_player is not None, "DAC player buffer not initialized."
         assert i_buffer.size == self.dac_player.size // 2, "i_buffer size must be half of the DAC player buffer size."
         assert q_buffer.size == self.dac_player.size // 2, "q_buffer size must be half of the DAC player buffer size."
+        if len(getattr(self, "wave_gens", [])) > 1:  # one generator per DAC: the same waveform on all of them
+            for ch in range(len(self.wave_gens)):
+                self.write_dac_iq_buf_ch(ch, i_buffer, q_buffer)
+            return
         self.dac_player[0::2] = i_buffer.astype(np.int16)
         self.dac_player[1::2] = q_buffer.astype(np.int16)
+
+    def write_dac_iq_buf_ch(self, ch, i_buffer, q_buffer):
+        """Write the I/Q waveform of one DAC (overlays with one waveform generator per DAC)"""
+        mem = self.wave_gens[ch].wave_mem
+        n = mem.size // 2
+        assert i_buffer.size == n and q_buffer.size == n, f"DAC{ch}: I and Q need {n} samples each"
+        iq = np.empty(2 * n, dtype=np.int16)
+        iq[0::2] = i_buffer.astype(np.int16)
+        iq[1::2] = q_buffer.astype(np.int16)
+        mem[:] = iq
+
+    def apply_dac_settings(self):
+        """
+        Make the staged mode and CW value of every waveform generator active on the same clock (common apply:
+        rising edge of axil_rf_control dac_enable bit 2). Without that bit (older bitstreams), apply per generator.
+        """
+        reg = self.rf_control.register_map.dac_enable
+        if hasattr(reg, "cw_apply") and all(wg.version for wg in self.wave_gens):
+            reg.cw_apply = 0
+            reg.cw_apply = 1
+            reg.cw_apply = 0
+        else:
+            for wg in self.wave_gens:
+                wg.apply()
 
     def write_dac_complex(self, c_buffer):
         """Writes complex DAC samples to all channels"""

@@ -10,6 +10,7 @@ RTL_SRC    += $(RTL_DIR)/axil_rf_control.v
 RTL_SRC    += $(RTL_DIR)/axil_csr.v
 RTL_SRC    += $(RTL_DIR)/axil_wave_gen.v
 RTL_SRC    += $(RTL_DIR)/wave_gen.v
+RTL_SRC    += $(RTL_DIR)/axis_idle_zero.v
 RTL_SRC    += $(RTL_DIR)/banked_mem.v
 RTL_SRC    += $(RTL_DIR)/axi4_mem_port.v
 RTL_SRC    += $(RTL_DIR)/wave_cap.v

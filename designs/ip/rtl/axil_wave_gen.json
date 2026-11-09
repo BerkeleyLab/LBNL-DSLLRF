@@ -15,6 +15,12 @@
                 "bit_width": 1,
                 "access": "read-write",
                 "description": "Trigger mode (0=internal, 1=external)"
+            },
+            "apply": {
+                "bit_offset": 3,
+                "bit_width": 1,
+                "access": "read-write",
+                "description": "Write 1: make the staged mode and CW value active on this channel"
             }
         }
     },
@@ -41,22 +47,60 @@
                 "access": "read-only",
                 "description": "Debug: output stream tready"
             },
-            "m_axis_tvalid": {
+            "play_valid": {
                 "bit_offset": 2,
                 "bit_width": 1,
                 "access": "read-only",
-                "description": "Debug: output stream tvalid"
+                "description": "Debug: a playback row is on the output stream"
             },
             "play_row": {
                 "bit_offset": 16,
                 "bit_width": 16,
                 "access": "read-only",
                 "description": "Debug: next row to read in the playback"
+            },
+            "mode": {
+                "bit_offset": 4,
+                "bit_width": 2,
+                "access": "read-only",
+                "description": "Active mode: 0 single, 1 loop, 2 CW"
             }
         }
     },
-    "waveform_data": {
+    "mode": {
         "address_offset": 24,
+        "access": "read-write",
+        "size": 64,
+        "description": "Staged mode (0 single, 1 loop, 2 CW), active on apply"
+    },
+    "cw_iq": {
+        "address_offset": 32,
+        "access": "read-write",
+        "size": 64,
+        "description": "Staged CW value: I bits 15:0, Q bits 31:16 (int16), active on apply",
+        "fields": {
+            "i": {
+                "bit_offset": 0,
+                "bit_width": 16,
+                "access": "read-write",
+                "description": "CW I"
+            },
+            "q": {
+                "bit_offset": 16,
+                "bit_width": 16,
+                "access": "read-write",
+                "description": "CW Q"
+            }
+        }
+    },
+    "version": {
+        "address_offset": 56,
+        "access": "read-only",
+        "size": 64,
+        "description": "Register map version: 0x00020000 (version 1 bitstreams read 0)"
+    },
+    "waveform_data": {
+        "address_offset": 64,
         "size": 64,
         "access": "write-only",
         "description": "Base address of the waveform memory: a flat byte array in output order, any write size or order"

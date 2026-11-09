@@ -160,3 +160,24 @@ async def test_internal_trigger_disabled(dut):
     await tb.write_register("trig_period", 0)
     hits = await trigger_cycles(tb, n_triggers=1, timeout_cycles=500)
     assert hits == [], f"trigger with trig_period=0 at cycles {hits}"
+
+
+@cocotb.test(timeout_time=5, timeout_unit="us")
+async def test_cw_apply_pulse(dut):
+    """dac_enable bit 2: a one-cycle cw_apply pulse on each 0 -> 1 write, none while it stays 1."""
+    tb = TB(dut)
+    await tb.cycle_reset()
+    pulses = 0
+
+    async def count():
+        nonlocal pulses
+        while True:
+            await RisingEdge(dut.s_axi_aclk)
+            pulses += int(dut.cw_apply.value)
+
+    cocotb.start_soon(count())
+    for value, expected in ((0b001, 0), (0b101, 1), (0b101, 1), (0b001, 1), (0b111, 2)):
+        await tb.write_register("dac_enable", value)
+        await ClockCycles(dut.s_axi_aclk, 5)
+        assert pulses == expected, f"after writing 0b{value:03b}: {pulses} pulses, expected {expected}"
+    assert dut.dac_enable.value == 1 and dut.pulse_enable.value == 1

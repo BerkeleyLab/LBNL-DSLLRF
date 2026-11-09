@@ -12,6 +12,22 @@
 // Playback (banked_mem port B): on trigger, rows 0 .. wave_length-1 are streamed on m_axis with back-pressure; tlast
 // marks the last row. wave_length = 0 plays BANK_DEPTH rows. Writes are accepted during playback and take effect on
 // rows not yet read.
+//
+// Modes (double-buffered: mode_next / cw_iq_next become active on an apply pulse, so several generators can switch
+// on the same clock):
+//   MODE_SINGLE (0)  one playback per trigger (above)
+//   MODE_LOOP   (1)  a trigger starts playback that repeats rows 0 .. wave_length-1 (tlast at the end of each pass)
+//                    until the mode changes; the pass in progress then completes
+//   MODE_CW     (2)  continuous constant output: cw_iq ({Q, I}, 16 bits each) repeated across every row, tvalid always
+//                    high; entering CW stops any playback. With the DAC fine mixer this is a CW at the NCO frequency
+//                    with amplitude and phase set by I and Q.
+//
+// Idle output: between playbacks tvalid is low (in CW it is always high). The RF-DAC converts every cycle and ignores
+// tvalid, so a pulse only ends in zero at the DAC with axis_idle_zero at the DAC input, which turns cycles without a
+// valid beat into zeros. Zeros are not sent from here on purpose: a continuous valid stream would keep the clock-
+// crossing FIFO behind the generator filled to a level set at startup, adding latency that can differ between
+// channels and loads; with gaps the FIFO empties and every playback starts with the shortest, fixed latency.
+// play_valid marks the beats that are playback rows.
 //-----------------------------------------------------------------------------
 
 module wave_gen #(
@@ -41,6 +57,13 @@ module wave_gen #(
     input  wire [SAMPLE_ADDR_WIDTH-1:0]      wave_length,
     output wire                              busy,           // playback running
     output wire [SAMPLE_ADDR_WIDTH-1:0]      play_row,       // next row to read (debug)
+    output wire                              play_valid,     // the beat on m_axis is a playback row (debug)
+
+    // Mode and CW value: staged, made active by apply
+    input  wire [1:0]                        mode_next,
+    input  wire [31:0]                       cw_iq_next,     // {Q, I}
+    input  wire                              apply,
+    output reg  [1:0]                        mode,           // active mode
 
     // Output AXI-Stream
     output wire [OUT_DATA_WIDTH-1:0]         m_axis_tdata,
@@ -51,6 +74,9 @@ module wave_gen #(
 
     localparam integer SAMPLE_ADDR_WIDTH = $clog2(BANK_DEPTH);
     localparam integer AXI_ADDR_WIDTH    = SAMPLE_ADDR_WIDTH + $clog2(OUT_DATA_WIDTH/8);
+    localparam [1:0]   MODE_SINGLE       = 2'd0;
+    localparam [1:0]   MODE_LOOP         = 2'd1;
+    localparam [1:0]   MODE_CW           = 2'd2;
 
     assign axi_wr_ready = 1'b1;
 
@@ -72,8 +98,14 @@ module wave_gen #(
     // would never end.
     wire [SAMPLE_ADDR_WIDTH-1:0] rd_last_row = rd_length - 1'b1;
 
+    reg  [31:0] cw_iq;
+    wire        cw   = (mode == MODE_CW);
+    wire        pb_tvalid;                 // playback stream before the CW mux
+    wire        pb_tlast;
+    wire [OUT_DATA_WIDTH-1:0] pb_tdata;
+
     // The RAM read, data pipeline and valid/last pipeline all advance only when the output is accepted
-    wire rd_advance = !m_axis_tvalid || m_axis_tready;
+    wire rd_advance = !pb_tvalid || (m_axis_tready && !cw);
 
     banked_mem #(
         .BUS_DATA_WIDTH (AXI_DATA_WIDTH),
@@ -110,9 +142,9 @@ module wave_gen #(
 
     generate
         if (READ_LATENCY > 1) begin : gen_pipe_out
-            assign m_axis_tdata = row_pipe[READ_LATENCY-2];
+            assign pb_tdata = row_pipe[READ_LATENCY-2];
         end else begin : gen_direct_out
-            assign m_axis_tdata = row_q;
+            assign pb_tdata = row_q;
         end
     endgenerate
 
@@ -128,9 +160,16 @@ module wave_gen #(
             rd_active     <= 1'b0;
             rd_valid_pipe <= {(READ_LATENCY){1'b0}};
             rd_last_pipe  <= {(READ_LATENCY){1'b0}};
+            mode          <= MODE_SINGLE;
+            cw_iq         <= 32'd0;
         end else begin
-            // Start on trigger (only when not busy)
-            if (trigger && !busy) begin
+            if (apply) begin
+                mode  <= mode_next;
+                cw_iq <= cw_iq_next;
+            end
+
+            // Start on trigger (only when not busy; not in CW)
+            if (trigger && !busy && !cw) begin
                 rd_running <= 1'b1;
                 rd_active  <= 1'b1;
                 rd_addr    <= {SAMPLE_ADDR_WIDTH{1'b0}};
@@ -143,7 +182,10 @@ module wave_gen #(
                 rd_last_pipe[0]  <= (rd_addr == rd_last_row);
 
                 if (rd_addr == rd_last_row) begin
-                    rd_active <= 1'b0;
+                    if (mode == MODE_LOOP)
+                        rd_addr <= {SAMPLE_ADDR_WIDTH{1'b0}};   // next pass
+                    else
+                        rd_active <= 1'b0;
                 end else begin
                     rd_addr <= rd_addr + 1;
                 end
@@ -158,19 +200,34 @@ module wave_gen #(
                 end
             end
 
-            // Clear running on last output
-            if (m_axis_tvalid && m_axis_tready && m_axis_tlast) begin
+            // Clear running on the last output of the last pass (no more rows issued)
+            if (pb_tvalid && m_axis_tready && pb_tlast && !rd_active && !cw) begin
                 rd_running <= 1'b0;
+            end
+
+            // Entering CW stops any playback
+            if (cw) begin
+                rd_running    <= 1'b0;
+                rd_active     <= 1'b0;
+                rd_valid_pipe <= {(READ_LATENCY){1'b0}};
+                rd_last_pipe  <= {(READ_LATENCY){1'b0}};
             end
         end
     end
 
-    assign m_axis_tvalid = rd_valid_pipe[READ_LATENCY-1];
-    assign m_axis_tlast  = rd_last_pipe[READ_LATENCY-1];
+    assign pb_tvalid     = rd_valid_pipe[READ_LATENCY-1];
+    assign pb_tlast      = rd_last_pipe[READ_LATENCY-1];
+    assign play_valid    = pb_tvalid && !cw;
+    assign m_axis_tvalid = cw || play_valid;
+    assign m_axis_tlast  = play_valid && pb_tlast;
+    assign m_axis_tdata  = cw         ? {(OUT_DATA_WIDTH / 32){cw_iq}} :
+                           play_valid ? pb_tdata : {OUT_DATA_WIDTH{1'b0}};
 
     initial begin
         if (READ_LATENCY < 1)
             $error("READ_LATENCY must be >= 1");
+        if (OUT_DATA_WIDTH % 32 != 0)
+            $error("OUT_DATA_WIDTH must be a multiple of 32 (I/Q pairs for CW)");
     end
 
 endmodule

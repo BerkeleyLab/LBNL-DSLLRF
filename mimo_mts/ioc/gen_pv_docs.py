@@ -8,7 +8,7 @@ each PV. The tables replace the text between the GENERATED markers in PVs.md.
 
     python -m mimo_mts.ioc.gen_pv_docs            # update PVs.md
     python -m mimo_mts.ioc.gen_pv_docs --check    # exit 1 if PVs.md is out of date (CI)
-    python -m mimo_mts.ioc.gen_pv_docs --list AlsMimo5GZCU208   # full PV names of one IOC (compare with dbl())
+    python -m mimo_mts.ioc.gen_pv_docs --list Mimo5GZCU208   # full PV names of one IOC (compare with dbl())
 """
 
 import argparse
@@ -74,6 +74,22 @@ class FakeAdcCal:
         return dict.fromkeys(self.channels, [])
 
 
+# Overlay configurations with one waveform generator per DAC (axil_wave_gen register map version 2)
+PER_DAC_GENERATORS = {"MIMO_5G_ZCU208"}
+
+
+class FakeWaveGen:
+    version = 0x00020000
+    active_mode = 0
+    mode = 0
+
+    def __init__(self, n_samples=81920):
+        self.wave_mem = np.zeros(n_samples, dtype=np.int16)
+
+    def set_cw_amp_phase(self, amp, phase_deg):
+        pass
+
+
 class FakeOverlay:
     """The parts of MimoMtsOverlay that MimoMtsIoc reads while building its records."""
 
@@ -93,6 +109,9 @@ class FakeOverlay:
             setattr(self, key, mixer[key])
         self.adc_cal = FakeAdcCal(self.board.n_adcs)
         self.dac_player = np.zeros(2048, dtype=np.int16)
+        if ol_name in PER_DAC_GENERATORS:
+            self.wave_gens = [FakeWaveGen() for _ in range(self.board.n_dacs)]
+            self.dac_player = self.wave_gens[0].wave_mem
         self._n_samples = 1024 * self.ol_info["ioc"]["decimation"]
 
     @property
@@ -104,6 +123,12 @@ class FakeOverlay:
     def capture_adc_iq_buf(self, i_buffer=None, q_buffer=None):
         shape = (self.board.n_adcs, self._n_samples)
         return np.zeros(shape, np.int16), np.zeros(shape, np.int16)
+
+    def write_dac_iq_buf_ch(self, ch, i_buffer, q_buffer):
+        pass
+
+    def apply_dac_settings(self):
+        pass
 
     def write_dac_iq_buf(self, i_buffer, q_buffer):
         pass
@@ -123,7 +148,7 @@ def ioc_classes():
         (a.AlsLlrfZCU208, "llrf-zcu208-ioc"),
         (a.AlsLlrfLBL208, "llrf-lbl208-ioc"),
         (a.MimoZCU208, "mimo-zcu208-ioc"),
-        (a.AlsMimo5GZCU208, "mimo5g-zcu208-ioc"),
+        (a.Mimo5GZCU208, "mimo-5g-zcu208-ioc"),
         (a.MimoLBL208, "mimo-lbl208-ioc"),
         (a.MimoZCU216, "mimo-zcu216-ioc"),
     ]
@@ -201,7 +226,8 @@ def pattern(name):
 
 
 GROUPS = [
-    ("Time axes and waveforms", r"^(ADC|DSP):TWF$|WF$"),
+    ("DAC waveforms, modes and CW", r"^DAC"),
+    ("ADC waveforms and time axes", r"^(ADC|DSP):TWF$|WF$"),
     ("Pulse statistics", r"pulse_stat"),
     ("RF control (`axil_rf_control` registers)", r"^rf_control:"),
     ("RFDC mixers", r"^rfdc_mixer:"),
