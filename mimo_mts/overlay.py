@@ -314,6 +314,11 @@ class MimoMtsOverlay(Overlay):
     # Banked-capture control (axi_wave_cap CSR: bit 0 oneshot, bit 1 arm/armed, bit 2 done, bits 31:16 count)
     # The CSR exists from mimo_mts_5g build b751729 on; on older axi_wave_cap bitstreams these reads return junk.
 
+    @property
+    def has_capture_csrs(self) -> bool:
+        """The captures have the one-shot control/status register (banked axi_wave_cap captures)."""
+        return bool(getattr(self, "_capture_csrs", None))
+
     def _require_capture_csrs(self):
         if not getattr(self, "_capture_csrs", None):
             raise RuntimeError("no axi_wave_cap control register in this overlay (older bitstream?)")

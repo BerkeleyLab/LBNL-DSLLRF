@@ -46,7 +46,7 @@ class AlsLlrfZCU208(MimoMtsIoc):
         self.llrf_register_map.trig_period = 125e6
         self.llrf_register_map.trig_delay = 0
         self.llrf_register_map.trig_divide = 1
-        self.llrf_register_map.dac_enable.dac_enable = 1
+        self.llrf_register_map.dac_enable.dac_enable = 0  # DACs off at boot
         # Set 50% maximum RF amplitude
         self.llrf_register_map.amp_loop_setpoint = 32767 / self.ol.rf_control.tx_gain / 2
         self.llrf_register_map.dac_enable.pulse_enable = 1
@@ -193,7 +193,7 @@ class AlsLlrfLBL208(MimoMtsIoc):
         self.llrf_register_map.trig_period = 125e6
         self.llrf_register_map.trig_delay = 0
         self.llrf_register_map.trig_divide = 1
-        self.llrf_register_map.dac_enable.dac_enable = 1
+        self.llrf_register_map.dac_enable.dac_enable = 0  # DACs off at boot
         # Set 50% maximum RF amplitude
         self.llrf_register_map.amp_loop_setpoint = 32767 / self.ol.rf_control.tx_gain / 2
         self.llrf_register_map.dac_enable.pulse_enable = 1
@@ -220,7 +220,8 @@ class Mimo5GZCU208(MimoMtsIoc):
 
     def init_rf_control(self):
         super().init_rf_control()
-        self.drive_ones_awg()
+        # dac_enable does not gate the DAC outputs on mimo_mts_5g yet (development plan item 14): start silent
+        self.drive_zeros_awg()
 
 
 class MimoLBL208(MimoMtsIoc):

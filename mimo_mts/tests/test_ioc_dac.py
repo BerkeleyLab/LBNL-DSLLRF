@@ -5,6 +5,8 @@ Check the DAC PVs of a running IOC through Channel Access, with a DAC n -> ADC n
 Checks are chosen from the PVs the IOC has:
 - every IOC with `DAC:IWF` (shared waveform): a 1 us pulse written to all DACs arrives on every ADC, with the
   same width and start on all channels;
+- every IOC: capture reads are not torn at a fast trigger (1 ms), with the ADC mixer slightly off the DAC mixer so
+  each capture starts at a different phase (development plan item 11);
 - IOCs with one waveform generator per DAC (`DAC{n}:mode`, `DAC:apply`, e.g. mimo-5g-zcu208-ioc):
   1. mode and CW values are staged: no effect until `DAC:apply`, then `DAC{n}:mode:RBV` follows;
   2. a CW phase / amplitude step on one DAC moves only its ADC (+90 deg, half amplitude);
@@ -15,8 +17,9 @@ Checks are chosen from the PVs the IOC has:
 With --no-loopback only the PV-level checks run (staging and mode readbacks).
 
 The DAC and ADC mixers are set to --rf-mhz, so each ADC sees its DAC at baseband in DSP:ADC{n}:AWF / PWF; phases
-and amplitudes are compared with a baseline (cable and NCO phases differ per channel). The IOC state (mixers, modes,
-CW values, shared waveform) is restored at the end, also after a failure.
+and amplitudes are compared with a baseline (cable and NCO phases differ per channel). The test sets
+rf_control:dac_enable bit 0 (the IOCs boot with the DACs disabled); the IOC state (DAC enable, mixers, modes, CW
+values, lengths, shared waveform) is restored at the end, also after a failure.
 
     python3 mimo_mts/tests/test_ioc_dac.py [--prefix MIMO_5G_ZCU208] [--rf-mhz 200] [--channel 3] [--no-loopback]
 """
@@ -56,7 +59,7 @@ class IocDacCheck:
     # --- Channel Access helpers ---
     def pv(self, name):
         if name not in self._pvs:
-            self._pvs[name] = self.epics.PV(f"{self.prefix}:{name}", connection_timeout=self.timeout_s)
+            self._pvs[name] = self.epics.PV(f"{self.prefix}:{name}", connection_timeout=self.timeout_s, form="time")
         return self._pvs[name]
 
     def exists(self, name):
@@ -72,9 +75,23 @@ class IocDacCheck:
         if not self.pv(name).put(value, wait=True, timeout=self.timeout_s):
             raise RuntimeError(f"{self.prefix}:{name}: put timed out")
 
+    def waveform_time(self):
+        """Server timestamp of the last DSP:ADC0:AWF update."""
+        pv = self.pv("DSP:ADC0:AWF")
+        pv.get(timeout=self.timeout_s, use_monitor=False)
+        return pv.timestamp
+
     def settle(self, n=1):
-        """Wait for fresh captures after a change (the IOC triggers every 0.5 s by default)."""
+        """
+        Wait for fresh captures after a change (the IOC triggers every 0.5 s by default), and check that the IOC is
+        still updating the ADC waveforms: a stalled capture loop would otherwise make every later check read old data.
+        """
+        before = self.waveform_time()
         time.sleep(n * self.settle_s)
+        if self.waveform_time() == before:
+            time.sleep(2 * self.settle_s)  # one more chance (slow trigger)
+            if self.waveform_time() == before:
+                raise RuntimeError(f"ADC waveforms not updating since {time.ctime(before)}: IOC capture loop stalled?")
 
     def report(self, name, ok, detail=""):
         self.results.append((name, ok))
@@ -165,6 +182,56 @@ def check_shared_waveform(chk, chans, length_ns=1000.0):
         f"widths {np.round(widths).astype(int).tolist()} ns (expected {length_ns:.0f}), "
         f"starts {np.round(starts).astype(int).tolist()} ns",
     )
+
+
+def check_capture_reads(
+    chk, chans, rf_mhz, has_shared, n_reads=12, period_cycles=250000, df_mhz=0.3003717, block_ns=100.0, tol_deg=2.0
+):
+    """
+    Capture reads are not torn (development plan item 11): with a fast trigger and the ADC mixer df_mhz off the DAC
+    mixer, the baseband rotates, so every capture starts at a different phase but is a straight phase ramp. A read
+    that mixes two captures shows a phase jump. Free-running captures read after the IRQ tear when the read takes
+    longer than the trigger period; one-shot captures (armed per read) do not.
+    The phase is averaged over block_ns blocks first: with ADC decimation 1 the R2C mixer output also carries the
+    sum-frequency image, which the IOC's short average (4 ns) passes as a ripple of several degrees.
+    """
+    saved_period = chk.get("rf_control:trig_period:RBV")
+    if has_shared:
+        i, q = pulse_iq(chk, 1e9)  # constant: a 16.4 us burst per trigger, longer than the capture
+        chk.put("DAC:QWF", q)
+        chk.put("DAC:IWF", i)
+    chk.put("rfdc_mixer:adc_rf_freq_mhz", rf_mhz + df_mhz)
+    chk.put("rf_control:trig_period", period_cycles)
+    try:
+        chk.settle()
+        worst = 0.0
+        torn = 0
+        for _ in range(n_reads):
+            time.sleep(0.25)
+            for ch in chans:
+                t, z = chk.adc_wave(ch)
+                a = np.abs(z)
+                sel = (t >= 400) & (a > 0.5 * a.max())
+                nb = int(sel.sum() * (t[1] - t[0]) // block_ns)
+                if nb < 10:
+                    continue
+                k = sel.sum() // nb
+                zb = z[sel][: nb * k].reshape(nb, k).mean(axis=1)
+                tb = t[sel][: nb * k].reshape(nb, k).mean(axis=1)
+                ph = np.degrees(np.unwrap(np.angle(zb)))
+                resid = np.abs(ph - np.polyval(np.polyfit(tb, ph, 1), tb)).max()
+                worst = max(worst, resid)
+                torn += resid > tol_deg
+        chk.report(
+            "capture reads not torn (fast trigger, rotating baseband)",
+            torn == 0,
+            f"{n_reads} reads x {len(chans)} ADCs at trig_period {period_cycles}: {torn} with a phase jump "
+            f"(> {tol_deg} deg from a ramp, {block_ns:.0f} ns blocks), worst residual {worst:.2f} deg",
+        )
+    finally:
+        chk.put("rf_control:trig_period", saved_period)
+        chk.put("rfdc_mixer:adc_rf_freq_mhz", rf_mhz)
+        chk.settle()
 
 
 def set_modes(chk, n_dac, mode, apply=True):
@@ -279,6 +346,33 @@ def check_per_dac_waveform(chk, n_dac, chans, ch_pulse, has_shared, length_ns=10
     return r
 
 
+def check_wave_length(chk, chans, ch, tol_ns=20.0):
+    """
+    Waveform length PVs (ns): with a constant waveform on every DAC, the ADC burst lasts DAC:wave_length;
+    rf_control:pulse_length (4 ns cycles) sets the same length; DAC{ch}:wave_length changes only that DAC.
+    """
+    i, q = pulse_iq(chk, 1e9)  # constant over the whole memory
+    chk.put("DAC:QWF", q)
+    chk.put("DAC:IWF", i)
+
+    def widths():
+        chk.settle(2)
+        return {n: (r[1] if (r := chk.pulse(n)) else None) for n in chans}
+
+    def report(name, got, want):
+        ok = all(w is not None and abs(w - want[n]) < tol_ns for n, w in got.items())
+        chk.report(name, ok, f"burst widths (ns) {[None if w is None else round(w) for w in got.values()]}")
+
+    chk.put("DAC:wave_length", 2000)
+    report("DAC:wave_length 2000 ns on every DAC", widths(), dict.fromkeys(chans, 2000))
+    rbv = chk.get(f"DAC{ch}:wave_length:RBV")
+    chk.report("DAC{n}:wave_length:RBV follows", abs(rbv - 2000) < 1, f"DAC{ch} RBV {rbv} ns")
+    chk.put("rf_control:pulse_length", 250)
+    report("rf_control:pulse_length 250 cycles = 1000 ns", widths(), dict.fromkeys(chans, 1000))
+    chk.put(f"DAC{ch}:wave_length", 500)
+    report(f"DAC{ch}:wave_length 500 ns on DAC{ch} only", widths(), {n: 500 if n == ch else 1000 for n in chans})
+
+
 def check_loop(chk, ch_pulse, n_captures=4):
     """Loop mode: the whole memory loops freely, so the pulse moves between captures; single mode keeps it fixed."""
 
@@ -335,37 +429,53 @@ def main():
     # state to restore
     saved_rf = {c: chk.get(f"rfdc_mixer:{c}_rf_freq_mhz:RBV") for c in ("dac", "adc")}
     saved_wfm = {p: np.array(chk.get(f"DAC:{p}WF")) for p in ("I", "Q")} if has_shared else None
+    has_wave_length = chk.exists("DAC:wave_length")
+    saved_pulse_length = chk.get("rf_control:pulse_length:RBV")
+    saved_dac_enable = int(chk.get("rf_control:dac_enable:RBV"))
+    saved_wave_length = chk.get("DAC:wave_length") if has_wave_length else None
     saved_cw = {(n, k): chk.get(f"DAC{n}:cw:{k}") for n in range(n_dac) for k in ("amp", "phase") if per_dac}
     try:
-        for c in ("dac", "adc"):
-            chk.put(f"rfdc_mixer:{c}_rf_freq_mhz", args.rf_mhz)
-        if per_dac:
-            set_modes(chk, n_dac, "single")
-        chk.settle(2)
-        if has_shared and not args.no_loopback:
-            check_shared_waveform(chk, chans)
-        if per_dac:
-            check_cw(chk, n_dac, chans, ch, loopback=not args.no_loopback)
+        try:
+            chk.put("rf_control:dac_enable", saved_dac_enable | 1)  # the IOCs boot with the DACs disabled
+            for c in ("dac", "adc"):
+                chk.put(f"rfdc_mixer:{c}_rf_freq_mhz", args.rf_mhz)
+            if per_dac:
+                set_modes(chk, n_dac, "single")
+            chk.settle(2)
+            if has_shared and not args.no_loopback:
+                check_shared_waveform(chk, chans)
             if not args.no_loopback:
-                check_nco_repeatability(chk, chans, args.rf_mhz)
-                if check_per_dac_waveform(chk, n_dac, chans, ch, has_shared) is not None:
-                    check_loop(chk, ch)
-            else:
-                set_modes(chk, n_dac, "loop")
-                chk.settle()
-                rbv = [chk.get(f"DAC{n}:mode:RBV", as_string=True) for n in range(n_dac)]
-                chk.report("loop mode active on all DACs", all(r == "loop" for r in rbv), f"mode:RBV {rbv}")
+                check_capture_reads(chk, chans, args.rf_mhz, has_shared)
+            if per_dac:
+                check_cw(chk, n_dac, chans, ch, loopback=not args.no_loopback)
+                if not args.no_loopback:
+                    check_nco_repeatability(chk, chans, args.rf_mhz)
+                    if check_per_dac_waveform(chk, n_dac, chans, ch, has_shared) is not None:
+                        check_loop(chk, ch)
+                    if has_wave_length and has_shared:
+                        check_wave_length(chk, chans, ch)
+                else:
+                    set_modes(chk, n_dac, "loop")
+                    chk.settle()
+                    rbv = [chk.get(f"DAC{n}:mode:RBV", as_string=True) for n in range(n_dac)]
+                    chk.report("loop mode active on all DACs", all(r == "loop" for r in rbv), f"mode:RBV {rbv}")
+        except RuntimeError as e:  # e.g. the IOC stopped updating the ADC waveforms: later checks would be meaningless
+            chk.report("IOC responsive", False, str(e))
     finally:
         print("  restoring the IOC state")
         if per_dac:
             for (n, k), v in saved_cw.items():
                 chk.put(f"DAC{n}:cw:{k}", v)
             set_modes(chk, n_dac, "single")
+        chk.put("rf_control:pulse_length", saved_pulse_length)  # on per-DAC IOCs this also sets DAC:wave_length
+        if saved_wave_length is not None:
+            chk.put("DAC:wave_length", saved_wave_length)
         if saved_wfm is not None:
             chk.put("DAC:QWF", saved_wfm["Q"])
             chk.put("DAC:IWF", saved_wfm["I"])
         for c, v in saved_rf.items():
             chk.put(f"rfdc_mixer:{c}_rf_freq_mhz", v)
+        chk.put("rf_control:dac_enable", saved_dac_enable)
 
     failed = [name for name, ok in chk.results if not ok]
     print(f"\n{len(chk.results) - len(failed)}/{len(chk.results)} passed")

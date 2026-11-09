@@ -16,6 +16,18 @@ on every capture-done interrupt where the overlay has one, otherwise periodicall
 Set the window with `DSP:ADC{n}:pulse_stat:start_ns` and `end_ns` (on the `DSP:TWF` axis); the IOC publishes the mean
 and standard deviation of amplitude and phase inside it for every capture.
 
+## Startup state
+
+The IOCs start with the DACs disabled: `rf_control:dac_enable` bit 0 is cleared at boot (bit 1, `pulse_enable`, keeps
+the IOC's default). Set bit 0 (the "DAC Enable" button) to drive the DACs. On `mimo_mts_5g`, where `dac_enable` does
+not gate the DAC outputs yet (development plan item 14), the IOC also starts with an all-zero waveform.
+
+## Trigger
+
+`trigger:rate_hz` sets the internal trigger rate in Hz (`:RBV` the rate in effect); it writes
+`rf_control:trig_period`, in cycles of the 250 MHz DSP clock, and 0 turns the internal trigger off. The trigger
+source is `rf_control:trig_sel` (internal, EVR or external).
+
 ## RF control
 
 One PV per register of `axil_rf_control` / `axil_llrf` (`designs/ip/rtl/axil_rf_control.json`): trigger source,
@@ -36,16 +48,24 @@ zone 2. The `:RBV` is computed back from the NCO settings. The NCO PVs themselve
 
 `DAC:IWF` and `DAC:QWF` are the I/Q baseband waveform (int16) for all DACs; writing either writes both (a shorter
 array is padded with zeros). `DAC:TWF` is the time axis in ns at the complex input rate (DAC rate / interpolation).
+`DAC:fill_ones` fills them quickly: 1 = constant full-scale I (Q = 0, a CW at the DAC RF frequency once the DACs are
+enabled), 0 = zeros.
 
 On overlays with one waveform generator per DAC (`mimo_mts_5g`), each DAC also has:
 
-- `DAC{n}:IWF` / `DAC{n}:QWF`: its own waveform (the shared `DAC:IWF` / `QWF` still write the same one to all DACs).
+- `DAC{n}:IWF` / `DAC{n}:QWF`: its own waveform (the shared `DAC:IWF` / `QWF` still write the same one to all DACs,
+  and then update these PVs too); `DAC{n}:AWF` / `DAC{n}:PWF` are its amplitude and phase, for plotting.
 - `DAC{n}:mode`: `single` (play the waveform once per trigger), `loop` (a trigger starts playback that repeats until
   the mode changes) or `CW` (constant output); `DAC{n}:mode:RBV` is the mode in effect.
 - `DAC{n}:cw:amp` (0–1, fraction of full scale) and `DAC{n}:cw:phase` (degrees): the CW amplitude and phase. The CW
   frequency is the DAC mixer frequency (`rfdc_mixer:DAC{n}:rf_freq_mhz` or `dac_rf_freq_mhz`).
 - Mode and CW settings are staged: write them for any number of DACs, then `DAC:apply` = 1 makes all of them active
   on the same clock (phase-coherent changes across channels).
+- `DAC{n}:wave_length` (ns, `:RBV` the value applied) and `DAC:wave_length` (all DACs): how much of the waveform is
+  played: the pulse length in single mode, the period in loop mode. Rounded to one generator row (20 samples, 4 ns
+  at 5 GSPS); 0 plays the whole memory (16.4 µs). Between playbacks the DACs output zero. On these overlays
+  `rf_control:pulse_length` (cycles of the 4 ns DSP clock) has no hardware effect of its own; writing it sets
+  `DAC:wave_length` to the same duration, as `pulse_length` set the DAC pulse on the older overlays.
 
 ## RF-ADC calibration
 
@@ -81,12 +101,12 @@ speed, `chassis_fan_speed_{1,2}:RBV` reads it, in rpm.
 
 | IOC class | Entry point | Overlay | Prefix `$P` | ADCs / DACs | Records |
 |---|---|---|---|---|---|
-| `AlsLlrfZCU208` | `llrf-zcu208-ioc` | `ALS_LLRF_ZCU208` | `ALS_LLRF_ZCU208` | 8 / 8 | 288 |
-| `AlsLlrfLBL208` | `llrf-lbl208-ioc` | `ALS_LLRF_LBL208` | `ALS_LLRF_LBL208` | 8 / 8 | 309 |
-| `MimoZCU208` | `mimo-zcu208-ioc` | `MIMO_ZCU208` | `MIMO_ZCU208` | 8 / 8 | 288 |
-| `Mimo5GZCU208` | `mimo-5g-zcu208-ioc` | `MIMO_5G_ZCU208` | `MIMO_5G_ZCU208` | 8 / 8 | 337 |
-| `MimoLBL208` | `mimo-lbl208-ioc` | `MIMO_LBL208` | `MIMO_LBL208` | 8 / 8 | 288 |
-| `MimoZCU216` | `mimo-zcu216-ioc` | `MIMO_ZCU216` | `MIMO_ZCU216` | 16 / 16 | 512 |
+| `AlsLlrfZCU208` | `llrf-zcu208-ioc` | `ALS_LLRF_ZCU208` | `ALS_LLRF_ZCU208` | 8 / 8 | 291 |
+| `AlsLlrfLBL208` | `llrf-lbl208-ioc` | `ALS_LLRF_LBL208` | `ALS_LLRF_LBL208` | 8 / 8 | 312 |
+| `MimoZCU208` | `mimo-zcu208-ioc` | `MIMO_ZCU208` | `MIMO_ZCU208` | 8 / 8 | 291 |
+| `Mimo5GZCU208` | `mimo-5g-zcu208-ioc` | `MIMO_5G_ZCU208` | `MIMO_5G_ZCU208` | 8 / 8 | 373 |
+| `MimoLBL208` | `mimo-lbl208-ioc` | `MIMO_LBL208` | `MIMO_LBL208` | 8 / 8 | 291 |
+| `MimoZCU216` | `mimo-zcu216-ioc` | `MIMO_ZCU216` | `MIMO_ZCU216` | 16 / 16 | 515 |
 
 `{n}` is the ADC or DAC channel (0 to ADCs − 1 or DACs − 1 of the IOC), `{i}` the chassis fan (1, 2). All names start with `$P:`. Every IOC also has the standard `devIocStats` records under `$P:ioc`.
 
@@ -98,12 +118,18 @@ speed, `chassis_fan_speed_{1,2}:RBV` reads it, in rpm.
 | `DAC:QWF` | waveform | DAC waveform Q, all DACs | cnt | all |
 | `DAC:TWF` | waveform | Time axis of the DAC waveform | ns | all |
 | `DAC:apply` | bo | Apply staged DAC modes / CW, all DACs |  | `Mimo5GZCU208` |
+| `DAC:fill_ones` | bo | Fill all DAC waveforms: 0 zeros, 1 ones |  | all |
+| `DAC:wave_length` | ao | All DACs waveform length, 0 = whole | ns | `Mimo5GZCU208` |
+| `DAC{n}:AWF` | waveform | DAC{n} waveform amplitude | cnt | `Mimo5GZCU208` |
 | `DAC{n}:IWF` | waveform | DAC{n} waveform I | cnt | `Mimo5GZCU208` |
+| `DAC{n}:PWF` | waveform | DAC{n} waveform phase | deg | `Mimo5GZCU208` |
 | `DAC{n}:QWF` | waveform | DAC{n} waveform Q | cnt | `Mimo5GZCU208` |
 | `DAC{n}:cw:amp` | ao | DAC{n} CW amplitude (fraction of FS) |  | `Mimo5GZCU208` |
 | `DAC{n}:cw:phase` | ao | DAC{n} CW phase | deg | `Mimo5GZCU208` |
 | `DAC{n}:mode` | mbbo | DAC{n} mode (active on DAC:apply) |  | `Mimo5GZCU208` |
 | `DAC{n}:mode:RBV` | mbbi | DAC{n} active mode |  | `Mimo5GZCU208` |
+| `DAC{n}:wave_length` | ao | DAC{n} waveform length, 0 = whole | ns | `Mimo5GZCU208` |
+| `DAC{n}:wave_length:RBV` | ai | DAC{n} waveform length applied | ns | `Mimo5GZCU208` |
 
 ### ADC waveforms and time axes
 
@@ -126,6 +152,13 @@ speed, `chassis_fan_speed_{1,2}:RBV` reads it, in rpm.
 | `DSP:ADC{n}:pulse_stat:phs:mean` | ai | ADC{n} pulse phase mean | deg | all |
 | `DSP:ADC{n}:pulse_stat:phs:std` | ai | ADC{n} pulse phase std | deg | all |
 | `DSP:ADC{n}:pulse_stat:start_ns` | longout | ADC{n} pulse window start | ns | all |
+
+### Trigger
+
+| PV | Type | Description | Units | IOCs |
+|---|---|---|---|---|
+| `trigger:rate_hz` | ao | Internal trigger rate, 0 = off | Hz | all |
+| `trigger:rate_hz:RBV` | ai | Internal trigger rate | Hz | all |
 
 ### RF control (`axil_rf_control` registers)
 

@@ -82,6 +82,9 @@ class FakeWaveGen:
     version = 0x00020000
     active_mode = 0
     mode = 0
+    wave_length = 0
+    out_data_width = 320
+    bank_depth = 4096
 
     def __init__(self, n_samples=81920):
         self.wave_mem = np.zeros(n_samples, dtype=np.int16)
@@ -229,6 +232,7 @@ GROUPS = [
     ("DAC waveforms, modes and CW", r"^DAC"),
     ("ADC waveforms and time axes", r"^(ADC|DSP):TWF$|WF$"),
     ("Pulse statistics", r"pulse_stat"),
+    ("Trigger", r"^trigger:"),
     ("RF control (`axil_rf_control` registers)", r"^rf_control:"),
     ("RFDC mixers", r"^rfdc_mixer:"),
     ("RF-ADC calibration", r"^adc_cal:"),

@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--Saved on 2026-04-24 17:44:41 by sdmurthy-->
 <display version="2.0.0">
   <name>MIMO_RFSOC</name>
   <width>1200</width>
@@ -32,6 +31,14 @@
           <P>MIMO_ZCU208</P>
         </macros>
         <group_name>zcu208</group_name>
+        <selected_color>
+          <color red="236" green="236" blue="236">
+          </color>
+        </selected_color>
+        <deselected_color>
+          <color red="200" green="200" blue="200">
+          </color>
+        </deselected_color>
       </tab>
       <tab>
         <name>LLRF ZCU208</name>
@@ -40,6 +47,14 @@
           <P>ALS_LLRF_ZCU208</P>
         </macros>
         <group_name>zcu208</group_name>
+        <selected_color>
+          <color red="236" green="236" blue="236">
+          </color>
+        </selected_color>
+        <deselected_color>
+          <color red="200" green="200" blue="200">
+          </color>
+        </deselected_color>
       </tab>
       <tab>
         <name>MIMO LBL208</name>
@@ -48,6 +63,14 @@
           <P>MIMO_LBL208</P>
         </macros>
         <group_name>lbl208</group_name>
+        <selected_color>
+          <color red="236" green="236" blue="236">
+          </color>
+        </selected_color>
+        <deselected_color>
+          <color red="200" green="200" blue="200">
+          </color>
+        </deselected_color>
       </tab>
       <tab>
         <name>LLRF LBL208</name>
@@ -56,6 +79,14 @@
           <P>ALS_LLRF_LBL208</P>
         </macros>
         <group_name>lbl208</group_name>
+        <selected_color>
+          <color red="236" green="236" blue="236">
+          </color>
+        </selected_color>
+        <deselected_color>
+          <color red="200" green="200" blue="200">
+          </color>
+        </deselected_color>
       </tab>
       <tab>
         <name>MIMO ZCU216</name>
@@ -64,6 +95,30 @@
           <P>MIMO_ZCU216</P>
         </macros>
         <group_name>zcu216</group_name>
+        <selected_color>
+          <color red="236" green="236" blue="236">
+          </color>
+        </selected_color>
+        <deselected_color>
+          <color red="200" green="200" blue="200">
+          </color>
+        </deselected_color>
+      </tab>
+      <tab>
+        <name>MIMO 5G ZCU208</name>
+        <file>waveforms.bob</file>
+        <macros>
+          <P>MIMO_5G_ZCU208</P>
+        </macros>
+        <group_name>zcu208</group_name>
+        <selected_color>
+          <color red="236" green="236" blue="236">
+          </color>
+        </selected_color>
+        <deselected_color>
+          <color red="200" green="200" blue="200">
+          </color>
+        </deselected_color>
       </tab>
       <tab>
         <name>FLEX MIMO ZCU208</name>
@@ -71,7 +126,15 @@
         <macros>
           <P>FLEX_MIMO_ZCU208</P>
         </macros>
-        <group_name>zcu208</group_name>
+        <group_name></group_name>
+        <selected_color>
+          <color red="236" green="236" blue="236">
+          </color>
+        </selected_color>
+        <deselected_color>
+          <color red="200" green="200" blue="200">
+          </color>
+        </deselected_color>
       </tab>
     </tabs>
     <x>10</x>
