@@ -78,6 +78,7 @@ class MimoMtsIoc:
         self.init_rf_control()
         self.init_wave_gens()
         self.update_adc_bufs()
+        self.init_capture_mode()
         self._init_per_channel_mixer_cfg()
         if hasattr(self.ol, "adc_cal"):
             self.init_adc_cal()
@@ -122,7 +123,7 @@ class MimoMtsIoc:
         self.llrf_register_map.trig_period = 125e6
         self.llrf_register_map.trig_delay = 0
         self.llrf_register_map.trig_divide = 1
-        self.llrf_register_map.dac_enable = 1
+        self.llrf_register_map.dac_enable = 0  # DACs off at boot; enable with rf_control:dac_enable
         self.llrf_register_map.amp_loop_setpoint = 0
 
     def init_wave_gens(self):
@@ -137,6 +138,30 @@ class MimoMtsIoc:
                 wg.mode = MODE_SINGLE
         if getattr(self.ol, "wave_gens", None) and all(getattr(g, "version", 0) for g in self.ol.wave_gens):
             self.ol.apply_dac_settings()
+
+    def init_capture_mode(self):
+        """
+        One-shot captures where the overlay has the capture control registers (doc/development_plan.md, item 11):
+        each capture is armed, taken on the next trigger and then held until the IOC has read it and re-armed, so a
+        trigger during the read cannot overwrite a buffer half read. Older captures run free (every trigger).
+        """
+        self.capture_oneshot = bool(getattr(self.ol, "has_capture_csrs", False))
+        self._last_read = time.monotonic()
+        if self.capture_oneshot:
+            self.ol.capture_oneshot = True
+            self.ol.arm_captures()
+        logger.info("ADC captures: %s", "one-shot (armed per read)" if self.capture_oneshot else "free-running")
+
+    def captures_done(self) -> bool:
+        """All armed captures have completed (one-shot mode)."""
+        return all(done for _, _, done, _ in self.ol.capture_status())
+
+    def read_captures(self):
+        """Read the captures into the waveform PVs; in one-shot mode re-arm them afterwards."""
+        self.update_adc_bufs_with_pvs()
+        self._last_read = time.monotonic()
+        if self.capture_oneshot:
+            self.ol.arm_captures()
 
     def init_adc_cal(self):
         """
@@ -230,6 +255,7 @@ class MimoMtsIoc:
         self.add_dac_channel_pvs()
         self.add_rf_control_pvs()
         self.add_pulse_pvs()
+        self.add_trigger_pvs()
         if hasattr(self.ol, "adc_cal"):
             self.add_adc_cal_pvs()
 
@@ -262,6 +288,16 @@ class MimoMtsIoc:
                 DESC=desc(f"DAC waveform {part}, all DACs"),
                 EGU="cnt",
             )
+        # Quick fill of every DAC waveform: 1 = full-scale I (drive_ones_awg), 0 = zeros (drive_zeros_awg)
+        self.pvs_out["DAC:fill_ones"] = builder.boolOut(
+            "DAC:fill_ones",
+            initial_value=int(self.dac_i.size > 0 and bool(np.all(self.dac_i == 32767))),
+            ZNAM="zeros",
+            ONAM="ones",
+            always_update=True,
+            on_update=lambda v: self.drive_ones_awg() if v else self.drive_zeros_awg(),
+            DESC=desc("Fill all DAC waveforms: 0 zeros, 1 ones"),
+        )
 
     def add_dac_channel_pvs(self):
         """
@@ -270,6 +306,10 @@ class MimoMtsIoc:
             DAC{n}:mode, DAC{n}:mode:RBV  staged and active mode: single (playback per trigger), loop, CW
             DAC{n}:cw:amp, DAC{n}:cw:phase  staged CW amplitude (fraction of full scale) and phase (deg)
             DAC:apply                     write 1: staged modes and CW values become active on all DACs at once
+            DAC{n}:wave_length (+ :RBV), DAC:wave_length
+                                          waveform length in ns (single: pulse length; loop: period), rounded to
+                                          one generator row (4 ns at 5 GSPS); 0 = the whole memory. A write to
+                                          rf_control:pulse_length (cycles of the 4 ns DSP clock) sets all of them.
         The CW carrier comes from the DAC fine mixer (rfdc_mixer:*:rf_freq_mhz).
         """
         gens = getattr(self.ol, "wave_gens", [])
@@ -277,10 +317,18 @@ class MimoMtsIoc:
             return
         self.dac_ch_iq = {}
         self.dac_cw = {}
+        fs_iq = self.ol.dac_sampling_rate / self.ol.ol_info["rfdc"]["dac_interpolation_factor"]
+        self.dac_row_ns = (gens[0].out_data_width // 32) / fs_iq * 1e9  # one generator row (I/Q pairs per row)
+        full_ns = gens[0].bank_depth * self.dac_row_ns
         modes = {"ZRST": "single", "ONST": "loop", "TWST": "CW"}
         for ch, wg in enumerate(gens):
             n = wg.wave_mem.size // 2
-            self.dac_ch_iq[ch] = {"I": np.zeros(n, dtype=np.int16), "Q": np.zeros(n, dtype=np.int16)}
+            # start from the shared waveform loaded at init (write_dac), which every generator holds
+            shared = getattr(self, "dac_i", None)
+            if shared is not None and shared.size == n:
+                self.dac_ch_iq[ch] = {"I": self.dac_i.copy(), "Q": self.dac_q.copy()}
+            else:
+                self.dac_ch_iq[ch] = {"I": np.zeros(n, dtype=np.int16), "Q": np.zeros(n, dtype=np.int16)}
             self.dac_cw[ch] = {"amp": 0.0, "phase": 0.0}
             for part in ("I", "Q"):
                 self.pvs_out[f"DAC{ch}:{part}WF"] = builder.WaveformOut(
@@ -291,6 +339,13 @@ class MimoMtsIoc:
                     DESC=desc(f"DAC{ch} waveform {part}"),
                     EGU="cnt",
                 )
+            amp, phs = self._dac_amp_phase(ch)
+            self.pvs_in[f"DAC{ch}:AWF"] = builder.WaveformIn(
+                f"DAC{ch}:AWF", amp, DESC=desc(f"DAC{ch} waveform amplitude"), EGU="cnt"
+            )
+            self.pvs_in[f"DAC{ch}:PWF"] = builder.WaveformIn(
+                f"DAC{ch}:PWF", phs, DESC=desc(f"DAC{ch} waveform phase"), EGU="deg"
+            )
             self.pvs_out[f"DAC{ch}:mode"] = builder.mbbOut(
                 f"DAC{ch}:mode",
                 initial_value=0,
@@ -321,6 +376,35 @@ class MimoMtsIoc:
                 EGU="deg",
                 PREC=2,
             )
+            self.pvs_out[f"DAC{ch}:wave_length"] = builder.aOut(
+                f"DAC{ch}:wave_length",
+                initial_value=self._dac_length_ns(wg),
+                on_update=lambda v, ch=ch: self._set_dac_length([ch], v),
+                always_update=True,
+                DESC=desc(f"DAC{ch} waveform length, 0 = whole"),
+                EGU="ns",
+                DRVL=0,
+                DRVH=full_ns,
+                PREC=0,
+            )
+            self.pvs_in[f"DAC{ch}:wave_length:RBV"] = builder.aIn(
+                f"DAC{ch}:wave_length:RBV",
+                initial_value=self._dac_length_ns(wg),
+                DESC=desc(f"DAC{ch} waveform length applied"),
+                EGU="ns",
+                PREC=0,
+            )
+        self.pvs_out["DAC:wave_length"] = builder.aOut(
+            "DAC:wave_length",
+            initial_value=self._dac_length_ns(gens[0]),
+            on_update=lambda v: self._set_dac_length(range(len(gens)), v),
+            always_update=True,
+            DESC=desc("All DACs waveform length, 0 = whole"),
+            EGU="ns",
+            DRVL=0,
+            DRVH=full_ns,
+            PREC=0,
+        )
         self.pvs_out["DAC:apply"] = builder.boolOut(
             "DAC:apply",
             ZNAM="idle",
@@ -330,12 +414,42 @@ class MimoMtsIoc:
             DESC=desc("Apply staged DAC modes / CW, all DACs"),
         )
 
+    def _dac_length_ns(self, wg):
+        """Playback length of a generator in ns (wave_length 0 plays the whole memory)."""
+        return (int(wg.wave_length) or wg.bank_depth) * self.dac_row_ns
+
+    def _set_dac_length(self, chans, ns):
+        """Set the waveform length of DACs from ns: whole rows; 0 or the full memory -> wave_length 0 (whole memory)."""
+        for ch in chans:
+            wg = self.ol.wave_gens[ch]
+            rows = int(round(ns / self.dac_row_ns))
+            wg.wave_length = rows if 0 < rows < wg.bank_depth else 0
+            applied = self._dac_length_ns(wg)
+            self.pvs_out[f"DAC{ch}:wave_length"].set(ns, process=False)
+            self.pvs_in[f"DAC{ch}:wave_length:RBV"].set(applied)
+            logger.info("DAC%d waveform length %s ns -> %d rows (%.0f ns)", ch, ns, wg.wave_length, applied)
+
+    def _dac_amp_phase(self, ch):
+        """Amplitude (counts) and phase (deg) of DAC ch's waveform, float32 for the DAC{n}:AWF / PWF plots."""
+        c = self.dac_ch_iq[ch]["I"].astype(np.float32) + 1j * self.dac_ch_iq[ch]["Q"].astype(np.float32)
+        return np.abs(c).astype(np.float32), np.angle(c, deg=True).astype(np.float32)
+
+    def _publish_dac_ch(self, ch, iq_pvs=False):
+        """Update DAC{ch}:AWF / PWF (and with iq_pvs DAC{ch}:IWF / QWF, without writing the memory again)."""
+        if iq_pvs:
+            for part in ("I", "Q"):
+                self.pvs_out[f"DAC{ch}:{part}WF"].set(self.dac_ch_iq[ch][part], process=False)
+        amp, phs = self._dac_amp_phase(ch)
+        self.pvs_in[f"DAC{ch}:AWF"].set(amp)
+        self.pvs_in[f"DAC{ch}:PWF"].set(phs)
+
     def _on_dac_ch_wfm(self, ch):
         n = self.dac_ch_iq[ch]["I"].size
         for part in ("I", "Q"):
             v = np.asarray(self.pvs_out[f"DAC{ch}:{part}WF"].get(), dtype=np.int16)[:n]
             self.dac_ch_iq[ch][part] = np.pad(v, (0, n - v.size))
         self.ol.write_dac_iq_buf_ch(ch, self.dac_ch_iq[ch]["I"], self.dac_ch_iq[ch]["Q"])
+        self._publish_dac_ch(ch)
         logger.info("DAC%d waveform written (%d I/Q samples)", ch, n)
 
     def _on_dac_cw(self, ch, **kw):
@@ -542,6 +656,40 @@ class MimoMtsIoc:
                 prefix + name, initial_value=value, on_update_name=self.on_update_name, DESC=desc(text)
             )
 
+    def add_trigger_pvs(self):
+        """
+        trigger:rate_hz (+ :RBV): internal trigger rate in Hz, i.e. rf_control:trig_period in cycles of the DSP clock
+        (ol_info["dsp_clk_hz"], 250 MHz by default); 0 = internal trigger off.
+        """
+        self.dsp_clk_hz = float(self.ol.ol_info.get("dsp_clk_hz", 250e6))
+        rate = self._trig_rate_hz()
+        self.pvs_out["trigger:rate_hz"] = builder.aOut(
+            "trigger:rate_hz",
+            initial_value=rate,
+            on_update=self._set_trig_rate,
+            always_update=True,
+            DESC=desc("Internal trigger rate, 0 = off"),
+            EGU="Hz",
+            DRVL=0,
+            DRVH=1e6,
+            PREC=3,
+        )
+        self.pvs_in["trigger:rate_hz:RBV"] = builder.aIn(
+            "trigger:rate_hz:RBV", initial_value=rate, DESC=desc("Internal trigger rate"), EGU="Hz", PREC=3
+        )
+
+    def _trig_rate_hz(self):
+        period = int(self.llrf_register_map.trig_period)
+        return self.dsp_clk_hz / period if period > 0 else 0.0
+
+    def _set_trig_rate(self, rate_hz):
+        period = int(round(self.dsp_clk_hz / rate_hz)) if rate_hz > 0 else 0
+        period = min(period, 2**32 - 1)
+        self.llrf_register_map.trig_period = period
+        self.pvs_out["rf_control:trig_period"].set(period, process=False)
+        self.pvs_in["trigger:rate_hz:RBV"].set(self._trig_rate_hz())
+        logger.info("Internal trigger rate %s Hz -> trig_period %d cycles", rate_hz, period)
+
     def add_pulse_pvs(self, prefix="pulse_stat:"):
         """
         Add pulse amplitude and phase statistics, after start_ns and before end_ns
@@ -598,7 +746,12 @@ class MimoMtsIoc:
         while True:
             await irq.wait()
             t1 = time.perf_counter()
-            self.update_adc_bufs_with_pvs()
+            if self.capture_oneshot and not self.captures_done():
+                # the IRQ comes from one capture; the others finish on the same trigger, give them a moment
+                await asyncio.sleep(1e-3)
+                if not self.captures_done():
+                    logger.warning("%s IRQ but not all captures done; reading anyway", self.ioc_name)
+            self.read_captures()
             logger.debug("%s IRQ!, time since last: %.6f s", self.ioc_name, t1 - t0)
             t0 = t1
 
@@ -608,8 +761,12 @@ class MimoMtsIoc:
             await asyncio.sleep(0.5)
 
             # If no interrupt is used, we still need to update ADC buffers
-            if not hasattr(self.ol, "write_done_irq"):
-                self.update_adc_bufs_with_pvs()
+            if not hasattr(self.ol, "write_done_irq") and (not self.capture_oneshot or self.captures_done()):
+                self.read_captures()
+            elif self.capture_oneshot and time.monotonic() - self._last_read > 1.0 and self.captures_done():
+                # watchdog: a capture finished but its interrupt was missed; read it and re-arm, or updates stop
+                logger.debug("%s captures done without an interrupt; reading", self.ioc_name)
+                self.read_captures()
 
             logger.debug("%s Updating register RBVs", self.ioc_name)
             for name in self.ol.rf_control._registers.keys():
@@ -640,10 +797,13 @@ class MimoMtsIoc:
             if hasattr(self.ol, "adc_cal"):
                 self.update_adc_cal_pvs()
 
+            self.pvs_in["trigger:rate_hz:RBV"].set(self._trig_rate_hz())
+
             for ch, wg in enumerate(getattr(self.ol, "wave_gens", [])):
                 rbv = self.pvs_in.get(f"DAC{ch}:mode:RBV")
                 if rbv is not None:
                     rbv.set(wg.active_mode)
+                    self.pvs_in[f"DAC{ch}:wave_length:RBV"].set(self._dac_length_ns(wg))
 
     def on_update_name(self, value, pv_name):
         """
@@ -657,6 +817,11 @@ class MimoMtsIoc:
                 setattr(self.llrf_register_map, name, signed_value)
             else:
                 logger.warning("%s not found in llrf_register_map.", name)
+            if name == "pulse_length" and "DAC:wave_length" in self.pvs_out:
+                # per-DAC generators: the DAC pulse length is their wave_length (cycles of the 4 ns DSP clock)
+                ns = value * 4.0
+                self.pvs_out["DAC:wave_length"].set(ns, process=False)
+                self._set_dac_length(range(len(self.ol.wave_gens)), ns)
 
         elif pv_name.startswith(f"{self.prefix}:rfdc_mixer:"):
             field = pv_name.removeprefix(f"{self.prefix}:rfdc_mixer:")
@@ -701,9 +866,9 @@ class MimoMtsIoc:
                     cfg["freq_mhz"] = self.ol.adc_mixer_nco_freq_mhz
                     cfg["nyquist"] = self.ol.adc_mixer_nco_nyquist
                     cfg["phase"] = self.ol.adc_mixer_nco_phase
-                    self.pvs_out[f"rfdc_mixer:ADC{ch}:nco_freq_mhz"].set(cfg["freq_mhz"])
-                    self.pvs_out[f"rfdc_mixer:ADC{ch}:nco_nyquist"].set(cfg["nyquist"])
-                    self.pvs_out[f"rfdc_mixer:ADC{ch}:nco_phase"].set(cfg["phase"])
+                    self.pvs_out[f"rfdc_mixer:ADC{ch}:nco_freq_mhz"].set(cfg["freq_mhz"], process=False)
+                    self.pvs_out[f"rfdc_mixer:ADC{ch}:nco_nyquist"].set(cfg["nyquist"], process=False)
+                    self.pvs_out[f"rfdc_mixer:ADC{ch}:nco_phase"].set(cfg["phase"], process=False)
 
             # Global DAC: use set_dac_mixer() — all channels, synchronized
             elif field.startswith("dac_mixer_nco_"):
@@ -714,9 +879,9 @@ class MimoMtsIoc:
                     cfg["freq_mhz"] = self.ol.dac_mixer_nco_freq_mhz
                     cfg["nyquist"] = self.ol.dac_mixer_nco_nyquist
                     cfg["phase"] = self.ol.dac_mixer_nco_phase
-                    self.pvs_out[f"rfdc_mixer:DAC{ch}:nco_freq_mhz"].set(cfg["freq_mhz"])
-                    self.pvs_out[f"rfdc_mixer:DAC{ch}:nco_nyquist"].set(cfg["nyquist"])
-                    self.pvs_out[f"rfdc_mixer:DAC{ch}:nco_phase"].set(cfg["phase"])
+                    self.pvs_out[f"rfdc_mixer:DAC{ch}:nco_freq_mhz"].set(cfg["freq_mhz"], process=False)
+                    self.pvs_out[f"rfdc_mixer:DAC{ch}:nco_nyquist"].set(cfg["nyquist"], process=False)
+                    self.pvs_out[f"rfdc_mixer:DAC{ch}:nco_phase"].set(cfg["phase"], process=False)
 
         elif "pulse_stat" in pv_name:
             # Per-channel ADC: DSP:ADC?:pulse_stat:start|end
@@ -726,7 +891,7 @@ class MimoMtsIoc:
                 ch_type = match.group("type")
                 ch = int(match.group("ch"))
                 param = match.group("param")
-                self.pvs_out[f"{ch_type}{ch}:pulse_stat:{param}"].set(value)
+                self.pvs_out[f"{ch_type}{ch}:pulse_stat:{param}"].set(value, process=False)
                 if param == "start_ns":
                     self.adc_pulse_start_ns[ch] = value
                 elif param == "end_ns":
@@ -753,18 +918,18 @@ class MimoMtsIoc:
             configs = self.adc_mixer_cfg if conv == "adc" else self.dac_mixer_cfg
             for ch, cfg in configs.items():
                 cfg.update(freq_mhz=nco, nyquist=zone, phase=phase)
-                self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_freq_mhz"].set(nco)
-                self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_nyquist"].set(zone)
-                self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:rf_freq_mhz"].set(rf_mhz)
-            self.pvs_out[f"rfdc_mixer:{conv}_mixer_nco_freq_mhz"].set(nco)
-            self.pvs_out[f"rfdc_mixer:{conv}_mixer_nco_nyquist"].set(zone)
+                self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_freq_mhz"].set(nco, process=False)
+                self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_nyquist"].set(zone, process=False)
+                self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:rf_freq_mhz"].set(rf_mhz, process=False)
+            self.pvs_out[f"rfdc_mixer:{conv}_mixer_nco_freq_mhz"].set(nco, process=False)
+            self.pvs_out[f"rfdc_mixer:{conv}_mixer_nco_nyquist"].set(zone, process=False)
         else:
             ch = int(m.group("ch"))
             cfg = (self.adc_mixer_cfg if conv == "adc" else self.dac_mixer_cfg)[ch]
             cfg.update(freq_mhz=nco, nyquist=zone)
             getattr(self.ol, f"set_{conv}_mixer_ch")(ch, nco, zone, cfg["phase"])
-            self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_freq_mhz"].set(nco)
-            self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_nyquist"].set(zone)
+            self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_freq_mhz"].set(nco, process=False)
+            self.pvs_out[f"rfdc_mixer:{conv.upper()}{ch}:nco_nyquist"].set(zone, process=False)
 
     def drive_test_awg(self):
         """Drive DAC with a test arbitrary waveform"""
@@ -780,6 +945,12 @@ class MimoMtsIoc:
         dac_q = (dac_wfm.imag).astype(np.int16)
         self.write_dac(dac_i, dac_q)
 
+    def drive_zeros_awg(self):
+        """Zero DAC waveform: no output even where rf_control:dac_enable does not gate the DACs (mimo_mts_5g)."""
+        assert self.ol.dac_player is not None, "DAC player buffer not initialized."
+        dac_i = np.zeros(self.ol.dac_player.size // 2, dtype=np.int16)
+        self.write_dac(dac_i, np.zeros_like(dac_i))
+
     def drive_ones_awg(self):
         """Drive DAC with all ones, for testing purposes."""
         assert self.ol.dac_player is not None, "DAC player buffer not initialized."
@@ -792,6 +963,11 @@ class MimoMtsIoc:
         self.dac_i = np.asarray(dac_i, dtype=np.int16)
         self.dac_q = np.asarray(dac_q, dtype=np.int16)
         self.ol.write_dac_iq_buf(self.dac_i, self.dac_q)
+        # with one generator per DAC this wrote every generator: keep the per-DAC PVs and plots in step
+        for ch in getattr(self, "dac_ch_iq", {}):
+            if f"DAC{ch}:AWF" in getattr(self, "pvs_in", {}):
+                self.dac_ch_iq[ch] = {"I": self.dac_i.copy(), "Q": self.dac_q.copy()}
+                self._publish_dac_ch(ch, iq_pvs=True)
 
 
 def mimo_auto_ioc():

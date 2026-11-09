@@ -16,8 +16,10 @@ first steps and open questions. Update this file as items progress; repository c
 | 8 | `mimo_mts_5g` for the LBL208 | 2 | medium |
 | 9 | Rerun the ADC calibration tests on ZCU208 and LBL208, update the findings | – (5 GSPS part: 8) | medium |
 | 10 | `mimo_mts_iq` at 5 GSPS with `wave_gen` / `wave_cap` | 2 | medium |
-| 11 | IOC capture reads without tearing (one-shot captures) | – | small |
+| 11 | IOC capture reads without tearing (one-shot captures) — done | – | small |
 | 12 | `mimo_mts_max`: DAC at 7 GSPS (MTS maximum) with per-DAC `wave_gen` | 2 | medium |
+| 13 | NCO phase repeatability per DAC and ADC (MIMO phase coherence) | – | medium |
+| 14 | `mimo_mts_5g`: common capture arm, `dac_enable` gating of the DAC outputs | 2 | small |
 
 Next in line: the LBL208 port (8) and the IOC capture reads (11); item 9 can run in parallel on the existing overlays,
 with its 5 GSPS part after item 8. The per-DAC AWG (2) and CW mode (7) are done (branch `feature/per-dac-cw`). Items 4 and 5 both change the Vivado flow; doing
@@ -310,7 +312,18 @@ during the copy overwrites a buffer half read, so a waveform PV can mix two capt
 (the capture-done interrupt or `ol.wait_captures()`), read, re-arm, as `test_mimo5g.py` (`Mimo5gCheck.capture`) and
 `doc/zcu208/mimo_mts_5g.ipynb` do. Older bitstreams keep the free-running read.
 
-**Done when** the IOC waveform PVs never mix captures on `mimo_mts_5g` (checked with a free-running loop tone).
+**Implemented** (branch `feature/ioc-oneshot`): `MimoMtsIoc.init_capture_mode()` puts the captures in one-shot mode
+where the overlay has the control registers (`ol.has_capture_csrs`); the capture-done interrupt handler waits until
+all captures are done, reads them and re-arms (`read_captures()`); a watchdog in the 0.5 s register loop reads and
+re-arms if an interrupt was missed. Older overlays keep the free-running read. `test_ioc_dac.py` checks it: at a 1 ms
+trigger with the ADC mixer 0.3 MHz off the DAC mixer, every capture must be a straight phase ramp.
+
+**Done when** the IOC waveform PVs never mix captures on `mimo_mts_5g` (`test_ioc_dac.py`, capture-read check).
+*Verified 9 Nov 2026:* with the free-running IOC all 96 reads (12 × 8 ADCs, 1 ms trigger) had a phase jump (worst
+195°); with one-shot reads none (worst deviation from the ramp 0.33°). The IOC re-arms about 45 ms after a capture
+completes. Remaining race: the 16 captures (I and Q of 8 ADCs) are armed by 16 separate register writes, so a trigger
+during the arming splits them over two triggers (one of 96 reads at a 1 ms trigger had I and Q of one ADC from
+different triggers). A common arm in hardware removes it (item 14).
 
 ## 12. `mimo_mts_max`: DAC at 7 GSPS
 
@@ -347,6 +360,58 @@ window per generator (`C_S_AXI_ADDR_WIDTH` 18), so the address map is the same.
 
 **Done when** `mimo_mts_max` meets timing, MTS locks with a repeatable latency, and `test_mimo5g.py` passes on
 hardware with the DACs at 7 GSPS.
+
+## 13. NCO phase repeatability per DAC and ADC
+
+**State.** The RFDC fine mixers make the carrier (CW mode, `rfdc_mixer:*:rf_freq_mhz`). The overlay already updates
+them on a SYSREF-timed event: `set_{adc,dac}_mixer` and `set_{adc,dac}_mixer_ch` set `EventSource =
+EVNT_SRC_SYSREF`, call `ResetNCOPhase()` on each block and enable SYSREF in the MTS configuration around the update.
+That should make the phases repeatable within a session; what remains to check is whether they also repeat when only
+one side changes, after an IOC restart and after a reboot (new MTS). Within one setting the phase is
+stable: `test_ioc_dac.py` measured the CW phase constant to 0.03° within and between captures. In the manual IOC test
+the per-channel phases differed by up to 130° with identical CW settings, more than cables and channels explain
+(10–110 ps, under 8° at 200 MHz). For MIMO phase coherence the per-DAC phase must be repeatable.
+First data point (8 Nov 2026, `test_ioc_dac.py`): after setting both DAC and ADC mixers to 0 MHz and back to 200 MHz,
+the per-ADC phases repeated to 0.0° on all 8 channels. Still open: changing only one side, IOC restarts, reboots.
+
+**Goal.** DAC and ADC NCO phases repeatable after a frequency change, an IOC restart and a reboot (MTS), to the 0.1°
+level ALS needs, or a documented calibration step that restores them.
+
+**Steps.**
+1. Measure: `test_ioc_dac.py` reports the per-ADC phase change after setting both mixers to 0 and back. Separate the
+   DAC and ADC sides by changing only one of them; repeat several times; repeat across IOC restarts and reboots.
+2. If not repeatable across restarts or reboots: find what differs (SYSREF edge used for the update, MTS latency,
+   LMX/LMK phase after a reboot) and either fix it or calibrate the per-channel phase at startup.
+3. Repeat step 1; add a pass/fail check to `test_ioc_dac.py` once the target is met.
+
+**Done when** the per-DAC and per-ADC carrier phases repeat to 0.1° after frequency changes, IOC restarts and reboots
+on the ZCU208 (and the LBL208, item 8), or the remaining offset is calibrated automatically.
+
+## 14. `mimo_mts_5g`: common capture arm and DAC enable
+
+**State.** Two gaps between `mimo_mts_5g` and the earlier overlays, found with the IOC test and the Phoebus screens:
+- One-shot captures are armed one register write per capture (16 writes); a trigger in between splits the set over
+  two triggers (item 11).
+- `rf_control:dac_enable` bit 0 does not reach the DAC outputs (`transmitter/enable` is unconnected); on `mimo_mts`
+  it gated `dac_streamer`. Bit 1 (`pulse_enable`) is not connected on either overlay.
+
+**Steps.**
+1. Common arm: an `arm` input on `axi_wave_cap` / `wave_cap`, driven by a one-cycle pulse from an `axil_rf_control`
+   register bit (as `cw_apply` drives the generators), so one write arms all captures on the same clock. Software:
+   `arm_captures()` uses it when present (version or register check), keeps the per-capture writes otherwise.
+2. DAC enable: an `enable` input on `axis_idle_zero` (output zero while low), connected to `dac_enable`.
+3. Testbenches, block design (`write_bd_tcl`), rebuild, `test_mimo5g.py` and `test_ioc_dac.py` on hardware.
+
+The capture length stays the full capture memory (a constant at least the capture depth: now 4096, clamped to the
+2048 rows), not `rf_control:pulse_length`: every capture fills the whole memory, so cable delay and latency never cut
+off the end of a waveform. The capture depth stays 2048 rows (8.2 µs, 320 BRAM36 for the 16 streams) rather than
+matching the 16.4 µs DAC memory: the remaining block RAM is reserved for the LLRF DSP's long decimated waveforms.
+
+Also from the IOC side: the IOCs boot with `dac_enable` bit 0 cleared, and the `mimo_mts_5g` IOC starts with a zero
+waveform until `dac_enable` gates its outputs.
+
+**Done when** `test_ioc_dac.py` passes its capture-read check repeatedly at a 1 ms trigger and `dac_enable` = 0
+silences all DACs.
 
 ## Related open work
 

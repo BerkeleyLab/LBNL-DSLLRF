@@ -1,0 +1,576 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<display version="2.0.0">
+  <name>LLRF loop</name>
+  <width>900</width>
+  <height>538</height>
+  <widget type="label" version="2.0.0">
+    <name>Title</name>
+    <class>TITLE</class>
+    <text>$(P) LLRF amplitude and phase loops</text>
+    <x use_class="true">0</x>
+    <y use_class="true">0</y>
+    <width>900</width>
+    <height>40</height>
+    <font use_class="true">
+      <font name="Header 1" family="Liberation Sans" style="BOLD" size="22.0">
+      </font>
+    </font>
+    <transparent use_class="true">true</transparent>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>rf_control registers (raw values: setpoints, gains and errors in DSP units); blue fields are read back.</text>
+    <x>10</x>
+    <y>45</y>
+    <width>880</width>
+    <height>25</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>Amplitude loop</text>
+    <x>10</x>
+    <y>80</y>
+    <width>300</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>enable</text>
+    <x>10</x>
+    <y>115</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="bool_button" version="2.0.0">
+    <name>Boolean Button</name>
+    <pv_name>$(P):rf_control:amp_loop_enable</pv_name>
+    <bit>0</bit>
+    <labels_from_pv>false</labels_from_pv>
+    <x>100</x>
+    <y>115</y>
+    <width>100</width>
+    <height>30</height>
+  </widget>
+  <widget type="led" version="2.0.0">
+    <name>LED</name>
+    <pv_name>$(P):rf_control:amp_loop_enable:RBV</pv_name>
+    <bit>0</bit>
+    <x>210</x>
+    <y>115</y>
+    <width>30</width>
+    <height>30</height>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>reset</text>
+    <x>300</x>
+    <y>115</y>
+    <width>60</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="bool_button" version="2.0.0">
+    <name>Boolean Button</name>
+    <pv_name>$(P):rf_control:amp_loop_reset</pv_name>
+    <bit>0</bit>
+    <labels_from_pv>false</labels_from_pv>
+    <x>360</x>
+    <y>115</y>
+    <width>100</width>
+    <height>30</height>
+  </widget>
+  <widget type="led" version="2.0.0">
+    <name>LED</name>
+    <pv_name>$(P):rf_control:amp_loop_reset:RBV</pv_name>
+    <bit>0</bit>
+    <x>470</x>
+    <y>115</y>
+    <width>30</width>
+    <height>30</height>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>setpoint</text>
+    <x>10</x>
+    <y>153</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rf_control:amp_loop_setpoint</pv_name>
+    <x>100</x>
+    <y>153</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:amp_loop_setpoint:RBV</pv_name>
+    <x>215</x>
+    <y>153</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="scaledslider" version="2.0.0">
+    <name>Scaled Slider</name>
+    <pv_name>$(P):rf_control:amp_loop_setpoint</pv_name>
+    <x>340</x>
+    <y>153</y>
+    <width>300</width>
+    <height>30</height>
+    <show_minor_ticks>false</show_minor_ticks>
+    <show_hihi>false</show_hihi>
+    <show_high>false</show_high>
+    <show_low>false</show_low>
+    <show_lolo>false</show_lolo>
+    <minimum>0.0</minimum>
+    <maximum>78000.0</maximum>
+    <limits_from_pv>false</limits_from_pv>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>kp</text>
+    <x>10</x>
+    <y>191</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rf_control:amp_loop_kp</pv_name>
+    <x>100</x>
+    <y>191</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:amp_loop_kp:RBV</pv_name>
+    <x>215</x>
+    <y>191</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ki</text>
+    <x>340</x>
+    <y>191</y>
+    <width>40</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rf_control:amp_loop_ki</pv_name>
+    <x>380</x>
+    <y>191</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:amp_loop_ki:RBV</pv_name>
+    <x>495</x>
+    <y>191</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>error</text>
+    <x>10</x>
+    <y>229</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:amp_loop_err:RBV</pv_name>
+    <x>100</x>
+    <y>229</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>measured</text>
+    <x>340</x>
+    <y>229</y>
+    <width>80</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:amp_measured:RBV</pv_name>
+    <x>420</x>
+    <y>229</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>Phase loop</text>
+    <x>10</x>
+    <y>284</y>
+    <width>300</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>enable</text>
+    <x>10</x>
+    <y>319</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="bool_button" version="2.0.0">
+    <name>Boolean Button</name>
+    <pv_name>$(P):rf_control:phs_loop_enable</pv_name>
+    <bit>0</bit>
+    <labels_from_pv>false</labels_from_pv>
+    <x>100</x>
+    <y>319</y>
+    <width>100</width>
+    <height>30</height>
+  </widget>
+  <widget type="led" version="2.0.0">
+    <name>LED</name>
+    <pv_name>$(P):rf_control:phs_loop_enable:RBV</pv_name>
+    <bit>0</bit>
+    <x>210</x>
+    <y>319</y>
+    <width>30</width>
+    <height>30</height>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>reset</text>
+    <x>300</x>
+    <y>319</y>
+    <width>60</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="bool_button" version="2.0.0">
+    <name>Boolean Button</name>
+    <pv_name>$(P):rf_control:phs_loop_reset</pv_name>
+    <bit>0</bit>
+    <labels_from_pv>false</labels_from_pv>
+    <x>360</x>
+    <y>319</y>
+    <width>100</width>
+    <height>30</height>
+  </widget>
+  <widget type="led" version="2.0.0">
+    <name>LED</name>
+    <pv_name>$(P):rf_control:phs_loop_reset:RBV</pv_name>
+    <bit>0</bit>
+    <x>470</x>
+    <y>319</y>
+    <width>30</width>
+    <height>30</height>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>setpoint</text>
+    <x>10</x>
+    <y>357</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rf_control:phs_loop_setpoint</pv_name>
+    <x>100</x>
+    <y>357</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:phs_loop_setpoint:RBV</pv_name>
+    <x>215</x>
+    <y>357</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="scaledslider" version="2.0.0">
+    <name>Scaled Slider</name>
+    <pv_name>$(P):rf_control:phs_loop_setpoint</pv_name>
+    <x>340</x>
+    <y>357</y>
+    <width>300</width>
+    <height>30</height>
+    <show_minor_ticks>false</show_minor_ticks>
+    <show_hihi>false</show_hihi>
+    <show_high>false</show_high>
+    <show_low>false</show_low>
+    <show_lolo>false</show_lolo>
+    <minimum>-131072.0</minimum>
+    <maximum>131071.0</maximum>
+    <limits_from_pv>false</limits_from_pv>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>kp</text>
+    <x>10</x>
+    <y>395</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rf_control:phs_loop_kp</pv_name>
+    <x>100</x>
+    <y>395</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:phs_loop_kp:RBV</pv_name>
+    <x>215</x>
+    <y>395</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ki</text>
+    <x>340</x>
+    <y>395</y>
+    <width>40</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rf_control:phs_loop_ki</pv_name>
+    <x>380</x>
+    <y>395</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:phs_loop_ki:RBV</pv_name>
+    <x>495</x>
+    <y>395</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>error</text>
+    <x>10</x>
+    <y>433</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:phs_loop_err:RBV</pv_name>
+    <x>100</x>
+    <y>433</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>measured</text>
+    <x>340</x>
+    <y>433</y>
+    <width>80</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:phs_measured:RBV</pv_name>
+    <x>420</x>
+    <y>433</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>RF status</text>
+    <x>10</x>
+    <y>488</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rf_control:rf_status:RBV</pv_name>
+    <x>100</x>
+    <y>488</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+</display>

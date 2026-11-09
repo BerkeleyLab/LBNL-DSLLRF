@@ -1,0 +1,2087 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<display version="2.0.0">
+  <name>RFDC NCO</name>
+  <width>900</width>
+  <height>890</height>
+  <widget type="label" version="2.0.0">
+    <name>Title</name>
+    <class>TITLE</class>
+    <text>$(P) per-channel NCO</text>
+    <x use_class="true">0</x>
+    <y use_class="true">0</y>
+    <width>900</width>
+    <height>40</height>
+    <font use_class="true">
+      <font name="Header 1" family="Liberation Sans" style="BOLD" size="22.0">
+      </font>
+    </font>
+    <transparent use_class="true">true</transparent>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>Set the RF frequency (0 to the sampling rate, e.g. 3000 MHz); the IOC picks the NCO frequency and Nyquist zone. The all-channel setting overwrites the per-channel ones.</text>
+    <x>10</x>
+    <y>45</y>
+    <width>880</width>
+    <height>40</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>All ADCs RF [MHz]</text>
+    <x>10</x>
+    <y>95</y>
+    <width>140</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:adc_rf_freq_mhz</pv_name>
+    <x>150</x>
+    <y>95</y>
+    <width>100</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:adc_rf_freq_mhz:RBV</pv_name>
+    <x>255</x>
+    <y>95</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>phase [deg]</text>
+    <x>380</x>
+    <y>95</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:adc_mixer_nco_phase</pv_name>
+    <x>470</x>
+    <y>95</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:adc_mixer_nco_phase:RBV</pv_name>
+    <x>565</x>
+    <y>95</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ADC</text>
+    <x>10</x>
+    <y>135</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>RF [MHz]</text>
+    <x>80</x>
+    <y>135</y>
+    <width>110</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>applied</text>
+    <x>195</x>
+    <y>135</y>
+    <width>100</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>phase [deg]</text>
+    <x>310</x>
+    <y>135</y>
+    <width>90</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>applied</text>
+    <x>405</x>
+    <y>135</y>
+    <width>90</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>NCO [MHz]</text>
+    <x>510</x>
+    <y>135</y>
+    <width>110</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>zone</text>
+    <x>625</x>
+    <y>135</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ADC0</text>
+    <x>10</x>
+    <y>170</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC0:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>170</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC0:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>170</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC0:nco_phase</pv_name>
+    <x>310</x>
+    <y>170</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC0:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>170</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC0:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>170</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC0:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>170</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ADC1</text>
+    <x>10</x>
+    <y>208</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC1:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>208</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC1:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>208</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC1:nco_phase</pv_name>
+    <x>310</x>
+    <y>208</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC1:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>208</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC1:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>208</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC1:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>208</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ADC2</text>
+    <x>10</x>
+    <y>246</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC2:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>246</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC2:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>246</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC2:nco_phase</pv_name>
+    <x>310</x>
+    <y>246</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC2:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>246</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC2:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>246</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC2:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>246</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ADC3</text>
+    <x>10</x>
+    <y>284</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC3:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>284</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC3:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>284</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC3:nco_phase</pv_name>
+    <x>310</x>
+    <y>284</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC3:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>284</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC3:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>284</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC3:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>284</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ADC4</text>
+    <x>10</x>
+    <y>322</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC4:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>322</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC4:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>322</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC4:nco_phase</pv_name>
+    <x>310</x>
+    <y>322</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC4:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>322</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC4:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>322</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC4:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>322</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ADC5</text>
+    <x>10</x>
+    <y>360</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC5:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>360</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC5:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>360</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC5:nco_phase</pv_name>
+    <x>310</x>
+    <y>360</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC5:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>360</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC5:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>360</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC5:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>360</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ADC6</text>
+    <x>10</x>
+    <y>398</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC6:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>398</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC6:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>398</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC6:nco_phase</pv_name>
+    <x>310</x>
+    <y>398</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC6:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>398</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC6:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>398</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC6:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>398</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>ADC7</text>
+    <x>10</x>
+    <y>436</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC7:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>436</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC7:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>436</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:ADC7:nco_phase</pv_name>
+    <x>310</x>
+    <y>436</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC7:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>436</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC7:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>436</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:ADC7:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>436</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>All DACs RF [MHz]</text>
+    <x>10</x>
+    <y>499</y>
+    <width>140</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:dac_rf_freq_mhz</pv_name>
+    <x>150</x>
+    <y>499</y>
+    <width>100</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:dac_rf_freq_mhz:RBV</pv_name>
+    <x>255</x>
+    <y>499</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>phase [deg]</text>
+    <x>380</x>
+    <y>499</y>
+    <width>90</width>
+    <height>30</height>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:dac_mixer_nco_phase</pv_name>
+    <x>470</x>
+    <y>499</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:dac_mixer_nco_phase:RBV</pv_name>
+    <x>565</x>
+    <y>499</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>DAC</text>
+    <x>10</x>
+    <y>539</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>RF [MHz]</text>
+    <x>80</x>
+    <y>539</y>
+    <width>110</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>applied</text>
+    <x>195</x>
+    <y>539</y>
+    <width>100</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>phase [deg]</text>
+    <x>310</x>
+    <y>539</y>
+    <width>90</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>applied</text>
+    <x>405</x>
+    <y>539</y>
+    <width>90</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>NCO [MHz]</text>
+    <x>510</x>
+    <y>539</y>
+    <width>110</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>zone</text>
+    <x>625</x>
+    <y>539</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>DAC0</text>
+    <x>10</x>
+    <y>574</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC0:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>574</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC0:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>574</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC0:nco_phase</pv_name>
+    <x>310</x>
+    <y>574</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC0:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>574</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC0:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>574</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC0:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>574</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>DAC1</text>
+    <x>10</x>
+    <y>612</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC1:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>612</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC1:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>612</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC1:nco_phase</pv_name>
+    <x>310</x>
+    <y>612</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC1:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>612</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC1:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>612</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC1:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>612</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>DAC2</text>
+    <x>10</x>
+    <y>650</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC2:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>650</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC2:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>650</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC2:nco_phase</pv_name>
+    <x>310</x>
+    <y>650</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC2:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>650</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC2:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>650</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC2:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>650</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>DAC3</text>
+    <x>10</x>
+    <y>688</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC3:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>688</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC3:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>688</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC3:nco_phase</pv_name>
+    <x>310</x>
+    <y>688</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC3:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>688</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC3:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>688</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC3:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>688</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>DAC4</text>
+    <x>10</x>
+    <y>726</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC4:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>726</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC4:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>726</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC4:nco_phase</pv_name>
+    <x>310</x>
+    <y>726</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC4:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>726</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC4:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>726</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC4:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>726</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>DAC5</text>
+    <x>10</x>
+    <y>764</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC5:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>764</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC5:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>764</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC5:nco_phase</pv_name>
+    <x>310</x>
+    <y>764</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC5:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>764</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC5:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>764</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC5:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>764</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>DAC6</text>
+    <x>10</x>
+    <y>802</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC6:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>802</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC6:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>802</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC6:nco_phase</pv_name>
+    <x>310</x>
+    <y>802</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC6:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>802</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC6:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>802</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC6:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>802</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>Label</name>
+    <text>DAC7</text>
+    <x>10</x>
+    <y>840</y>
+    <width>60</width>
+    <height>30</height>
+    <font>
+      <font family="Liberation Sans" style="BOLD" size="14.0">
+      </font>
+    </font>
+    <horizontal_alignment>0</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC7:rf_freq_mhz</pv_name>
+    <x>80</x>
+    <y>840</y>
+    <width>110</width>
+    <height>30</height>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC7:rf_freq_mhz:RBV</pv_name>
+    <x>195</x>
+    <y>840</y>
+    <width>100</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textentry" version="3.0.0">
+    <name>Text Entry</name>
+    <pv_name>$(P):rfdc_mixer:DAC7:nco_phase</pv_name>
+    <x>310</x>
+    <y>840</y>
+    <width>90</width>
+    <height>30</height>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <tooltip>$(pv_name)</tooltip>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC7:nco_phase:RBV</pv_name>
+    <x>405</x>
+    <y>840</y>
+    <width>90</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>1</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC7:nco_freq_mhz:RBV</pv_name>
+    <x>510</x>
+    <y>840</y>
+    <width>110</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>3</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>Text Update</name>
+    <pv_name>$(P):rfdc_mixer:DAC7:nco_nyquist:RBV</pv_name>
+    <x>625</x>
+    <y>840</y>
+    <width>60</width>
+    <height>30</height>
+    <background_color>
+      <color name="Write_Background" red="128" green="255" blue="255">
+      </color>
+    </background_color>
+    <precision>0</precision>
+    <show_units>false</show_units>
+    <horizontal_alignment>1</horizontal_alignment>
+    <vertical_alignment>1</vertical_alignment>
+    <wrap_words>false</wrap_words>
+  </widget>
+</display>
