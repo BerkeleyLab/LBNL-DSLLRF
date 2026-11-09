@@ -19,7 +19,7 @@ first steps and open questions. Update this file as items progress; repository c
 | 11 | IOC capture reads without tearing (one-shot captures) — done | – | small |
 | 12 | `mimo_mts_max`: DAC at 7 GSPS (MTS maximum) with per-DAC `wave_gen` | 2 | medium |
 | 13 | NCO phase repeatability per DAC and ADC (MIMO phase coherence) | – | medium |
-| 14 | `mimo_mts_5g`: common capture arm, `dac_enable` gating of the DAC outputs | 2 | small |
+| 14 | `mimo_mts_5g`: common capture arm, `dac_enable` gating of the DAC outputs — done | 2 | small |
 
 Next in line: the LBL208 port (8) and the IOC capture reads (11); item 9 can run in parallel on the existing overlays,
 with its 5 GSPS part after item 8. The per-DAC AWG (2) and CW mode (7) are done (branch `feature/per-dac-cw`). Items 4 and 5 both change the Vivado flow; doing
@@ -412,6 +412,17 @@ waveform until `dac_enable` gates its outputs.
 
 **Done when** `test_ioc_dac.py` passes its capture-read check repeatedly at a 1 ms trigger and `dac_enable` = 0
 silences all DACs.
+
+**Implemented** (branch `feature/capture-arm-dac-enable`): step 1 as described (CSR bit 3 as the capability flag). For
+step 2 the gating moved from `axis_idle_zero` (500 MHz) to the output of `axil_wave_gen` (250 MHz, the clock of
+`axil_rf_control`, so no clock crossing): an `enable` input with parameter `HAS_ENABLE`. The `mimo_mts_5g` IOC boots
+with the all-ones waveform again when its generators have the enable. Testbenches pass; `test_ioc_dac.py` has a
+`dac_enable` check.
+
+*Verified 9 Nov 2026* (WNS +0.058 ns at 500 MHz, worst path a clock-tree reset into the RFDC SYSREF edge detector,
+unrelated to this change; +0.157 ns at 250 MHz): `test_mimo5g.py --nco` passes; the IOC boots with the DACs off and
+the all-ones waveform; `test_ioc_dac.py` 39/39 twice, the capture-read check with no torn read (worst deviation
+0.36°, 96 reads at a 1 ms trigger) and `dac_enable` silencing all 8 DACs.
 
 ## Related open work
 

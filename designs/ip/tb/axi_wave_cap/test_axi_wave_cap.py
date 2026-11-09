@@ -49,6 +49,7 @@ class AxiWaveCapTB:
         self.dut.trigger.value = 0
         self.dut.n_rows.value = 0
         self.dut.s_axis_tvalid.value = 0
+        self.dut.arm_all.value = 0
         await ClockCycles(self.dut.axis_clk, 10)
         self.dut.axis_aresetn.value = 1
         await ClockCycles(self.dut.axis_clk, 5)
@@ -188,6 +189,9 @@ async def csr_write(tb, value):
     await tb.axi.write(CSR, value.to_bytes(4, "little"), size=2)
 
 
+CAP_ARM_ALL = 0x8  # CSR bit 3: the bitstream has the common arm input
+
+
 @cocotb.test(timeout_time=400, timeout_unit="us")
 async def test_oneshot_arm(dut):
     """One-shot mode: no capture until armed, exactly one capture per arm, done/armed/count in the CSR."""
@@ -206,18 +210,18 @@ async def test_oneshot_arm(dut):
             n += int(tb.dut.write_done.value)
         return n, first
 
-    assert await csr_read(tb) == 0, "reset state: continuous mode, not armed, not done, count 0"
+    assert await csr_read(tb) == CAP_ARM_ALL, "reset state: continuous mode, not armed, not done, count 0"
     await csr_write(tb, 0x1)  # oneshot, not armed
-    assert await csr_read(tb) == 0x1
+    assert await csr_read(tb) == 0x1 | CAP_ARM_ALL
     n, _ = await pulse_trigger_and_count_done()
     assert n == 0, "captured without being armed"
 
     await csr_write(tb, 0x3)  # oneshot + arm
-    assert await csr_read(tb) == 0x3, "armed bit not set"
+    assert await csr_read(tb) == 0x3 | CAP_ARM_ALL, "armed bit not set"
     n, first = await pulse_trigger_and_count_done()
     assert n == 1, f"write_done pulsed {n} times"
     status = await csr_read(tb)
-    assert status == (1 << 16) | 0x4 | 0x1, f"status 0x{status:08x}: expected count 1, done, oneshot"
+    assert status == (1 << 16) | CAP_ARM_ALL | 0x4 | 0x1, f"status 0x{status:08x}: expected count 1, done, oneshot"
     data = bytes((await tb.axi.read(0, 50 * tb.row_bytes)).data)
     start = tb.captured_start(data)
     assert start - first in range(0, 3) and data == tb.expected_bytes(start, 50)
@@ -229,3 +233,34 @@ async def test_oneshot_arm(dut):
     await csr_write(tb, 0x0)  # back to continuous
     n, _ = await pulse_trigger_and_count_done()
     assert n == 1 and (await csr_read(tb)) >> 16 == 2, "continuous mode capture not counted"
+
+
+@cocotb.test(timeout_time=400, timeout_unit="us")
+async def test_common_arm(dut):
+    """arm_all (one-cycle pulse) arms like a CSR arm write: one capture on the next trigger, done set, armed cleared."""
+    tb = AxiWaveCapTB(dut)
+    await tb.reset()
+    tb.dut.n_rows.value = 50
+    await csr_write(tb, 0x1)  # oneshot, not armed
+    assert await csr_read(tb) & 0xF == 0x1 | CAP_ARM_ALL
+
+    async def trigger_and_count(cycles=200):
+        tb.dut.trigger.value = 1
+        await RisingEdge(tb.dut.axis_clk)
+        tb.dut.trigger.value = 0
+        n = 0
+        for _ in range(cycles):
+            await RisingEdge(tb.dut.axis_clk)
+            n += int(tb.dut.write_done.value)
+        return n
+
+    assert await trigger_and_count() == 0, "captured without being armed"
+    tb.dut.arm_all.value = 1
+    await RisingEdge(tb.dut.axis_clk)
+    tb.dut.arm_all.value = 0
+    await ClockCycles(tb.dut.axis_clk, 3)
+    assert await csr_read(tb) & 0xF == 0x3 | CAP_ARM_ALL, "arm_all did not arm"
+    assert await trigger_and_count() == 1, "no capture after arm_all"
+    status = await csr_read(tb)
+    assert status & 0xF == 0x5 | CAP_ARM_ALL and status >> 16 == 1, f"status 0x{status:08x}"
+    assert await trigger_and_count() == 0, "captured again without re-arming"

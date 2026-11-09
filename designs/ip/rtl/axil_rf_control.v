@@ -39,6 +39,7 @@ module axil_rf_control #(
     output wire dac_enable,
     output wire pulse_enable,
     output wire cw_apply,           // one-cycle pulse on a 0 -> 1 write of dac_enable bit 2 (wave_gen apply)
+    output wire capture_arm,        // one-cycle pulse on a 0 -> 1 write of dac_enable bit 3 (arm all captures)
     output wire [15:0] pulse_length,
     output wire amp_loop_enable,
     output wire amp_loop_reset,
@@ -128,6 +129,10 @@ module axil_rf_control #(
     reg cw_apply_d = 1'b0;
     always @(posedge s_axi_aclk) cw_apply_d <= csr_out_regs[5][2];
     assign cw_apply = csr_out_regs[5][2] && !cw_apply_d;
+    // Common arm strobe for the one-shot captures (axi_wave_cap arm_all): rising edge of dac_enable bit 3
+    reg capture_arm_d = 1'b0;
+    always @(posedge s_axi_aclk) capture_arm_d <= csr_out_regs[5][3];
+    assign capture_arm = csr_out_regs[5][3] && !capture_arm_d;
     assign amp_loop_enable  = csr_out_regs[6][0];
     assign amp_loop_setpoint= csr_out_regs[7][KW-1:0];
     assign amp_loop_reset   = csr_out_regs[8][0];

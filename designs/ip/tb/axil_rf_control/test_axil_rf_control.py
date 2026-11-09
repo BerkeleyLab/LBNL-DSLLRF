@@ -181,3 +181,24 @@ async def test_cw_apply_pulse(dut):
         await ClockCycles(dut.s_axi_aclk, 5)
         assert pulses == expected, f"after writing 0b{value:03b}: {pulses} pulses, expected {expected}"
     assert dut.dac_enable.value == 1 and dut.pulse_enable.value == 1
+
+
+@cocotb.test()
+async def test_capture_arm_pulse(dut):
+    """dac_enable bit 3: a one-cycle capture_arm pulse on each 0 -> 1 write, independent of the other bits."""
+    tb = TB(dut)
+    await tb.cycle_reset()
+    pulses = {"capture_arm": 0, "cw_apply": 0}
+
+    async def count():
+        while True:
+            await RisingEdge(dut.s_axi_aclk)
+            for name in pulses:
+                pulses[name] += int(getattr(dut, name).value)
+
+    cocotb.start_soon(count())
+    for value, arms, applies in ((0b0001, 0, 0), (0b1001, 1, 0), (0b1001, 1, 0), (0b0001, 1, 0), (0b1101, 2, 1)):
+        await tb.write_register("dac_enable", value)
+        await ClockCycles(dut.s_axi_aclk, 5)
+        got = (pulses["capture_arm"], pulses["cw_apply"])
+        assert got == (arms, applies), f"after 0b{value:04b}: capture_arm/cw_apply {got}, expected {(arms, applies)}"

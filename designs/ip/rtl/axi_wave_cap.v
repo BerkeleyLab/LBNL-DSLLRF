@@ -10,7 +10,11 @@
 //   bit 0      oneshot  (R/W, reset 0 = capture on every trigger)
 //   bit 1      write 1: arm (one capture on the next trigger); read: armed
 //   bit 2      done     (R, set when an armed capture completes, cleared by arm)
+//   bit 3      1: has the common arm input arm_all (R; older bitstreams read 0)
 //   bits 31:16 capture_count (R, completed captures, wraps)
+//
+// arm_all (one-cycle pulse, axis_clk) arms like a CSR arm write; driven from one register bit for all captures, it
+// arms them on the same clock, so no trigger can fall between the arming of two captures.
 //-----------------------------------------------------------------------------
 
 module axi_wave_cap #(
@@ -77,7 +81,8 @@ module axi_wave_cap #(
     // Capture control (as adc_capture)
     input  wire                           trigger,     // single clock cycle pulse
     input  wire [N_ROWS_WIDTH-1:0]        n_rows,
-    output wire                           write_done
+    output wire                           write_done,
+    input  wire                           arm_all      // common arm pulse (one cycle); tie 0 if unused
 );
 
     localparam CORE_ADDR_WIDTH = $clog2(DEPTH) + $clog2(ROW_WIDTH/8);
@@ -132,7 +137,7 @@ module axi_wave_cap #(
     end
 
     assign mem_rd_valid = core_rd_valid || csr_rd_valid;
-    assign mem_rd_data  = csr_rd_valid ? {{(AXI_DATA_WIDTH-32){1'b0}}, capture_count, 13'b0, done, armed, oneshot}
+    assign mem_rd_data  = csr_rd_valid ? {{(AXI_DATA_WIDTH-32){1'b0}}, capture_count, 12'b0, 1'b1, done, armed, oneshot}
                                        : core_rd_data;
 
     wave_cap #(
@@ -158,7 +163,7 @@ module axi_wave_cap #(
         .busy           (),
         .write_done     (write_done),
         .oneshot        (oneshot),
-        .arm            (arm),
+        .arm            (arm || arm_all),
         .armed          (armed),
         .done           (done),
         .capture_count  (capture_count),

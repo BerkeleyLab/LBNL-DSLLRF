@@ -19,6 +19,7 @@ OUT_DATA_WIDTH ?= 320
 BANK_DEPTH     ?= 4096
 GRANULE        ?= 64
 RAM_STYLE      ?= \"ultra\"
+HAS_ENABLE     ?= 1
 
 # module parameters
 export PARAM_C_S_AXI_DATA_WIDTH := $(C_S_AXI_DATA_WIDTH)
@@ -28,5 +29,6 @@ export PARAM_BANK_DEPTH     := $(BANK_DEPTH)
 export PARAM_GRANULE        := $(GRANULE)
 export PARAM_RAM_STYLE      := $(RAM_STYLE)
 export PARAM_READ_LATENCY   := 3
+export PARAM_HAS_ENABLE     := $(HAS_ENABLE)
 
 include ../cocotb_inc.mk

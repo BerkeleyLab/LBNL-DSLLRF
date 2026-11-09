@@ -275,6 +275,7 @@ proc create_hier_cell_dac7 { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I cw_apply
+  create_bd_pin -dir I enable
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -288,7 +289,10 @@ proc create_hier_cell_dac7 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.HAS_ENABLE {1} \
+ ] $axil_wave_gen_0
+
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /transmitter/dac7/axil_wave_gen_0/m_axis]
@@ -338,6 +342,7 @@ proc create_hier_cell_dac7 { parentCell nameHier } {
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axil_wave_gen_0/s_axi_aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_idle_zero_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net cw_apply_1 [get_bd_pins cw_apply] [get_bd_pins axil_wave_gen_0/cw_apply]
+  connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins axil_wave_gen_0/enable]
   connect_bd_net -net trigger_1 [get_bd_pins trigger] [get_bd_pins axil_wave_gen_0/trigger]
 
   # Restore current instance
@@ -388,6 +393,7 @@ proc create_hier_cell_dac6 { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I cw_apply
+  create_bd_pin -dir I enable
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -401,7 +407,10 @@ proc create_hier_cell_dac6 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.HAS_ENABLE {1} \
+ ] $axil_wave_gen_0
+
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /transmitter/dac6/axil_wave_gen_0/m_axis]
@@ -451,6 +460,7 @@ proc create_hier_cell_dac6 { parentCell nameHier } {
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axil_wave_gen_0/s_axi_aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_idle_zero_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net cw_apply_1 [get_bd_pins cw_apply] [get_bd_pins axil_wave_gen_0/cw_apply]
+  connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins axil_wave_gen_0/enable]
   connect_bd_net -net trigger_1 [get_bd_pins trigger] [get_bd_pins axil_wave_gen_0/trigger]
 
   # Restore current instance
@@ -501,6 +511,7 @@ proc create_hier_cell_dac5 { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I cw_apply
+  create_bd_pin -dir I enable
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -514,7 +525,10 @@ proc create_hier_cell_dac5 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.HAS_ENABLE {1} \
+ ] $axil_wave_gen_0
+
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /transmitter/dac5/axil_wave_gen_0/m_axis]
@@ -564,6 +578,7 @@ proc create_hier_cell_dac5 { parentCell nameHier } {
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axil_wave_gen_0/s_axi_aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_idle_zero_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net cw_apply_1 [get_bd_pins cw_apply] [get_bd_pins axil_wave_gen_0/cw_apply]
+  connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins axil_wave_gen_0/enable]
   connect_bd_net -net trigger_1 [get_bd_pins trigger] [get_bd_pins axil_wave_gen_0/trigger]
 
   # Restore current instance
@@ -614,6 +629,7 @@ proc create_hier_cell_dac4 { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I cw_apply
+  create_bd_pin -dir I enable
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -627,7 +643,10 @@ proc create_hier_cell_dac4 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.HAS_ENABLE {1} \
+ ] $axil_wave_gen_0
+
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /transmitter/dac4/axil_wave_gen_0/m_axis]
@@ -677,6 +696,7 @@ proc create_hier_cell_dac4 { parentCell nameHier } {
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axil_wave_gen_0/s_axi_aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_idle_zero_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net cw_apply_1 [get_bd_pins cw_apply] [get_bd_pins axil_wave_gen_0/cw_apply]
+  connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins axil_wave_gen_0/enable]
   connect_bd_net -net trigger_1 [get_bd_pins trigger] [get_bd_pins axil_wave_gen_0/trigger]
 
   # Restore current instance
@@ -727,6 +747,7 @@ proc create_hier_cell_dac3 { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I cw_apply
+  create_bd_pin -dir I enable
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -740,7 +761,10 @@ proc create_hier_cell_dac3 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.HAS_ENABLE {1} \
+ ] $axil_wave_gen_0
+
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /transmitter/dac3/axil_wave_gen_0/m_axis]
@@ -790,6 +814,7 @@ proc create_hier_cell_dac3 { parentCell nameHier } {
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axil_wave_gen_0/s_axi_aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_idle_zero_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net cw_apply_1 [get_bd_pins cw_apply] [get_bd_pins axil_wave_gen_0/cw_apply]
+  connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins axil_wave_gen_0/enable]
   connect_bd_net -net trigger_1 [get_bd_pins trigger] [get_bd_pins axil_wave_gen_0/trigger]
 
   # Restore current instance
@@ -840,6 +865,7 @@ proc create_hier_cell_dac2 { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I cw_apply
+  create_bd_pin -dir I enable
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -853,7 +879,10 @@ proc create_hier_cell_dac2 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.HAS_ENABLE {1} \
+ ] $axil_wave_gen_0
+
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /transmitter/dac2/axil_wave_gen_0/m_axis]
@@ -903,6 +932,7 @@ proc create_hier_cell_dac2 { parentCell nameHier } {
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axil_wave_gen_0/s_axi_aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_idle_zero_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net cw_apply_1 [get_bd_pins cw_apply] [get_bd_pins axil_wave_gen_0/cw_apply]
+  connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins axil_wave_gen_0/enable]
   connect_bd_net -net trigger_1 [get_bd_pins trigger] [get_bd_pins axil_wave_gen_0/trigger]
 
   # Restore current instance
@@ -953,6 +983,7 @@ proc create_hier_cell_dac1 { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I cw_apply
+  create_bd_pin -dir I enable
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -966,7 +997,10 @@ proc create_hier_cell_dac1 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.HAS_ENABLE {1} \
+ ] $axil_wave_gen_0
+
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /transmitter/dac1/axil_wave_gen_0/m_axis]
@@ -1016,6 +1050,7 @@ proc create_hier_cell_dac1 { parentCell nameHier } {
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axil_wave_gen_0/s_axi_aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_idle_zero_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net cw_apply_1 [get_bd_pins cw_apply] [get_bd_pins axil_wave_gen_0/cw_apply]
+  connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins axil_wave_gen_0/enable]
   connect_bd_net -net trigger_1 [get_bd_pins trigger] [get_bd_pins axil_wave_gen_0/trigger]
 
   # Restore current instance
@@ -1066,6 +1101,7 @@ proc create_hier_cell_dac0 { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
   create_bd_pin -dir I cw_apply
+  create_bd_pin -dir I enable
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trigger
 
@@ -1079,7 +1115,10 @@ proc create_hier_cell_dac0 { parentCell nameHier } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.HAS_ENABLE {1} \
+ ] $axil_wave_gen_0
+
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /transmitter/dac0/axil_wave_gen_0/m_axis]
@@ -1129,6 +1168,7 @@ proc create_hier_cell_dac0 { parentCell nameHier } {
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axil_wave_gen_0/s_axi_aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_idle_zero_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net cw_apply_1 [get_bd_pins cw_apply] [get_bd_pins axil_wave_gen_0/cw_apply]
+  connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins axil_wave_gen_0/enable]
   connect_bd_net -net trigger_1 [get_bd_pins trigger] [get_bd_pins axil_wave_gen_0/trigger]
 
   # Restore current instance
@@ -1178,6 +1218,7 @@ proc create_hier_cell_m33 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -1229,6 +1270,7 @@ proc create_hier_cell_m33 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -1281,6 +1323,7 @@ proc create_hier_cell_m32 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -1332,6 +1375,7 @@ proc create_hier_cell_m32 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -1384,6 +1428,7 @@ proc create_hier_cell_m31 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -1435,6 +1480,7 @@ proc create_hier_cell_m31 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -1487,6 +1533,7 @@ proc create_hier_cell_m30 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -1538,6 +1585,7 @@ proc create_hier_cell_m30 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -1590,6 +1638,7 @@ proc create_hier_cell_m23 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -1641,6 +1690,7 @@ proc create_hier_cell_m23 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -1693,6 +1743,7 @@ proc create_hier_cell_m22 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -1744,6 +1795,7 @@ proc create_hier_cell_m22 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -1796,6 +1848,7 @@ proc create_hier_cell_m21 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -1847,6 +1900,7 @@ proc create_hier_cell_m21 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -1899,6 +1953,7 @@ proc create_hier_cell_m20 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -1950,6 +2005,7 @@ proc create_hier_cell_m20 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -2002,6 +2058,7 @@ proc create_hier_cell_m13 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -2053,6 +2110,7 @@ proc create_hier_cell_m13 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -2105,6 +2163,7 @@ proc create_hier_cell_m12 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -2156,6 +2215,7 @@ proc create_hier_cell_m12 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -2208,6 +2268,7 @@ proc create_hier_cell_m11 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -2259,6 +2320,7 @@ proc create_hier_cell_m11 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -2311,6 +2373,7 @@ proc create_hier_cell_m10 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -2362,6 +2425,7 @@ proc create_hier_cell_m10 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -2414,6 +2478,7 @@ proc create_hier_cell_m03 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -2465,6 +2530,7 @@ proc create_hier_cell_m03 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -2517,6 +2583,7 @@ proc create_hier_cell_m02 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -2568,6 +2635,7 @@ proc create_hier_cell_m02 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -2620,6 +2688,7 @@ proc create_hier_cell_m01 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -2671,6 +2740,7 @@ proc create_hier_cell_m01 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -2723,6 +2793,7 @@ proc create_hier_cell_m00 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type clk axis_clk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I -type rst s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -2776,6 +2847,7 @@ proc create_hier_cell_m00 { parentCell nameHier } {
   # Create port connections
   connect_bd_net -net Net1 [get_bd_pins axis_clk] [get_bd_pins axi_wave_cap_0/axis_clk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_register_slice_1/aclk]
   connect_bd_net -net axi_wave_cap_0_write_done [get_bd_pins write_done_0] [get_bd_pins axi_wave_cap_0/write_done]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins axi_wave_cap_0/arm_all]
   connect_bd_net -net clk_wiz_adc1_clk_out1 [get_bd_pins aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_register_slice_0/aclk]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins axi_wave_cap_0/n_rows]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins axi_wave_cap_0/axis_aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn]
@@ -2916,6 +2988,7 @@ proc create_hier_cell_transmitter { parentCell nameHier } {
   connect_bd_net -net S_AXI_RESETN_1 [get_bd_pins S_AXI_RESETN] [get_bd_pins dac0/s_axi_aresetn] [get_bd_pins dac1/s_axi_aresetn] [get_bd_pins dac2/s_axi_aresetn] [get_bd_pins dac3/s_axi_aresetn] [get_bd_pins dac4/s_axi_aresetn] [get_bd_pins dac5/s_axi_aresetn] [get_bd_pins dac6/s_axi_aresetn] [get_bd_pins dac7/s_axi_aresetn] [get_bd_pins interconnect/ARESETN] [get_bd_pins interconnect/M00_ARESETN] [get_bd_pins interconnect/M01_ARESETN] [get_bd_pins interconnect/M02_ARESETN] [get_bd_pins interconnect/M03_ARESETN] [get_bd_pins interconnect/M04_ARESETN] [get_bd_pins interconnect/M05_ARESETN] [get_bd_pins interconnect/M06_ARESETN] [get_bd_pins interconnect/M07_ARESETN] [get_bd_pins interconnect/S00_ARESETN]
   connect_bd_net -net cw_apply_1 [get_bd_pins cw_apply] [get_bd_pins dac0/cw_apply] [get_bd_pins dac1/cw_apply] [get_bd_pins dac2/cw_apply] [get_bd_pins dac3/cw_apply] [get_bd_pins dac4/cw_apply] [get_bd_pins dac5/cw_apply] [get_bd_pins dac6/cw_apply] [get_bd_pins dac7/cw_apply]
   connect_bd_net -net dac_clk_1 [get_bd_pins aclk] [get_bd_pins dac0/aclk] [get_bd_pins dac1/aclk] [get_bd_pins dac2/aclk] [get_bd_pins dac3/aclk] [get_bd_pins dac4/aclk] [get_bd_pins dac5/aclk] [get_bd_pins dac6/aclk] [get_bd_pins dac7/aclk]
+  connect_bd_net -net enable_1 [get_bd_pins enable] [get_bd_pins dac0/enable] [get_bd_pins dac1/enable] [get_bd_pins dac2/enable] [get_bd_pins dac3/enable] [get_bd_pins dac4/enable] [get_bd_pins dac5/enable] [get_bd_pins dac6/enable] [get_bd_pins dac7/enable]
   connect_bd_net -net pulse_length_1 -boundary_type lower [get_bd_pins pulse_length]
   connect_bd_net -net trig_cap_1 [get_bd_pins trig_cap] [get_bd_pins dac0/trigger] [get_bd_pins dac1/trigger] [get_bd_pins dac2/trigger] [get_bd_pins dac3/trigger] [get_bd_pins dac4/trigger] [get_bd_pins dac5/trigger] [get_bd_pins dac6/trigger] [get_bd_pins dac7/trigger]
 
@@ -2996,6 +3069,7 @@ proc create_hier_cell_receiver { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I S_AXI_CLK
   create_bd_pin -dir I aclk
+  create_bd_pin -dir I capture_arm
   create_bd_pin -dir I -from 15 -to 0 pulse_length
   create_bd_pin -dir I s_axi_aresetn
   create_bd_pin -dir I trig_cap
@@ -3107,6 +3181,7 @@ proc create_hier_cell_receiver { parentCell nameHier } {
   # Create port connections
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins m00/aclk] [get_bd_pins m01/aclk] [get_bd_pins m02/aclk] [get_bd_pins m03/aclk] [get_bd_pins m10/aclk] [get_bd_pins m11/aclk] [get_bd_pins m12/aclk] [get_bd_pins m13/aclk] [get_bd_pins m20/aclk] [get_bd_pins m21/aclk] [get_bd_pins m22/aclk] [get_bd_pins m23/aclk] [get_bd_pins m30/aclk] [get_bd_pins m31/aclk] [get_bd_pins m32/aclk] [get_bd_pins m33/aclk]
   connect_bd_net -net axis_clk_1 [get_bd_pins S_AXI_CLK] [get_bd_pins interconnect/ACLK] [get_bd_pins interconnect/M00_ACLK] [get_bd_pins interconnect/M01_ACLK] [get_bd_pins interconnect/M02_ACLK] [get_bd_pins interconnect/M03_ACLK] [get_bd_pins interconnect/M04_ACLK] [get_bd_pins interconnect/M05_ACLK] [get_bd_pins interconnect/M06_ACLK] [get_bd_pins interconnect/M07_ACLK] [get_bd_pins interconnect/M08_ACLK] [get_bd_pins interconnect/M09_ACLK] [get_bd_pins interconnect/M10_ACLK] [get_bd_pins interconnect/M11_ACLK] [get_bd_pins interconnect/M12_ACLK] [get_bd_pins interconnect/M13_ACLK] [get_bd_pins interconnect/M14_ACLK] [get_bd_pins interconnect/M15_ACLK] [get_bd_pins interconnect/S00_ACLK] [get_bd_pins m00/axis_clk] [get_bd_pins m01/axis_clk] [get_bd_pins m02/axis_clk] [get_bd_pins m03/axis_clk] [get_bd_pins m10/axis_clk] [get_bd_pins m11/axis_clk] [get_bd_pins m12/axis_clk] [get_bd_pins m13/axis_clk] [get_bd_pins m20/axis_clk] [get_bd_pins m21/axis_clk] [get_bd_pins m22/axis_clk] [get_bd_pins m23/axis_clk] [get_bd_pins m30/axis_clk] [get_bd_pins m31/axis_clk] [get_bd_pins m32/axis_clk] [get_bd_pins m33/axis_clk]
+  connect_bd_net -net capture_arm_1 [get_bd_pins capture_arm] [get_bd_pins m00/capture_arm] [get_bd_pins m01/capture_arm] [get_bd_pins m02/capture_arm] [get_bd_pins m03/capture_arm] [get_bd_pins m10/capture_arm] [get_bd_pins m11/capture_arm] [get_bd_pins m12/capture_arm] [get_bd_pins m13/capture_arm] [get_bd_pins m20/capture_arm] [get_bd_pins m21/capture_arm] [get_bd_pins m22/capture_arm] [get_bd_pins m23/capture_arm] [get_bd_pins m30/capture_arm] [get_bd_pins m31/capture_arm] [get_bd_pins m32/capture_arm] [get_bd_pins m33/capture_arm]
   connect_bd_net -net m00_write_done_0 [get_bd_pins write_done_0] [get_bd_pins m00/write_done_0]
   connect_bd_net -net pulse_length_1 [get_bd_pins pulse_length] [get_bd_pins m00/pulse_length] [get_bd_pins m01/pulse_length] [get_bd_pins m02/pulse_length] [get_bd_pins m03/pulse_length] [get_bd_pins m10/pulse_length] [get_bd_pins m11/pulse_length] [get_bd_pins m12/pulse_length] [get_bd_pins m13/pulse_length] [get_bd_pins m20/pulse_length] [get_bd_pins m21/pulse_length] [get_bd_pins m22/pulse_length] [get_bd_pins m23/pulse_length] [get_bd_pins m30/pulse_length] [get_bd_pins m31/pulse_length] [get_bd_pins m32/pulse_length] [get_bd_pins m33/pulse_length]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins interconnect/ARESETN] [get_bd_pins interconnect/M00_ARESETN] [get_bd_pins interconnect/M01_ARESETN] [get_bd_pins interconnect/M02_ARESETN] [get_bd_pins interconnect/M03_ARESETN] [get_bd_pins interconnect/M04_ARESETN] [get_bd_pins interconnect/M05_ARESETN] [get_bd_pins interconnect/M06_ARESETN] [get_bd_pins interconnect/M07_ARESETN] [get_bd_pins interconnect/M08_ARESETN] [get_bd_pins interconnect/M09_ARESETN] [get_bd_pins interconnect/M10_ARESETN] [get_bd_pins interconnect/M11_ARESETN] [get_bd_pins interconnect/M12_ARESETN] [get_bd_pins interconnect/M13_ARESETN] [get_bd_pins interconnect/M14_ARESETN] [get_bd_pins interconnect/M15_ARESETN] [get_bd_pins interconnect/S00_ARESETN] [get_bd_pins m00/s_axi_aresetn] [get_bd_pins m01/s_axi_aresetn] [get_bd_pins m02/s_axi_aresetn] [get_bd_pins m03/s_axi_aresetn] [get_bd_pins m10/s_axi_aresetn] [get_bd_pins m11/s_axi_aresetn] [get_bd_pins m12/s_axi_aresetn] [get_bd_pins m13/s_axi_aresetn] [get_bd_pins m20/s_axi_aresetn] [get_bd_pins m21/s_axi_aresetn] [get_bd_pins m22/s_axi_aresetn] [get_bd_pins m23/s_axi_aresetn] [get_bd_pins m30/s_axi_aresetn] [get_bd_pins m31/s_axi_aresetn] [get_bd_pins m32/s_axi_aresetn] [get_bd_pins m33/s_axi_aresetn]
@@ -5444,6 +5519,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_net -net RFingressReset_peripheral_aresetn [get_bd_pins clocktreeMTS/ingress_aresetn] [get_bd_pins rfdc/m0_axis_aresetn] [get_bd_pins rfdc/m1_axis_aresetn] [get_bd_pins rfdc/m2_axis_aresetn] [get_bd_pins rfdc/m3_axis_aresetn] [get_bd_pins rfdc/s0_axis_aresetn] [get_bd_pins rfdc/s1_axis_aresetn] [get_bd_pins rfdc/s2_axis_aresetn] [get_bd_pins rfdc/s3_axis_aresetn]
   connect_bd_net -net TRIG_IN_1 [get_bd_ports TRIG_IN] [get_bd_pins axil_rf_control_0/ext_trigger_in]
   connect_bd_net -net axi_intc_0_irq [get_bd_pins axi_intc_0/irq] [get_bd_pins zynq_ultra_ps_e_0/pl_ps_irq0]
+  connect_bd_net -net axil_rf_control_0_capture_arm [get_bd_pins axil_rf_control_0/capture_arm] [get_bd_pins receiver/capture_arm]
   connect_bd_net -net axil_rf_control_0_cw_apply [get_bd_pins axil_rf_control_0/cw_apply] [get_bd_pins transmitter/cw_apply]
   connect_bd_net -net axil_rf_control_0_dac_enable [get_bd_pins axil_rf_control_0/dac_enable] [get_bd_pins transmitter/enable]
   connect_bd_net -net axil_rf_control_0_pulse_length [get_bd_pins axil_rf_control_0/pulse_length] [get_bd_pins transmitter/pulse_length]

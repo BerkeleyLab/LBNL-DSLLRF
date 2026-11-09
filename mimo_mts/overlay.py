@@ -335,9 +335,30 @@ class MimoMtsOverlay(Overlay):
         for csr in self._capture_csrs:
             csr.write(0, int(bool(value)))
 
+    @property
+    def has_common_arm(self) -> bool:
+        """
+        Every capture has the common arm input (axi_wave_cap CSR bit 3), driven by axil_rf_control dac_enable bit 3:
+        one register write arms all captures on the same clock.
+        """
+        return self.has_capture_csrs and all(csr.read(0) & 0x8 for csr in self._capture_csrs)
+
     def arm_captures(self):
-        """Arm every capture for one capture on the next trigger (one-shot mode)."""
+        """
+        Arm every capture for one capture on the next trigger (one-shot mode). With the common arm all captures are
+        armed on the same clock; otherwise one write per capture, and a trigger arriving during those writes can split
+        the set over two triggers (development plan item 14).
+        """
         self._require_capture_csrs()
+        if self.has_common_arm:
+            for csr in self._capture_csrs:
+                if not csr.read(0) & 1:
+                    csr.write(0, 0b01)  # one-shot mode, not armed
+            reg = self.rf_control.register_map.dac_enable
+            reg.capture_arm = 0
+            reg.capture_arm = 1
+            reg.capture_arm = 0
+            return
         for csr in self._capture_csrs:
             csr.write(0, 0b11)
 

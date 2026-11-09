@@ -33,6 +33,8 @@ class WaveGen(DefaultIP):
         params = description.get("parameters", {})
         self.out_data_width = int(params.get("OUT_DATA_WIDTH", 320))
         self.bank_depth = int(params.get("BANK_DEPTH", 4096))
+        # the output is gated by the enable input (axil_rf_control dac_enable) in this bitstream
+        self.has_enable = int(params.get("HAS_ENABLE", 0)) == 1
         self.version = self.read(self.register_map.version.address) & 0xFFFFFFFF
         self.wave_mem = self._mem_to_view()
 

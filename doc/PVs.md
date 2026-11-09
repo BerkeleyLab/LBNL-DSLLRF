@@ -19,8 +19,10 @@ and standard deviation of amplitude and phase inside it for every capture.
 ## Startup state
 
 The IOCs start with the DACs disabled: `rf_control:dac_enable` bit 0 is cleared at boot (bit 1, `pulse_enable`, keeps
-the IOC's default). Set bit 0 (the "DAC Enable" button) to drive the DACs. On `mimo_mts_5g`, where `dac_enable` does
-not gate the DAC outputs yet (development plan item 14), the IOC also starts with an all-zero waveform.
+the IOC's default). Set bit 0 (the "DAC Enable" button) to drive the DACs. The waveform loaded at boot is all ones
+(full-scale I); on `mimo_mts_5g` bitstreams older than development plan item 14, where `dac_enable` does not gate the
+DAC outputs, the IOC starts with zeros instead. Bit 3 of `dac_enable` arms all one-shot captures at once (used by the
+IOC; not for operators).
 
 ## Trigger
 
@@ -176,8 +178,8 @@ speed, `chassis_fan_speed_{1,2}:RBV` reads it, in rpm.
 | `rf_control:amp_loop_setpoint` | longout | Amplitude loop setpoint |  | all |
 | `rf_control:amp_loop_setpoint:RBV` | longin | Amplitude loop setpoint |  | all |
 | `rf_control:amp_measured:RBV` | longin | Amplitude monitor |  | all |
-| `rf_control:dac_enable` | longout | Bit0 DAC, bit1 pulse enable, bit2 apply |  | all |
-| `rf_control:dac_enable:RBV` | longin | Bit0 DAC, bit1 pulse enable, bit2 apply |  | all |
+| `rf_control:dac_enable` | longout | b0 DAC, b1 pulse, b2 apply, b3 arm |  | all |
+| `rf_control:dac_enable:RBV` | longin | b0 DAC, b1 pulse, b2 apply, b3 arm |  | all |
 | `rf_control:phs_loop_enable` | longout | Phase loop enable |  | all |
 | `rf_control:phs_loop_enable:RBV` | longin | Phase loop enable |  | all |
 | `rf_control:phs_loop_err:RBV` | longin | Phase loop error |  | all |

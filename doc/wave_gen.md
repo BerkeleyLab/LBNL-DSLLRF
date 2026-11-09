@@ -158,6 +158,16 @@ trigger-to-DAC latency and left the latency set by the FIFO level at startup (it
 of the same bitstream). With the gaps the FIFO empties and every playback starts with the shortest, fixed latency.
 `status` bit 2 shows whether the current beat is a playback row.
 
+**Output enable.** With `HAS_ENABLE = 1` (in `mimo_mts_5g`, driven by `axil_rf_control` `dac_enable` bit 0) the
+`enable` input of `axil_wave_gen` gates its output: while low, the generator keeps running but its beats are dropped,
+so the DAC outputs zero behind `axis_idle_zero`, in single, loop and CW mode alike. The default `HAS_ENABLE = 0` ignores
+the input, so designs that leave it unconnected (the `base` overlays) keep playing.
+
+**Common capture arm.** `axi_wave_cap` has an `arm_all` input, ORed into the CSR arm; in `mimo_mts_5g` all 16 captures
+get it from `axil_rf_control` `capture_arm` (a pulse on the rising edge of `dac_enable` bit 3), so one register write
+arms them on the same clock. CSR bit 3 reads 1 on bitstreams with this input; `MimoMtsOverlay.arm_captures()` uses the
+common arm when all captures have it and falls back to one write per capture otherwise.
+
 In `mimo_mts_5g` (feature/per-dac-cw) each DAC has its own `axil_wave_gen` (`transmitter/dac0` … `dac7`, at
 0xA0280000 + n × 0x40000) feeding its RFDC stream directly. The broadcaster and the DAC loopback capture
 (`hier_dac_cap`) are gone. All generators share the trigger, and `axil_rf_control` drives their common `cw_apply`

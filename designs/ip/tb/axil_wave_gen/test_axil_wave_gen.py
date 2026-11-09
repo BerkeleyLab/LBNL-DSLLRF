@@ -83,6 +83,7 @@ class AxilWaveGenTB:
         self.dut.s_axi_aresetn.value = 0
         self.dut.trigger.value = 0
         self.dut.cw_apply.value = 0
+        self.dut.enable.value = 1
 
         # Clear any pending data in sink
         while not self.axis_sink.empty():
@@ -713,3 +714,30 @@ async def test_no_beats_between_playbacks(dut):
     assert [d for d, _ in out] == samples, f"{len(out)} beats; expected exactly the {n} playback rows"
     assert [last for _, last in out] == [0] * (n - 1) + [1], "tlast only on the last row"
     assert (await tb.read_status() >> 2) & 1 == 0, "playback valid after the playback"
+
+
+@cocotb.test(timeout_time=100, timeout_unit="us")
+async def test_enable_gates_output(dut):
+    """
+    HAS_ENABLE = 1 (as in mimo_mts_5g): with enable low no beats leave the generator (playback runs on and finishes,
+    CW is dropped too); with enable high again the next playback is output from row 0.
+    """
+    tb = AxilWaveGenTB(dut)
+    await tb.reset()
+    n = 16
+    samples = tb.generate_test_pattern(n, "random")
+    await tb.write_waveform_words(tb.samples_to_axi_words(samples))
+    dut.enable.value = 0
+    await ClockCycles(dut.s_axi_aclk, 3)
+    trig = cocotb.start_soon(beats(tb, n + 40))
+    await tb.trigger_waveform(n)
+    assert not await trig, "beats while disabled"
+    assert await tb._wait_not_busy(200), "playback did not finish while disabled"
+    await set_mode(tb, MODE_CW, cw_i=5, cw_q=6)
+    assert not await beats(tb, 20), "CW beats while disabled"
+    await set_mode(tb, MODE_SINGLE)
+    dut.enable.value = 1
+    await ClockCycles(dut.s_axi_aclk, 3)
+    trig = cocotb.start_soon(beats(tb, n + 40, playback=True))
+    await tb.trigger_waveform(n)
+    assert [d for d, _ in await trig] == samples, "playback after re-enable"
