@@ -99,7 +99,8 @@ bitfile_synthesis_zcu216:
       - OVERLAY: [mimo_mts]
 
 # ZCU208/LBL208 overlays: built when their RTL, constraints, block design or Makefile change, and on every tag
-# (for the release below). The matrix lists the overlays released for each board's IOCs; others are built locally.
+# (for the release below). The matrix lists the production overlays, those of the production IOCs (Mimo5GZCU208,
+# AlsLlrfZCU208, AlsLlrfLBL208; MimoZCU216 above); others (ZCU208 mimo_mts, mimo_mts_iq, base, ...) are built locally.
 bitfile_synthesis_208:
   before_script:
     - cd designs/${BOARD}/${OVERLAY}
@@ -134,9 +135,9 @@ bitfile_synthesis_208:
   parallel:
     matrix:
       - BOARD: [ZCU208]
-        OVERLAY: [mimo_mts, mimo_mts_5g]
+        OVERLAY: [mimo_mts_5g, als_llrf_mts]
       - BOARD: [LBL208]
-        OVERLAY: [als_llrf_mts]
+        OVERLAY: [als_llrf_mts]  # add mimo_mts_5g (Mimo5GLBL208) once designs/LBL208/mimo_mts_5g exists (plan item 8)
 
 # On a tag: publish the overlays built above as a GitLab release (files kept with the job, linked from the release).
 # Tag only after the synthesis jobs can pass, e.g. `git tag -a v2026.2 -m "..." && git push origin v2026.2`.

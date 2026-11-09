@@ -40,8 +40,9 @@ sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc   # entry points in pyproject.tom
 testbenches under `designs/ip/tb` are the CI-run tests.
 
 CI (`.gitlab-ci.yml`): lint always; `rtl_test` only when `designs/ip/**` changes; `pv_docs` when `mimo_mts/` or the
-register JSON change. Overlay synthesis (ZCU208: `mimo_mts`, `mimo_mts_5g`; LBL208: `als_llrf_mts`; ZCU216: `mimo_mts`,
-the overlays the IOCs use) runs when their RTL, xdc, tcl or Makefile change, and on every tag; a tag pipeline then
+register JSON change. Overlay synthesis of the production overlays (ZCU208: `mimo_mts_5g`, `als_llrf_mts`; LBL208:
+`als_llrf_mts`; ZCU216: `mimo_mts`) runs when their RTL, xdc, tcl or Makefile change, and on every tag; other overlays
+(ZCU208 `mimo_mts`, `mimo_mts_iq`, `base`) are built locally. A tag pipeline then
 publishes the overlays as a GitLab release (`release_overlays`, `designs/scripts/make_release.py`; files under
 `<board>/` as in `mimo_mts/overlays/`). Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` to skip the
 ruff-migration commit in `git blame`.
