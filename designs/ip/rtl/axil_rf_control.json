@@ -32,7 +32,7 @@
     "dac_enable": {
         "address_offset": 20,
         "access": "read-write",
-        "description": "Bit0 DAC, bit1 pulse enable, bit2 apply",
+        "description": "b0 DAC, b1 pulse, b2 apply, b3 arm",
         "size": 32,
         "fields": {
             "dac_enable": {
@@ -52,6 +52,12 @@
                 "bit_width": 1,
                 "access": "read-write",
                 "description": "Rising edge: apply the staged wave_gen mode / CW value on all generators"
+            },
+            "capture_arm": {
+                "bit_offset": 3,
+                "bit_width": 1,
+                "access": "read-write",
+                "description": "Rising edge: arm all one-shot captures (axi_wave_cap) on the same clock"
             }
         }
     },

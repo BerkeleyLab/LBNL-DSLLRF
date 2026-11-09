@@ -85,6 +85,7 @@ class FakeWaveGen:
     wave_length = 0
     out_data_width = 320
     bank_depth = 4096
+    has_enable = True
 
     def __init__(self, n_samples=81920):
         self.wave_mem = np.zeros(n_samples, dtype=np.int16)

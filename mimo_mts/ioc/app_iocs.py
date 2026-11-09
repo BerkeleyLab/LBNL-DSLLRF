@@ -220,8 +220,10 @@ class Mimo5GZCU208(MimoMtsIoc):
 
     def init_rf_control(self):
         super().init_rf_control()
-        # dac_enable does not gate the DAC outputs on mimo_mts_5g yet (development plan item 14): start silent
-        self.drive_zeros_awg()
+        if all(getattr(wg, "has_enable", False) for wg in self.ol.wave_gens):
+            self.drive_ones_awg()  # gated by dac_enable, which is off at boot
+        else:
+            self.drive_zeros_awg()  # older bitstreams: dac_enable does not gate the DAC outputs, start silent
 
 
 class MimoLBL208(MimoMtsIoc):

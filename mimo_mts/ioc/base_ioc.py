@@ -283,7 +283,7 @@ class MimoMtsIoc:
             self.pvs_out[name] = builder.WaveformOut(
                 name,
                 self.dac_i if part == "I" else self.dac_q,
-                on_update=lambda _value: self._on_dac_wfm(),
+                on_update=lambda value, part=part: self._on_dac_wfm(part, value),
                 always_update=True,
                 DESC=desc(f"DAC waveform {part}, all DACs"),
                 EGU="cnt",
@@ -334,7 +334,7 @@ class MimoMtsIoc:
                 self.pvs_out[f"DAC{ch}:{part}WF"] = builder.WaveformOut(
                     f"DAC{ch}:{part}WF",
                     self.dac_ch_iq[ch][part],
-                    on_update=lambda _v, ch=ch: self._on_dac_ch_wfm(ch),
+                    on_update=lambda value, ch=ch, part=part: self._on_dac_ch_wfm(ch, part, value),
                     always_update=True,  # DAC:IWF/QWF also write this memory: a repeated value must still be written
                     DESC=desc(f"DAC{ch} waveform {part}"),
                     EGU="cnt",
@@ -443,13 +443,17 @@ class MimoMtsIoc:
         self.pvs_in[f"DAC{ch}:AWF"].set(amp)
         self.pvs_in[f"DAC{ch}:PWF"].set(phs)
 
-    def _on_dac_ch_wfm(self, ch):
+    def _on_dac_ch_wfm(self, ch, part, value):
+        """
+        DAC{ch}:IWF or QWF written: use the written value and the IOC's copy of the other part. Reading the PVs back
+        here would race with other callbacks (a shared DAC:IWF write updates these PVs when its callback runs, which
+        can be after a later DAC{ch}:IWF write has already been stored).
+        """
         n = self.dac_ch_iq[ch]["I"].size
-        for part in ("I", "Q"):
-            v = np.asarray(self.pvs_out[f"DAC{ch}:{part}WF"].get(), dtype=np.int16)[:n]
-            self.dac_ch_iq[ch][part] = np.pad(v, (0, n - v.size))
+        v = np.asarray(value, dtype=np.int16)[:n]
+        self.dac_ch_iq[ch][part] = np.pad(v, (0, n - v.size))
         self.ol.write_dac_iq_buf_ch(ch, self.dac_ch_iq[ch]["I"], self.dac_ch_iq[ch]["Q"])
-        self._publish_dac_ch(ch)
+        self._publish_dac_ch(ch, iq_pvs=True)  # the PVs end up showing what the generator holds
         logger.info("DAC%d waveform written (%d I/Q samples)", ch, n)
 
     def _on_dac_cw(self, ch, **kw):
@@ -459,13 +463,12 @@ class MimoMtsIoc:
         except ValueError as e:
             logger.error("DAC%d CW: %s", ch, e)
 
-    def _on_dac_wfm(self):
+    def _on_dac_wfm(self, part, value):
+        """DAC:IWF or QWF written: the written value and the IOC's copy of the other part (no PV read-back)."""
         n = self.dac_i.size
-        wfm = []
-        for part in ("I", "Q"):
-            v = np.asarray(self.pvs_out[f"DAC:{part}WF"].get(), dtype=np.int16)[:n]
-            wfm.append(np.pad(v, (0, n - v.size)))
-        self.write_dac(*wfm)
+        v = np.asarray(value, dtype=np.int16)[:n]
+        v = np.pad(v, (0, n - v.size))
+        self.write_dac(v if part == "I" else self.dac_i, v if part == "Q" else self.dac_q)
         logger.info("DAC waveform written (%d I/Q samples)", n)
 
     def add_adc_cal_pvs(self, prefix="adc_cal:"):

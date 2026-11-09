@@ -7,6 +7,7 @@ Checks are chosen from the PVs the IOC has:
   same width and start on all channels;
 - every IOC: capture reads are not torn at a fast trigger (1 ms), with the ADC mixer slightly off the DAC mixer so
   each capture starts at a different phase (development plan item 11);
+- every IOC: rf_control:dac_enable bit 0 silences all DACs (on mimo_mts_5g bitstreams from plan item 14 on);
 - IOCs with one waveform generator per DAC (`DAC{n}:mode`, `DAC:apply`, e.g. mimo-5g-zcu208-ioc):
   1. mode and CW values are staged: no effect until `DAC:apply`, then `DAC{n}:mode:RBV` follows;
   2. a CW phase / amplitude step on one DAC moves only its ADC (+90 deg, half amplitude);
@@ -234,6 +235,28 @@ def check_capture_reads(
         chk.settle()
 
 
+def check_dac_enable(chk, chans, has_shared):
+    """rf_control:dac_enable bit 0 gates every DAC: no burst on any ADC while it is clear, bursts again once set."""
+    if has_shared:
+        i, q = pulse_iq(chk, 1e9)  # constant over the whole memory
+        chk.put("DAC:QWF", q)
+        chk.put("DAC:IWF", i)
+    value = int(chk.get("rf_control:dac_enable:RBV"))
+    chk.put("rf_control:dac_enable", value & ~1)
+    chk.settle(2)
+    off = [chk.pulse(n) for n in chans]
+    chk.put("rf_control:dac_enable", value | 1)
+    chk.settle(2)
+    on = [chk.pulse(n) for n in chans]
+    ok = all(r is None for r in off) and all(r is not None for r in on)
+    chk.report(
+        "dac_enable bit 0 gates every DAC",
+        ok,
+        f"bursts with the DACs disabled: {sum(r is not None for r in off)}/{len(chans)}, "
+        f"enabled: {sum(r is not None for r in on)}/{len(chans)}",
+    )
+
+
 def set_modes(chk, n_dac, mode, apply=True):
     for ch in range(n_dac):
         chk.put(f"DAC{ch}:mode", mode)
@@ -446,6 +469,7 @@ def main():
                 check_shared_waveform(chk, chans)
             if not args.no_loopback:
                 check_capture_reads(chk, chans, args.rf_mhz, has_shared)
+                check_dac_enable(chk, chans, has_shared)
             if per_dac:
                 check_cw(chk, n_dac, chans, ch, loopback=not args.no_loopback)
                 if not args.no_loopback:

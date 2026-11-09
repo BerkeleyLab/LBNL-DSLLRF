@@ -22,7 +22,8 @@ module axil_wave_gen #(
     parameter integer GRANULE            = 64,
     parameter integer BANK_DEPTH         = 4096,
     parameter integer READ_LATENCY       = 3,
-    parameter RAM_STYLE                  = "ultra"
+    parameter RAM_STYLE                  = "ultra",
+    parameter integer HAS_ENABLE         = 0      // 1: the enable input gates the output stream
 ) (
     (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 s_axi_aclk CLK" *)
     (* X_INTERFACE_PARAMETER = "ASSOCIATED_BUSIF s_axi, ASSOCIATED_RESET s_axi_aresetn" *)
@@ -67,7 +68,12 @@ module axil_wave_gen #(
     input wire trigger,
 
     // Common apply strobe (e.g. from axil_rf_control): makes the staged mode / CW value active on all generators
-    input wire cw_apply
+    input wire cw_apply,
+
+    // Output enable (e.g. axil_rf_control dac_enable), used when HAS_ENABLE = 1: while low the generator runs on but
+    // its beats are dropped, so the stream has gaps (zeros at the DAC behind axis_idle_zero). Ignored if HAS_ENABLE = 0,
+    // so designs that leave it unconnected keep playing.
+    input wire enable
 );
 
     //-------------------------------------------------------------------------
@@ -149,6 +155,12 @@ module axil_wave_gen #(
     // Write interface to wave_gen
     wire [SAMPLE_ADDR_WIDTH-1:0] play_row;
     wire                         play_valid;
+    // output gating by enable (registered; same clock as the register that drives it)
+    reg                          out_enable;
+    wire                         core_tvalid, core_tready;
+    always @(posedge s_axi_aclk) out_enable <= (HAS_ENABLE == 0) || enable;
+    assign m_axis_tvalid = core_tvalid && out_enable;
+    assign core_tready   = m_axis_tready || !out_enable;   // while disabled, beats are consumed and dropped
     wire int_wr_en;
     wire [AXI_ADDR_WIDTH-1:0] int_wr_addr;
     wire [AXI_DATA_WIDTH-1:0] int_wr_data;
@@ -445,9 +457,9 @@ module axil_wave_gen #(
 
         // Output AXI-Stream
         .m_axis_tdata(m_axis_tdata),
-        .m_axis_tvalid(m_axis_tvalid),
+        .m_axis_tvalid(core_tvalid),
         .m_axis_tlast(m_axis_tlast),
-        .m_axis_tready(m_axis_tready)
+        .m_axis_tready(core_tready)
     );
 
     //-------------------------------------------------------------------------
