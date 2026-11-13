@@ -1,0 +1,84 @@
+{
+    "csr_bases": {
+        "ui_ssd1322_framebuffer": 0,
+        "ui": 8192
+    },
+    "csr_registers": {
+        "ui_phy_clk_divisor": {
+            "address_offset": 8192,
+            "size": 4,
+            "access": "read-write"
+        },
+        "ui_phy_mode": {
+            "address_offset": 8196,
+            "size": 4,
+            "access": "read-write",
+            "description": "SPI mode (CPOL/CPHA). Curently only mode 0 and 3 are supported."
+        },
+        "ui_encoder": {
+            "address_offset": 8200,
+            "size": 4,
+            "access": "read-only",
+            "description": "Current encoder position as 16 bit signed integer"
+        },
+        "ui_inputs": {
+            "address_offset": 8204,
+            "size": 4,
+            "access": "read-only",
+            "description": "Input pin state. Read from MCP23 GPIO register"
+        },
+        "ui_outputs": {
+            "address_offset": 8208,
+            "size": 4,
+            "access": "read-write",
+            "description": "Control output pins. This value will be sent to the MCP23 OLAT register on write"
+        },
+        "ui_send_fb": {
+            "address_offset": 8212,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write anything to send framebuffer to SSD1322 once"
+        },
+        "ui_read_mcp": {
+            "address_offset": 8216,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write anything to read MCP inputs once"
+        },
+        "ui_enable_interrupt": {
+            "address_offset": 8220,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write 1 to fetch MCP inputs automatically on pin-change"
+        },
+        "ui_reset": {
+            "address_offset": 8224,
+            "size": 4,
+            "access": "read-write",
+            "description": "Write anything to reset and re-initialize MCP23 and OLED. Takes 4 ms."
+        },
+        "ui_event_invert": {
+            "address_offset": 8228,
+            "size": 4,
+            "access": "read-write",
+            "description": "set a bit to invert the button value (active low)"
+        },
+        "ui_event_active": {
+            "address_offset": 8232,
+            "size": 4,
+            "access": "read-write",
+            "description": "clear a bit to disable button"
+        },
+        "ui_event_t_long": {
+            "address_offset": 8236,
+            "size": 4,
+            "access": "read-write",
+            "description": "time for long press in [10 ms]"
+        },
+        "ui_event_flags": {
+            "address_offset": 8240,
+            "size": 4,
+            "access": "read-only"
+        }
+    }
+}

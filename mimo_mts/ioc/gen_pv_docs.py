@@ -23,6 +23,8 @@ from typing import Any
 
 import numpy as np
 
+from mimo_mts.drivers.fp_gui import FakeEvr
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 PVS_MD = ROOT / "doc" / "PVs.md"
 BEGIN = "<!-- BEGIN GENERATED PV TABLES: python -m mimo_mts.ioc.gen_pv_docs -->"
@@ -117,6 +119,7 @@ class FakeOverlay:
             self.wave_gens = [FakeWaveGen() for _ in range(self.board.n_dacs)]
             self.dac_player = self.wave_gens[0].wave_mem
         self._n_samples = 1024 * self.ol_info["ioc"]["decimation"]
+        self.evr = FakeEvr()
 
     @property
     def mixer_cfg(self):

@@ -35,6 +35,8 @@ lint:
 
 rtl_test:
   before_script:
+    # Needed to allow cloning the py_ui_board repo from gitlab
+    - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lbl.gov/".insteadOf "ssh://git@gitlab-ssh.lbl.gov/"
     - python3 -m venv .venv
     - source .venv/bin/activate
     - pip install -e .
@@ -49,6 +51,7 @@ rtl_test:
 pv_docs:
   stage: test
   before_script:
+    - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lbl.gov/".insteadOf "ssh://git@gitlab-ssh.lbl.gov/"
     - python3 -m venv .venv
     - source .venv/bin/activate
     - pip install -e .

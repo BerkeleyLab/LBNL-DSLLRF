@@ -4,9 +4,11 @@ import asyncio
 import logging
 import os
 
+from py_ui_board import Gui
 from smbus2 import SMBus
 from softioc import builder
 
+from mimo_mts.drivers.fp_gui import build_gui
 from mimo_mts.drivers.telemetry.max31785 import Max31785
 from mimo_mts.drivers.telemetry.mcrps_device import McrpsDevice
 from mimo_mts.ioc.base_ioc import MimoMtsIoc, desc
@@ -119,6 +121,9 @@ class AlsLlrfLBL208(MimoMtsIoc):
         if self.with_pmbus:
             self.add_pmbus_pvs()
 
+        # The GUI needs to be built before builder.loadDatabase() is called in super().start_ioc()
+        self.gui_menu = build_gui(evr_ip=self.ol.evr)
+
     def add_pmbus_pvs(self, prefix="pmbus:"):
         """
         Add all supported fan status and power-supply sensor PVs to the IOC.
@@ -158,6 +163,10 @@ class AlsLlrfLBL208(MimoMtsIoc):
         # Telemetry is in a separate coroutine, so the update interval can be different
         if self.with_pmbus:
             asyncio.run_coroutine_threadsafe(self.pmbus_update(), self.dispatcher.loop)
+
+        # Run the front-panel GUI
+        self.gui = Gui(self.ol.ui_board, self.gui_menu, idle_timeout=60, invert_timeout=3600)
+        asyncio.run_coroutine_threadsafe(self.gui.async_run(), self.dispatcher.loop)
 
     async def pmbus_update(self):
         while True:

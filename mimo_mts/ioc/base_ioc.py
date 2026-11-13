@@ -60,7 +60,9 @@ class MimoMtsIoc:
     def run_ioc(self):
         with self.run():
             logger.info(self)
-            softioc.interactive_ioc(globals())
+            context = globals().copy()
+            context["ioc"] = self
+            softioc.interactive_ioc(context)
 
     def init(self):
         self.llrf_register_map = self.ol.rf_control.register_map
@@ -213,6 +215,9 @@ class MimoMtsIoc:
         return int(np.binary_repr(val, width=32), 2)
 
     def create_ioc(self):
+        # Add ioc:* PVs with system statistics
+        softioc.devIocStats(self.ioc_name)
+
         builder.SetDeviceName(self.prefix)
         self.pvs_in = {}
         self.pvs_out = {}
@@ -732,7 +737,6 @@ class MimoMtsIoc:
 
         self.dispatcher = dispatcher = asyncio_dispatcher.AsyncioDispatcher(loop=loop)
         builder.LoadDatabase()
-        softioc.devIocStats(self.ioc_name)
         # builder.dbLoadDatabase('ioc.db', substitutions=f'P={self.prefix}:')
         softioc.iocInit(dispatcher)
 

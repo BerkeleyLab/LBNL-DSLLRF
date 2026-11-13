@@ -218,24 +218,29 @@ class LmVerifier:
             logger.error(f"{self.name}: Register verification failed")
         return verify_ok
 
-    def change_config(self, reg_addr, por_value, value, mask=0xFFFF):
+    def change_config(self, reg_addr: int, value: int, mask=0xFFFF, initial_value=0):
         """
         Sometimes certain register values are needed to enable verification / lock detect features
         This function checks if the registers are set to the right value in the .tcs
         If not, the value is written to the chip and a Warning is logged.
+        reg_addr: register address to change
+        initial_value: initial reset-value to assume if this register is not present in the .tcs
+        value: new register value
+        mask: bit-mask. Only the bits which are 1 are checked against value and possibly modified.
         """
         # Check if the regs are in the reg_map. If not add the POR value.
         if reg_addr not in self.reg_map:
-            self.reg_map[reg_addr] = por_value
+            self.reg_map[reg_addr] = initial_value
 
         # Check if the reg_map value corresponds to the wanted value. If not, change it.
+        value &= mask
         old_val = self.reg_map[reg_addr]
-        if old_val & mask != value & mask:
-            self.mux_select()
+        if old_val & mask != value:
             new_val = (old_val & ~mask) | value
             logger.warning(
                 f"{self.name}: Changing Reg 0x{reg_addr:x} from 0x{old_val:02x} to 0x{new_val:02x}. Fix the .tcs!"
             )
+            self.mux_select()
             self.write_reg(reg_addr, new_val)
             self.reg_map[reg_addr] = new_val
 
@@ -264,7 +269,7 @@ class Lmx2594Verifier(LmVerifier):
 
     def enable_sdo(self):
         """Make sure that MUX_OUT_LD_SEL is 0. To enable the SPI SDO pin"""
-        self.change_config(0, 0b0010010000010000, 0, 1 << 2)
+        self.change_config(0, 0, 1 << 2, initial_value=0b0010010000010000)
 
     def is_locked(self):
         """return true if the chip is locked. False if there is an error."""
@@ -306,18 +311,18 @@ class Lmk0482Verifier(LmVerifier):
         name: is an optional string which will be used in print messages to identify the chip
         """
         exclude = {
-            0x6,
-            0x182,
-            0x183,
-            0x184,
-            0x185,
-            0x186,
-            0x187,
-            0x188,
-            0x189,
-            0x1FFF,
+            0x0006,
             0x015F,
+            0x0182,
+            0x0183,
+            0x0184,
+            0x0185,
+            0x0186,
+            0x0187,
+            0x0188,
+            0x0189,
             0x018B,
+            0x1FFF,
         }
         super().__init__(path, config, 1, mux_sel, mux_val, name, exclude)
         self.enable_sdo()
@@ -329,9 +334,9 @@ class Lmk0482Verifier(LmVerifier):
         PLL2_LD_MUX = 3 (PLL1 and PLL2 DLD)
         """
         # PLL1_LD_MUX --> SPI readback
-        self.change_config(0x15F, (1 << 3) | 6, (7 << 3) | 3)
+        self.change_config(0x15F, (7 << 3) | 3, initial_value=(1 << 3) | 6)
         # PLL2_LD_MUX --> PLL1 and PLL2 DLD
-        self.change_config(0x16E, (2 << 3) | 6, (3 << 3) | 3)
+        self.change_config(0x16E, (3 << 3) | 3, initial_value=(2 << 3) | 6)
 
     def is_locked(self):
         """Return True if PLLs are locked or powered down."""
