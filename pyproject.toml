@@ -22,7 +22,10 @@ dependencies = [
     "spidev==3.8",
     "cocotbext-axi>=0.1.28",
     "ruff==0.17",
-    "pre-commit==4.6"
+    "pre-commit==4.6",
+    "py_ui_board@git+ssh://git@gitlab-ssh.lbl.gov/llrf-projects/py_ui_board.git",
+    # "py_ui_board@git+https://gitlab.lbl.gov/llrf-projects/py_ui_board",
+
 ]
 license = "LicenseRef-Government-Use"
 license-files = ["LICEN[CS]E*"]

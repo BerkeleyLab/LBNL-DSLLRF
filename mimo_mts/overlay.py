@@ -16,12 +16,13 @@ from mimo_mts.drivers.clocktreeMTS import ClockTreeMTS
 from mimo_mts.drivers.evr import EVR
 from mimo_mts.drivers.frontend_control import FrontendControl
 from mimo_mts.drivers.rf_control import RfControl
+from mimo_mts.drivers.ui_board import UiBoard
 from mimo_mts.drivers.wave_gen import WaveGen
 from mimo_mts.utils.config_clk104 import CLK104Config
 from mimo_mts.utils.config_si570 import SI570
 
 logger = logging.getLogger(__name__)
-__all__ = ("EVR", "RfControl", "ClockTreeMTS", "FrontendControl", "WaveGen")
+__all__ = ("EVR", "ClockTreeMTS", "FrontendControl", "RfControl", "UiBoard", "WaveGen")
 
 
 class MimoMtsOverlay(Overlay):
@@ -186,6 +187,9 @@ class MimoMtsOverlay(Overlay):
 
         if "frontend_control_axi_0" in self.ip_dict:
             self.ffe = self.frontend_control_axi_0
+
+        if "ui_board_hard_axi_0" in self.ip_dict:
+            self.ui_board = self.ui_board_hard_axi_0
 
         # Waveform generators: one per DAC in transmitter/dac{n}/ (mimo_mts_5g), or a single one (hier_llrf/ in base,
         # transmitter/hier_dac_play/ in older mimo_mts_5g builds). Sorted by DAC number; wave_gen is the first.
