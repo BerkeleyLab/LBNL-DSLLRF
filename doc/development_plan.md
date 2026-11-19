@@ -426,6 +426,10 @@ the all-ones waveform; `test_ioc_dac.py` 39/39 twice, the capture-read check wit
 
 ## Related open work
 
+- The 4 GSPS ZCU208 `mimo_mts` overlay is no longer built by CI (production overlays: ZCU208 `mimo_mts_5g` and
+  `als_llrf_mts`, LBL208 `als_llrf_mts`, ZCU216 `mimo_mts`; LBL208 `mimo_mts_5g` joins with item 8). It becomes
+  obsolete once `mimo_mts_5g` carries the LLRF application on the ZCU208 and the LBL208 (items 3 and 8); its design
+  directory stays.
 - ADC calibration, longer term: pilot-tone injection (one spare DAC, splitter, a coupler per phase-critical ADC)
   for training at boot (item 9 covers the reruns).
 - LBL208 analog front end: the ADC-to-RX-slice mapping is apparently reversed on the hardware (loopback on ADC7 is
