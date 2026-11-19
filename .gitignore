@@ -21,3 +21,4 @@ designs/ip/tb/*/results.xml
 designs/ip/tb/*/synth/vivado_synth/
 doc/*_test.ipynb
 *.vvp
+release/

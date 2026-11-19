@@ -39,9 +39,13 @@ sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc   # entry points in pyproject.tom
 `mimo_mts/tests/*.py` are on-board scripts (argparse `main()`), not pytest tests; they need real hardware. The RTL
 testbenches under `designs/ip/tb` are the CI-run tests.
 
-CI (`.gitlab-ci.yml`): lint always; `rtl_test` only when `designs/ip/**` changes; synthesis jobs (currently disabled as
-hidden `.bitfile_synthesis_*` jobs) only when RTL, xdc or tcl files change. Run `git config blame.ignoreRevsFile
-.git-blame-ignore-revs` to skip the ruff-migration commit in `git blame`.
+CI (`.gitlab-ci.yml`): lint always; `rtl_test` only when `designs/ip/**` changes; `pv_docs` when `mimo_mts/` or the
+register JSON change. Overlay synthesis of the production overlays (ZCU208: `mimo_mts_5g`, `als_llrf_mts`; LBL208:
+`als_llrf_mts`; ZCU216: `mimo_mts`) runs when their RTL, xdc, tcl or Makefile change, and on every tag; other overlays
+(ZCU208 `mimo_mts`, `mimo_mts_iq`, `base`) are built locally. A tag pipeline then
+publishes the overlays as a GitLab release (`release_overlays`, `designs/scripts/make_release.py`; files under
+`<board>/` as in `mimo_mts/overlays/`). Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` to skip the
+ruff-migration commit in `git blame`.
 
 ## Editor and static analysis
 
