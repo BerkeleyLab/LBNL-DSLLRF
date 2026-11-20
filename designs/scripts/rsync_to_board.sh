@@ -50,7 +50,12 @@ echo "Syncing $repo/ -> $user@$board_ip:$dest (files git does not ignore; then .
 # --ignore-missing-args: tracked files deleted in the working tree are skipped, not an error
 working_tree_files | rsync -avz --from0 --files-from=- --ignore-missing-args "$@" \
     ./ "$user@$board_ip:$dest"
-rsync -az --exclude '/modules/' "$@" .git/ "$user@$board_ip:${dest%/}/.git/"
+if [[ -d .git ]]; then
+    rsync -az --exclude '/modules/' "$@" .git/ "$user@$board_ip:${dest%/}/.git/"
+else
+    # a git worktree: .git is a file pointing to the main repository, which is not copied
+    echo "(.git skipped: $repo is a git worktree)"
+fi
 
 # Overlays (.bit/.hwh/.dtbo) on the board may be newer than local ones (e.g. CI builds copied
 # there). Never delete them (no --delete), replace one only when the local file is newer

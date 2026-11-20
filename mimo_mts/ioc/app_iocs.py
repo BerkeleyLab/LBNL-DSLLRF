@@ -4,11 +4,9 @@ import asyncio
 import logging
 import os
 
-from py_ui_board import Gui
 from smbus2 import SMBus
 from softioc import builder
 
-from mimo_mts.drivers.fp_gui import build_gui
 from mimo_mts.drivers.telemetry.max31785 import Max31785
 from mimo_mts.drivers.telemetry.mcrps_device import McrpsDevice
 from mimo_mts.ioc.base_ioc import MimoMtsIoc, desc
@@ -122,7 +120,16 @@ class AlsLlrfLBL208(MimoMtsIoc):
             self.add_pmbus_pvs()
 
         # The GUI needs to be built before builder.loadDatabase() is called in super().start_ioc()
-        self.gui_menu = build_gui(evr_ip=self.ol.evr)
+        self.gui_menu = None
+        if self.front_panel_gui:
+            from mimo_mts.drivers.fp_gui import build_gui  # needs py_ui_board, installed by hand on the board
+
+            self.gui_menu = build_gui(PF=f"{self.prefix}:", evr_ip=self.ol.evr)
+
+    @property
+    def front_panel_gui(self):
+        """The overlay configuration enables the front-panel GUI and the overlay has the ui_board core."""
+        return bool(self.ol.ol_info.get("front_panel_gui", False)) and hasattr(self.ol, "ui_board")
 
     def add_pmbus_pvs(self, prefix="pmbus:"):
         """
@@ -165,8 +172,11 @@ class AlsLlrfLBL208(MimoMtsIoc):
             asyncio.run_coroutine_threadsafe(self.pmbus_update(), self.dispatcher.loop)
 
         # Run the front-panel GUI
-        self.gui = Gui(self.ol.ui_board, self.gui_menu, idle_timeout=60, invert_timeout=3600)
-        asyncio.run_coroutine_threadsafe(self.gui.async_run(), self.dispatcher.loop)
+        if self.gui_menu is not None:
+            from py_ui_board import Gui
+
+            self.gui = Gui(self.ol.ui_board, self.gui_menu, idle_timeout=60, invert_timeout=3600)
+            asyncio.run_coroutine_threadsafe(self.gui.async_run(), self.dispatcher.loop)
 
     async def pmbus_update(self):
         while True:

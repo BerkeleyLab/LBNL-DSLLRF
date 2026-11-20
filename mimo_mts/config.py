@@ -8,6 +8,8 @@ from mimo_mts.utils.boards import lbl208, zcu208, zcu216
 
 #   * MIMO_ : direct sampling without decimation
 #   * LLRF_ : decimate by 8 at RFDC, LLRF loop control DSP included
+# Optional keys: "front_panel_gui" (default False): run the chassis front-panel GUI (LBL208 only; needs the
+# ui_board_hard_axi core in the overlay and the py_ui_board package, which is installed by hand for now)
 
 
 ol_configs = {
@@ -221,6 +223,7 @@ ol_configs = {
         },
         "device_tree_segments": ["/boot/lmxadc.dtbo"],
         "si570_freq_mhz": 156.1375,
+        "front_panel_gui": True,  # chassis front panel (ui_board_hard_axi, py_ui_board); off when absent
         "rfdc": {
             "adc_decimation_factor": 8,
             "dac_interpolation_factor": 8,

@@ -3,10 +3,10 @@ import json
 from enum import IntFlag
 from pathlib import Path
 from time import sleep
+from typing import Any
 
 import numpy as np
 from pynq import DefaultIP
-from pynq.registers import RegisterMap
 
 
 class EV(IntFlag):
@@ -63,7 +63,7 @@ class UiBoard(DefaultIP):
         self.fb = self.mmio.array[FB_BASE : FB_BASE + 2048]
 
         # shortcut for the register map (which is used here a lot)
-        self.rm: RegisterMap = self.register_map
+        self.rm: Any = self.register_map  # built at runtime by PYNQ from ui_board_hard_axi.json
 
         self.reset()
         atexit.register(self.clear)

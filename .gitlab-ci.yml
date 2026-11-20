@@ -36,11 +36,9 @@ lint:
 
 rtl_test:
   before_script:
-    # Needed to allow cloning the py_ui_board repo from gitlab
-    - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lbl.gov/".insteadOf "ssh://git@gitlab-ssh.lbl.gov/"
     - python3 -m venv .venv
     - source .venv/bin/activate
-    - pip install -e .
+    - pip install -e ".[dev]"
     - cd designs/ip/tb
   stage: test
   script:
@@ -52,10 +50,9 @@ rtl_test:
 pv_docs:
   stage: test
   before_script:
-    - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lbl.gov/".insteadOf "ssh://git@gitlab-ssh.lbl.gov/"
     - python3 -m venv .venv
     - source .venv/bin/activate
-    - pip install -e .
+    - pip install -e ".[dev]"
   script:
     # doc/PVs.md must match the PVs the IOC code creates
     - python -m mimo_mts.ioc.gen_pv_docs --check
