@@ -1,7 +1,7 @@
 #!/bin/bash
 
 sudo -E pip install -U pip
-sudo -E pip install -U setuptools packaging
+sudo -E pip install -U "setuptools<82" packaging  # pynq 3.0.1 imports pkg_resources (pyproject.toml)
 
 # Build MTS necessary patch to xrfdc package
 echo "Cloning the PYNQ repository"
@@ -31,11 +31,9 @@ sudo -E pip uninstall -y pynqmetadata
 # sudo -E pip cache purge
 sudo -E pip install pynqmetadata
 
-sudo -E pip install softioc
-sudo -E pip install spidev
-
-# Install python package and notebook
-# The -e makes it in editable mode for development without reinstalling the module
-sudo -E pip install -e . --no-deps
-# pynq-get-notebooks RFSoC-MTS -p $PYNQ_JUPYTER_NOTEBOOKS
+# Install python package with its deployment dependencies (pyproject.toml: softioc, spidev, smbus2, ... pinned there;
+# the development tools are in the "dev" extra and not installed here). Editable: edits take effect without reinstall.
+sudo -E pip install -e .
+# Front-panel GUI (LBL208, config "front_panel_gui"): py_ui_board is not public yet, install it by hand:
+# sudo -E pip install git+ssh://git@gitlab-ssh.lbl.gov/llrf-projects/py_ui_board.git
 echo "$BOARD Ready..."

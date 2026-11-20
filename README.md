@@ -174,7 +174,7 @@ The pipeline runs `ruff check` and `ruff format --check`. Unformatted or failing
 Install the development dependencies, which include a pinned Ruff version:
 
 ```bash
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 Then run these from the repository root:

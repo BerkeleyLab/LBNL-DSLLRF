@@ -14,7 +14,9 @@ run on the board. `bedrock/` is a git submodule (BerkeleyLab/Bedrock) providing 
 
 ## Commands
 
-Python environment: `pip install -e .` (pins ruff, cocotb, pynq, softioc, etc.). Hardware-only packages (pynq,
+Python environment: `pip install -e ".[dev]"` for development (adds cocotb, cocotbext-axi, ruff, pre-commit, pyepics to
+the deployment dependencies: pynq, softioc, numpy, ...); on the board `install.sh` (`pip install -e .`). `py_ui_board` (front-panel
+GUI, LBL208) is not public yet and is installed by hand where the GUI runs. Hardware-only packages (pynq,
 xrfdc, xrfclk, softioc on the board) mean `mimo_mts` generally cannot run off-board.
 
 ```bash
