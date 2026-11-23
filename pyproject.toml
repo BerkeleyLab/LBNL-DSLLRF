@@ -52,6 +52,7 @@ exclude = ["mimo_mts.tests"]
 [project.scripts]
 mimo-zcu208-ioc = "mimo_mts.ioc.app_iocs:mimo_zcu208_ioc"
 mimo-5g-zcu208-ioc = "mimo_mts.ioc.app_iocs:mimo_5g_zcu208_ioc"
+mimo-5g-lbl208-ioc = "mimo_mts.ioc.app_iocs:mimo_5g_lbl208_ioc"
 mimo-lbl208-ioc = "mimo_mts.ioc.app_iocs:mimo_lbl208_ioc"
 mimo-zcu216-ioc = "mimo_mts.ioc.app_iocs:mimo_zcu216_ioc"
 llrf-zcu208-ioc = "mimo_mts.ioc.app_iocs:llrf_zcu208_ioc"

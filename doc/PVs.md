@@ -1,6 +1,6 @@
 # EPICS Process Variables
 
-The IOCs (`sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc`, `mimo-5g-zcu208-ioc`) publish the PVs below, all under
+The IOCs (`sudo -E {mimo,llrf}-{zcu208,lbl208,zcu216}-ioc`, `mimo-5g-{zcu208,lbl208}-ioc`) publish the PVs below, all under
 the IOC prefix `$P` (the overlay name, e.g. `ALS_LLRF_LBL208`). The tables at the end are generated from the IOC code
 (`python -m mimo_mts.ioc.gen_pv_docs`, checked in CI); the notes here explain how to use each group.
 Setpoints have a matching `:RBV` readback where the hardware can be read back.
@@ -107,6 +107,7 @@ speed, `chassis_fan_speed_{1,2}:RBV` reads it, in rpm.
 | `AlsLlrfLBL208` | `llrf-lbl208-ioc` | `ALS_LLRF_LBL208` | `ALS_LLRF_LBL208` | 8 / 8 | 312 |
 | `MimoZCU208` | `mimo-zcu208-ioc` | `MIMO_ZCU208` | `MIMO_ZCU208` | 8 / 8 | 291 |
 | `Mimo5GZCU208` | `mimo-5g-zcu208-ioc` | `MIMO_5G_ZCU208` | `MIMO_5G_ZCU208` | 8 / 8 | 373 |
+| `Mimo5GLBL208` | `mimo-5g-lbl208-ioc` | `MIMO_5G_LBL208` | `MIMO_5G_LBL208` | 8 / 8 | 373 |
 | `MimoLBL208` | `mimo-lbl208-ioc` | `MIMO_LBL208` | `MIMO_LBL208` | 8 / 8 | 291 |
 | `MimoZCU216` | `mimo-zcu216-ioc` | `MIMO_ZCU216` | `MIMO_ZCU216` | 16 / 16 | 515 |
 
@@ -119,19 +120,19 @@ speed, `chassis_fan_speed_{1,2}:RBV` reads it, in rpm.
 | `DAC:IWF` | waveform | DAC waveform I, all DACs | cnt | all |
 | `DAC:QWF` | waveform | DAC waveform Q, all DACs | cnt | all |
 | `DAC:TWF` | waveform | Time axis of the DAC waveform | ns | all |
-| `DAC:apply` | bo | Apply staged DAC modes / CW, all DACs |  | `Mimo5GZCU208` |
+| `DAC:apply` | bo | Apply staged DAC modes / CW, all DACs |  | `Mimo5GZCU208`, `Mimo5GLBL208` |
 | `DAC:fill_ones` | bo | Fill all DAC waveforms: 0 zeros, 1 ones |  | all |
-| `DAC:wave_length` | ao | All DACs waveform length, 0 = whole | ns | `Mimo5GZCU208` |
-| `DAC{n}:AWF` | waveform | DAC{n} waveform amplitude | cnt | `Mimo5GZCU208` |
-| `DAC{n}:IWF` | waveform | DAC{n} waveform I | cnt | `Mimo5GZCU208` |
-| `DAC{n}:PWF` | waveform | DAC{n} waveform phase | deg | `Mimo5GZCU208` |
-| `DAC{n}:QWF` | waveform | DAC{n} waveform Q | cnt | `Mimo5GZCU208` |
-| `DAC{n}:cw:amp` | ao | DAC{n} CW amplitude (fraction of FS) |  | `Mimo5GZCU208` |
-| `DAC{n}:cw:phase` | ao | DAC{n} CW phase | deg | `Mimo5GZCU208` |
-| `DAC{n}:mode` | mbbo | DAC{n} mode (active on DAC:apply) |  | `Mimo5GZCU208` |
-| `DAC{n}:mode:RBV` | mbbi | DAC{n} active mode |  | `Mimo5GZCU208` |
-| `DAC{n}:wave_length` | ao | DAC{n} waveform length, 0 = whole | ns | `Mimo5GZCU208` |
-| `DAC{n}:wave_length:RBV` | ai | DAC{n} waveform length applied | ns | `Mimo5GZCU208` |
+| `DAC:wave_length` | ao | All DACs waveform length, 0 = whole | ns | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:AWF` | waveform | DAC{n} waveform amplitude | cnt | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:IWF` | waveform | DAC{n} waveform I | cnt | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:PWF` | waveform | DAC{n} waveform phase | deg | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:QWF` | waveform | DAC{n} waveform Q | cnt | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:cw:amp` | ao | DAC{n} CW amplitude (fraction of FS) |  | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:cw:phase` | ao | DAC{n} CW phase | deg | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:mode` | mbbo | DAC{n} mode (active on DAC:apply) |  | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:mode:RBV` | mbbi | DAC{n} active mode |  | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:wave_length` | ao | DAC{n} waveform length, 0 = whole | ns | `Mimo5GZCU208`, `Mimo5GLBL208` |
+| `DAC{n}:wave_length:RBV` | ai | DAC{n} waveform length applied | ns | `Mimo5GZCU208`, `Mimo5GLBL208` |
 
 ### ADC waveforms and time axes
 

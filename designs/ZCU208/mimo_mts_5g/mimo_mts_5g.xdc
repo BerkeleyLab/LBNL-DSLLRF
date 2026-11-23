@@ -17,8 +17,8 @@ set_property BLOCK_SYNTH.RETIMING 1 [get_cells mimo_mts_5g_i/rfdc/*]
 set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells mimo_mts_5g_i/rfdc/*]
 set_property BLOCK_SYNTH.RETIMING 1 [get_cells mimo_mts_5g_i/receiver/m*/axis_dwidth_converter_0/*]
 set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells mimo_mts_5g_i/receiver/m*/axis_dwidth_converter_0/*]
-set_property BLOCK_SYNTH.RETIMING 1 [get_cells mimo_mts_5g_i/transmitter/hier_dac_play/axis_dwidth_converter_0/*]
-set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells mimo_mts_5g_i/transmitter/hier_dac_play/axis_dwidth_converter_0/*]
+set_property BLOCK_SYNTH.RETIMING 1 [get_cells mimo_mts_5g_i/transmitter/dac*/axis_dwidth_converter_0/*]
+set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells mimo_mts_5g_i/transmitter/dac*/axis_dwidth_converter_0/*]
 
 # -------------- -------------- -------------- -------------- -------------- -------------- -------
 # Timing Constraints
@@ -45,3 +45,76 @@ set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
 set_property BITSTREAM.CONFIG.UNUSEDPIN PULLNONE [current_design]
 set_property BITSTREAM.CONFIG.OVERTEMPSHUTDOWN ENABLE [current_design]
 set_property BITSTREAM.CONFIG.USR_ACCESS TIMESTAMP [current_design]
+
+# Analog front-end control (frontend_control_axi SPI, as in als_llrf_mts): DACIO/ADCIO headers; on the LBL208 they
+# reach the front-end slices, on the ZCU208 they are unused header pins.
+set_property PACKAGE_PIN A9       [get_ports "DACIO_00"]; # Bank  87 VCCO - VCC1V8   - IO_L12N_AD8N_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_00"]; # Bank  87 VCCO - VCC1V8   - IO_L12N_AD8N_87
+set_property PACKAGE_PIN A10      [get_ports "DACIO_01"]; # Bank  87 VCCO - VCC1V8   - IO_L12P_AD8P_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_01"]; # Bank  87 VCCO - VCC1V8   - IO_L12P_AD8P_87
+set_property PACKAGE_PIN A6       [get_ports "DACIO_02"]; # Bank  87 VCCO - VCC1V8   - IO_L11N_AD9N_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_02"]; # Bank  87 VCCO - VCC1V8   - IO_L11N_AD9N_87
+set_property PACKAGE_PIN A7       [get_ports "DACIO_03"]; # Bank  87 VCCO - VCC1V8   - IO_L11P_AD9P_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_03"]; # Bank  87 VCCO - VCC1V8   - IO_L11P_AD9P_87
+set_property PACKAGE_PIN A5       [get_ports "DACIO_04"]; # Bank  87 VCCO - VCC1V8   - IO_L10N_AD10N_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_04"]; # Bank  87 VCCO - VCC1V8   - IO_L10N_AD10N_87
+set_property PACKAGE_PIN B5       [get_ports "DACIO_05"]; # Bank  87 VCCO - VCC1V8   - IO_L10P_AD10P_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_05"]; # Bank  87 VCCO - VCC1V8   - IO_L10P_AD10P_87
+set_property PACKAGE_PIN C5       [get_ports "DACIO_06"]; # Bank  87 VCCO - VCC1V8   - IO_L9N_AD11N_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_06"]; # Bank  87 VCCO - VCC1V8   - IO_L9N_AD11N_87
+set_property PACKAGE_PIN C6       [get_ports "DACIO_07"]; # Bank  87 VCCO - VCC1V8   - IO_L9P_AD11P_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_07"]; # Bank  87 VCCO - VCC1V8   - IO_L9P_AD11P_87
+set_property PACKAGE_PIN C10      [get_ports "DACIO_08"]; # Bank  87 VCCO - VCC1V8   - IO_L4N_AD12N_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_08"]; # Bank  87 VCCO - VCC1V8   - IO_L4N_AD12N_87
+set_property PACKAGE_PIN D10      [get_ports "DACIO_09"]; # Bank  87 VCCO - VCC1V8   - IO_L4P_AD12P_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_09"]; # Bank  87 VCCO - VCC1V8   - IO_L4P_AD12P_87
+set_property PACKAGE_PIN D6       [get_ports "DACIO_10"]; # Bank  87 VCCO - VCC1V8   - IO_L3N_AD13N_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_10"]; # Bank  87 VCCO - VCC1V8   - IO_L3N_AD13N_87
+set_property PACKAGE_PIN E7       [get_ports "DACIO_11"]; # Bank  87 VCCO - VCC1V8   - IO_L3P_AD13P_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_11"]; # Bank  87 VCCO - VCC1V8   - IO_L3P_AD13P_87
+set_property PACKAGE_PIN E8       [get_ports "DACIO_12"]; # Bank  87 VCCO - VCC1V8   - IO_L2N_AD14N_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_12"]; # Bank  87 VCCO - VCC1V8   - IO_L2N_AD14N_87
+set_property PACKAGE_PIN E9       [get_ports "DACIO_13"]; # Bank  87 VCCO - VCC1V8   - IO_L2P_AD14P_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_13"]; # Bank  87 VCCO - VCC1V8   - IO_L2P_AD14P_87
+set_property PACKAGE_PIN E6       [get_ports "DACIO_14"]; # Bank  87 VCCO - VCC1V8   - IO_L1N_AD15N_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_14"]; # Bank  87 VCCO - VCC1V8   - IO_L1N_AD15N_87
+set_property PACKAGE_PIN F6       [get_ports "DACIO_15"]; # Bank  87 VCCO - VCC1V8   - IO_L1P_AD15P_87
+set_property IOSTANDARD  LVCMOS18 [get_ports "DACIO_15"]; # Bank  87 VCCO - VCC1V8   - IO_L1P_AD15P_87
+set_property PACKAGE_PIN AP5      [get_ports "ADCIO_00"]; # Bank  84 VCCO - VCC1V8   - IO_L12N_AD0N_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_00"]; # Bank  84 VCCO - VCC1V8   - IO_L12N_AD0N_84
+set_property PACKAGE_PIN AP6      [get_ports "ADCIO_01"]; # Bank  84 VCCO - VCC1V8   - IO_L12P_AD0P_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_01"]; # Bank  84 VCCO - VCC1V8   - IO_L12P_AD0P_84
+set_property PACKAGE_PIN AR6      [get_ports "ADCIO_02"]; # Bank  84 VCCO - VCC1V8   - IO_L11N_AD1N_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_02"]; # Bank  84 VCCO - VCC1V8   - IO_L11N_AD1N_84
+set_property PACKAGE_PIN AR7      [get_ports "ADCIO_03"]; # Bank  84 VCCO - VCC1V8   - IO_L11P_AD1P_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_03"]; # Bank  84 VCCO - VCC1V8   - IO_L11P_AD1P_84
+set_property PACKAGE_PIN AV7      [get_ports "ADCIO_04"]; # Bank  84 VCCO - VCC1V8   - IO_L10N_AD2N_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_04"]; # Bank  84 VCCO - VCC1V8   - IO_L10N_AD2N_84
+set_property PACKAGE_PIN AU7      [get_ports "ADCIO_05"]; # Bank  84 VCCO - VCC1V8   - IO_L10P_AD2P_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_05"]; # Bank  84 VCCO - VCC1V8   - IO_L10P_AD2P_84
+set_property PACKAGE_PIN AV8      [get_ports "ADCIO_06"]; # Bank  84 VCCO - VCC1V8   - IO_L9N_AD3N_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_06"]; # Bank  84 VCCO - VCC1V8   - IO_L9N_AD3N_84
+set_property PACKAGE_PIN AU8      [get_ports "ADCIO_07"]; # Bank  84 VCCO - VCC1V8   - IO_L9P_AD3P_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_07"]; # Bank  84 VCCO - VCC1V8   - IO_L9P_AD3P_84
+set_property PACKAGE_PIN AT6      [get_ports "ADCIO_08"]; # Bank  84 VCCO - VCC1V8   - IO_L8N_HDGC_AD4N_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_08"]; # Bank  84 VCCO - VCC1V8   - IO_L8N_HDGC_AD4N_84
+set_property PACKAGE_PIN AT7      [get_ports "ADCIO_09"]; # Bank  84 VCCO - VCC1V8   - IO_L8P_HDGC_AD4P_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_09"]; # Bank  84 VCCO - VCC1V8   - IO_L8P_HDGC_AD4P_84
+set_property PACKAGE_PIN AU5      [get_ports "ADCIO_10"]; # Bank  84 VCCO - VCC1V8   - IO_L7N_HDGC_AD5N_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_10"]; # Bank  84 VCCO - VCC1V8   - IO_L7N_HDGC_AD5N_84
+set_property PACKAGE_PIN AT5      [get_ports "ADCIO_11"]; # Bank  84 VCCO - VCC1V8   - IO_L7P_HDGC_AD5P_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_11"]; # Bank  84 VCCO - VCC1V8   - IO_L7P_HDGC_AD5P_84
+set_property PACKAGE_PIN AW3      [get_ports "ADCIO_12"]; # Bank  84 VCCO - VCC1V8   - IO_L2N_AD10N_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_12"]; # Bank  84 VCCO - VCC1V8   - IO_L2N_AD10N_84
+set_property PACKAGE_PIN AW4      [get_ports "ADCIO_13"]; # Bank  84 VCCO - VCC1V8   - IO_L2P_AD10P_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_13"]; # Bank  84 VCCO - VCC1V8   - IO_L2P_AD10P_84
+set_property PACKAGE_PIN AV2      [get_ports "ADCIO_14"]; # Bank  84 VCCO - VCC1V8   - IO_L3N_AD9N_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_14"]; # Bank  84 VCCO - VCC1V8   - IO_L3N_AD9N_84
+set_property PACKAGE_PIN AV3      [get_ports "ADCIO_15"]; # Bank  84 VCCO - VCC1V8   - IO_L3P_AD9P_84
+set_property IOSTANDARD  LVCMOS18 [get_ports "ADCIO_15"]; # Bank  84 VCCO - VCC1V8   - IO_L3P_AD9P_84
+
+# CLK104 SPI readback mux select (PS EMIO GPIO 0, 1), for the CLK104 register readback in config_clk104.py
+set_property PACKAGE_PIN C11      [get_ports "CLK104_CLK_SPI_MUX_SEL[0]"]; # Bank  68 VCCO - VCC1V2   - IO_T3U_N12_68
+set_property IOSTANDARD  LVCMOS12 [get_ports "CLK104_CLK_SPI_MUX_SEL[0]"]; # Bank  68 VCCO - VCC1V2   - IO_T3U_N12_68
+set_property PACKAGE_PIN B12      [get_ports "CLK104_CLK_SPI_MUX_SEL[1]"]; # Bank  68 VCCO - VCC1V2   - IO_L19N_T3L_N1_DBC_AD9N_68
+set_property IOSTANDARD  LVCMOS12 [get_ports "CLK104_CLK_SPI_MUX_SEL[1]"]; # Bank  68 VCCO - VCC1V2   - IO_L19N_T3L_N1_DBC_AD9N_68

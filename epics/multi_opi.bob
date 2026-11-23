@@ -121,12 +121,12 @@
         </deselected_color>
       </tab>
       <tab>
-        <name>FLEX MIMO ZCU208</name>
-        <file>waveforms_sep_nco.bob</file>
+        <name>MIMO 5G LBL208</name>
+        <file>waveforms.bob</file>
         <macros>
-          <P>FLEX_MIMO_ZCU208</P>
+          <P>MIMO_5G_LBL208</P>
         </macros>
-        <group_name></group_name>
+        <group_name>lbl208</group_name>
         <selected_color>
           <color red="236" green="236" blue="236">
           </color>
