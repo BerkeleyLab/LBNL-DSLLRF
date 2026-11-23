@@ -67,7 +67,7 @@ class MimoMtsOverlay(Overlay):
         super().__init__(str(ol_info["bitfile_name"]), **kwargs)
 
         if "clk104_tcs" in ol_info:
-            # only als_llrf_*208 overlays have clk104 readback support
+            # register readback needs the CLK104 SPI readback mux pins in the overlay (config "verify")
             self.clk104.verify_regs()
             assert self.clk104.is_locked(), "CLK104 is not locked after configuration"
 

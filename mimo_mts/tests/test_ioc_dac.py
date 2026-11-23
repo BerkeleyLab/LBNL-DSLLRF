@@ -23,6 +23,10 @@ rf_control:dac_enable bit 0 (the IOCs boot with the DACs disabled); the IOC stat
 values, lengths, shared waveform) is restored at the end, also after a failure.
 
     python3 mimo_mts/tests/test_ioc_dac.py [--prefix MIMO_5G_ZCU208] [--rf-mhz 200] [--channel 3] [--no-loopback]
+
+LBL208 (front end with 3 GHz filters, one loopback path DAC6 -> ADC7): set the attenuators of the path in the IOC
+shell first, e.g. ioc.ol.ffe.slices[4].attenuators[0].set_db(20); ioc.ol.ffe.slices[4].attenuators[1].set_db(2), then
+    python3 mimo_mts/tests/test_ioc_dac.py --prefix MIMO_5G_LBL208 --rf-mhz 3000 --pairs 6:7
 """
 
 import argparse
@@ -56,6 +60,8 @@ class IocDacCheck:
         self.results = []
         self._pvs = {}
         self.t_dsp = np.zeros(0)  # DSP:TWF, read in main()
+        self.adc_of = {}  # cabled loopback pairs, set in main(): DAC -> ADC
+        self.dac_of = {}  # and ADC -> DAC
 
     # --- Channel Access helpers ---
     def pv(self, name):
@@ -97,6 +103,11 @@ class IocDacCheck:
     def report(self, name, ok, detail=""):
         self.results.append((name, ok))
         print(f"[{'PASS' if ok else 'FAIL'}] {name}{': ' + detail if detail else ''}")
+
+    def path(self, adc):
+        """Name of the loopback path into this ADC."""
+        dac = self.dac_of.get(adc, adc)
+        return f"ADC{adc}" if dac == adc else f"DAC{dac} -> ADC{adc}"
 
     def info(self, text):
         print(f"  {text}")
@@ -235,25 +246,37 @@ def check_capture_reads(
         chk.settle()
 
 
-def check_dac_enable(chk, chans, has_shared):
-    """rf_control:dac_enable bit 0 gates every DAC: no burst on any ADC while it is clear, bursts again once set."""
+def check_dac_enable(chk, chans, has_shared, min_db=20.0, t0_ns=400.0):
+    """
+    rf_control:dac_enable bit 0 gates every DAC: the ADC level with the DACs disabled must be at least min_db below
+    the level with them enabled, on every looped-back ADC. Relative, not an absolute threshold: behind a front end
+    (LBL208) the ADC also sees amplifier noise and signals the board does not drive.
+    """
     if has_shared:
         i, q = pulse_iq(chk, 1e9)  # constant over the whole memory
         chk.put("DAC:QWF", q)
         chk.put("DAC:IWF", i)
+
+    def levels():
+        chk.settle(2)
+        out = {}
+        for ch in chans:
+            t, z = chk.adc_wave(ch)
+            out[ch] = float(np.sqrt(np.mean(np.abs(z[t >= t0_ns]) ** 2)))
+        return out
+
     value = int(chk.get("rf_control:dac_enable:RBV"))
     chk.put("rf_control:dac_enable", value & ~1)
-    chk.settle(2)
-    off = [chk.pulse(n) for n in chans]
+    off = levels()
     chk.put("rf_control:dac_enable", value | 1)
-    chk.settle(2)
-    on = [chk.pulse(n) for n in chans]
-    ok = all(r is None for r in off) and all(r is not None for r in on)
+    on = levels()
+    ratio_db = {ch: 20 * np.log10(on[ch] / max(off[ch], 1e-9)) for ch in chans}
+    ok = all(r >= min_db for r in ratio_db.values())
     chk.report(
         "dac_enable bit 0 gates every DAC",
         ok,
-        f"bursts with the DACs disabled: {sum(r is not None for r in off)}/{len(chans)}, "
-        f"enabled: {sum(r is not None for r in on)}/{len(chans)}",
+        ", ".join(f"{chk.path(ch)}: {on[ch]:.0f} -> {off[ch]:.1f} cnt ({ratio_db[ch]:.1f} dB)" for ch in chans)
+        + f" (enabled -> disabled, need >= {min_db:.0f} dB)",
     )
 
 
@@ -295,7 +318,7 @@ def check_cw(chk, n_dac, chans, ch_step, loopback, tol_deg=1.0, tol_amp=0.02):
         for k, ch in enumerate(chans):
             ok = abs(wrap_deg(d[k] - want_deg[k])) < tol_deg and abs(r[k] - want_ratio[k]) < tol_amp
             chk.report(
-                f"{name}: ADC{ch}",
+                f"{name}: {chk.path(ch)}",
                 ok,
                 f"phase {d[k]:+7.2f} deg (expected {wrap_deg(want_deg[k]):+7.1f}), amplitude ratio {r[k]:.3f} "
                 f"(expected {want_ratio[k]:.2f})",
@@ -308,9 +331,15 @@ def check_cw(chk, n_dac, chans, ch_step, loopback, tol_deg=1.0, tol_amp=0.02):
     compare("CW step staged, before apply", chk.phasors(chans), [0.0] * len(chans), [1.0] * len(chans))
     chk.put("DAC:apply", 1)
     chk.settle(2)
-    want_d = [90.0 if ch == ch_step else 0.0 for ch in chans]
-    want_r = [0.5 if ch == ch_step else 1.0 for ch in chans]
-    compare(f"CW step on DAC{ch_step}", chk.phasors(chans), want_d, want_r)
+    z = chk.phasors(chans)
+    # a frequency plan that inverts the spectrum (e.g. 2nd Nyquist zone on the DAC and ADC) turns +90 into -90
+    d_step = np.degrees(np.angle(z[chans.index(chk.adc_of[ch_step])] / z0[chans.index(chk.adc_of[ch_step])]))
+    sign = -1.0 if abs(wrap_deg(d_step + 90)) < abs(wrap_deg(d_step - 90)) else 1.0
+    if sign < 0:
+        chk.info("spectrum inverted by the frequency plan: phase steps are measured with the opposite sign")
+    want_d = [sign * 90.0 if chk.dac_of[a] == ch_step else 0.0 for a in chans]
+    want_r = [0.5 if chk.dac_of[a] == ch_step else 1.0 for a in chans]
+    compare(f"CW step on DAC{ch_step}", z, want_d, want_r)
 
     # all DACs at once: 45 deg * n
     chk.put(f"DAC{ch_step}:cw:amp", 0.5)
@@ -318,7 +347,8 @@ def check_cw(chk, n_dac, chans, ch_step, loopback, tol_deg=1.0, tol_amp=0.02):
         chk.put(f"DAC{ch}:cw:phase", 45.0 * ch)
     chk.put("DAC:apply", 1)
     chk.settle(2)
-    compare("CW 45 deg * n on one apply", chk.phasors(chans), [45.0 * ch for ch in chans], [1.0] * len(chans))
+    want_d = [sign * 45.0 * chk.dac_of[a] for a in chans]
+    compare("CW 45 deg * n on one apply", chk.phasors(chans), want_d, [1.0] * len(chans))
     for ch in range(n_dac):
         chk.put(f"DAC{ch}:cw:phase", 0.0)
     chk.put("DAC:apply", 1)
@@ -354,17 +384,19 @@ def check_per_dac_waveform(chk, n_dac, chans, ch_pulse, has_shared, length_ns=10
     chk.put(f"DAC{ch_pulse}:QWF", q)
     chk.put(f"DAC{ch_pulse}:IWF", i)
     chk.settle(2)
+    a_pulse = chk.adc_of[ch_pulse]
     res = {ch: chk.pulse(ch) for ch in chans}
-    r = res.get(ch_pulse)
+    r = res.get(a_pulse)
     ok = r is not None and abs(r[1] - length_ns) < 50
     chk.report(
-        f"DAC{ch_pulse}:IWF pulse on ADC{ch_pulse} only",
+        f"DAC{ch_pulse}:IWF pulse on ADC{a_pulse} only",
         ok,
         f"start {r[0]:.0f} ns, width {r[1]:.0f} ns (expected {length_ns:.0f})" if r else "no pulse",
     )
-    if has_shared:
-        long_ok = all(res[ch] is not None and res[ch][1] > 5 * length_ns for ch in chans if ch != ch_pulse)
-        widths = {ch: (round(res[ch][1]) if res[ch] else None) for ch in chans if ch != ch_pulse}
+    others = [ch for ch in chans if ch != a_pulse]
+    if has_shared and others:
+        long_ok = all(res[ch] is not None and res[ch][1] > 5 * length_ns for ch in others)
+        widths = {ch: (round(res[ch][1]) if res[ch] else None) for ch in others}
         chk.report("other DACs keep the shared waveform", long_ok, f"widths (ns) {widths}")
     return r
 
@@ -393,7 +425,8 @@ def check_wave_length(chk, chans, ch, tol_ns=20.0):
     chk.put("rf_control:pulse_length", 250)
     report("rf_control:pulse_length 250 cycles = 1000 ns", widths(), dict.fromkeys(chans, 1000))
     chk.put(f"DAC{ch}:wave_length", 500)
-    report(f"DAC{ch}:wave_length 500 ns on DAC{ch} only", widths(), {n: 500 if n == ch else 1000 for n in chans})
+    want = {n: 500 if chk.dac_of[n] == ch else 1000 for n in chans}
+    report(f"DAC{ch}:wave_length 500 ns on DAC{ch} only", widths(), want)
 
 
 def check_loop(chk, ch_pulse, n_captures=4):
@@ -404,7 +437,7 @@ def check_loop(chk, ch_pulse, n_captures=4):
         for k in range(n):
             if k:
                 chk.settle()
-            r = chk.pulse(ch_pulse)
+            r = chk.pulse(chk.adc_of[ch_pulse])
             out.append(None if r is None else round(r[0]))
         return out
 
@@ -432,6 +465,11 @@ def main():
     parser.add_argument("--channel", type=int, default=3, help="DAC for the single-channel checks")
     parser.add_argument("--settle", type=float, default=1.5, help="seconds to wait for fresh captures")
     parser.add_argument("--no-loopback", action="store_true", help="PV-level checks only (no loopback cables)")
+    parser.add_argument(
+        "--pairs",
+        default=None,
+        help="cabled loopback paths DAC:ADC, e.g. 6:7 on the LBL208 front end (default DAC n -> ADC n, all channels)",
+    )
     args = parser.parse_args()
 
     chk = IocDacCheck(args.prefix, settle_s=args.settle)
@@ -442,11 +480,18 @@ def main():
     n_dac = chk.count_channels("rfdc_mixer:DAC{}:rf_freq_mhz")
     has_shared = chk.exists("DAC:IWF")
     per_dac = chk.exists("DAC0:mode") and chk.exists("DAC:apply")
-    chans = list(range(min(n_adc, n_dac)))
-    ch = min(args.channel, n_dac - 1)
+    if args.pairs:
+        pairs = [(int(d), int(a)) for d, a in (p.split(":") for p in args.pairs.split(","))]
+    else:
+        pairs = [(k, k) for k in range(min(n_adc, n_dac))]
+    chk.adc_of = dict(pairs)
+    chk.dac_of = {a: d for d, a in pairs}
+    chans = [a for _, a in pairs]
+    ch = args.channel if args.channel in chk.adc_of else pairs[0][0]  # the single-DAC checks need a cabled DAC
     print(
         f"{args.prefix}: {n_adc} ADCs, {n_dac} DACs, shared DAC waveform: {'yes' if has_shared else 'no'}, "
-        f"per-DAC generators: {'yes' if per_dac else 'no'}; loopback DAC n -> ADC n: {not args.no_loopback}"
+        f"per-DAC generators: {'yes' if per_dac else 'no'}; loopback (DAC, ADC): "
+        f"{'none' if args.no_loopback else pairs}; single-DAC checks on DAC{ch}"
     )
 
     # state to restore

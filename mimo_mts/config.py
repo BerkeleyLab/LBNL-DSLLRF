@@ -90,6 +90,7 @@ ol_configs = {
             "lmk_tcs": files(clk104).joinpath("LMK04828_500M_CLKin0.tcs"),
             "lmxadc_tcs": files(clk104).joinpath("LMX2594_5G.tcs"),
             "lmxdac_tcs": files(clk104).joinpath("LMX2594_5G.tcs"),
+            "verify": True,
         },
         "rfdc": {
             "adc_decimation_factor": 1,
@@ -106,6 +107,39 @@ ol_configs = {
             },
             "mts": {
                 "mts_adc_target_latency": 106,
+                "mts_dac_target_latency": 320,
+            },
+        },
+        "ioc": {"decimation": 20},
+    },
+    "MIMO_5G_LBL208": {
+        "bitfile_name": files(overlays).joinpath("lbl208/mimo_mts_5g.bit"),
+        "board": lbl208,
+        "sampling_rate_hz": {
+            "adc": 5.0e9,
+            "dac": 5.0e9,
+        },
+        "clk104_tcs": {
+            "lmk_tcs": files(clk104).joinpath("LMK04828_500M_CLKin0_DIST.tcs"),  # CLK104A
+            "lmxadc_tcs": files(clk104).joinpath("LMX2594_5G.tcs"),
+            "lmxdac_tcs": files(clk104).joinpath("LMX2594_5G.tcs"),
+            "verify": True,
+        },
+        "rfdc": {
+            "adc_decimation_factor": 1,
+            "dac_interpolation_factor": 2,
+            "mixer": {
+                "adc_mixer_nco_freq_mhz": 0,
+                "adc_mixer_nco_nyquist": 1,
+                "adc_mixer_nco_phase": 0,
+                "adc_mixer_mode": xrfdc.MIXER_MODE_R2C,
+                "dac_mixer_nco_freq_mhz": 0,
+                "dac_mixer_nco_nyquist": 1,
+                "dac_mixer_nco_phase": 0,
+                "dac_mixer_mode": xrfdc.MIXER_MODE_C2R,
+            },
+            "mts": {
+                "mts_adc_target_latency": 108,
                 "mts_dac_target_latency": 320,
             },
         },

@@ -75,7 +75,7 @@ class FakeAdcCal:
 
 
 # Overlay configurations with one waveform generator per DAC (axil_wave_gen register map version 2)
-PER_DAC_GENERATORS = {"MIMO_5G_ZCU208"}
+PER_DAC_GENERATORS = {"MIMO_5G_ZCU208", "MIMO_5G_LBL208"}
 
 
 class FakeWaveGen:
@@ -153,6 +153,7 @@ def ioc_classes():
         (a.AlsLlrfLBL208, "llrf-lbl208-ioc"),
         (a.MimoZCU208, "mimo-zcu208-ioc"),
         (a.Mimo5GZCU208, "mimo-5g-zcu208-ioc"),
+        (a.Mimo5GLBL208, "mimo-5g-lbl208-ioc"),
         (a.MimoLBL208, "mimo-lbl208-ioc"),
         (a.MimoZCU216, "mimo-zcu216-ioc"),
     ]

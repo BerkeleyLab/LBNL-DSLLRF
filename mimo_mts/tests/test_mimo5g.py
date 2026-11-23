@@ -13,7 +13,12 @@ On-board check of the ZCU208 mimo_mts_5g overlay with the banked waveform genera
 4. Writes during playback: the waveform is rewritten for a few seconds while it plays on a fast trigger; every write
    must return promptly, and check 1 must still pass afterwards.
 
-    sudo -E python3 mimo_mts/tests/test_mimo5g.py [--no-adc] [--f-mhz 200]
+    sudo -E python3 mimo_mts/tests/test_mimo5g.py [--no-adc] [--f-mhz 200] [--nco]
+
+LBL208 (analog front end with 3 GHz filters, one loopback path): RF mode with the cabled pair and the attenuators of
+its path, e.g.
+    sudo -E python3 mimo_mts/tests/test_mimo5g.py --config MIMO_5G_LBL208 --rf-mhz 3000 --pairs 6:7 \\
+        --atten 4:0=20,4:1=2 --nco
 """
 
 import argparse
@@ -24,12 +29,19 @@ from typing import Any
 import numpy as np
 
 from mimo_mts.overlay import MimoMtsOverlay
+from mimo_mts.utils.rfdc_freq import rf_to_nco
 
 DSP_CLK_HZ = 250e6  # axil_rf_control and the generator/capture clock in mimo_mts_5g
 
 
 class Mimo5gCheck:
-    def __init__(self, ol, f_hz, amplitude):
+    def __init__(self, ol, f_hz, amplitude, rf_hz=None, pairs=None, band_hz=100e6):
+        """
+        f_hz: test tone frequency (direct mode: the DAC output frequency; RF mode: offset from rf_hz at baseband).
+        rf_hz: RF mode (e.g. the LBL208 front end with its 3 GHz filters): DAC and ADC NCOs at rf_hz, captures analysed
+            as complex I/Q within +-band_hz of it. None: direct mode (DAC n -> ADC n cables, real samples, NCOs at 0).
+        pairs: [(dac, adc), ...] cabled loopback paths; default DAC n -> ADC n for all channels.
+        """
         self.ol = ol
         self.wg = ol.wave_gen
         self.gens = getattr(ol, "wave_gens", [ol.wave_gen])
@@ -37,7 +49,14 @@ class Mimo5gCheck:
         self.fs = ol.adc_sampling_rate
         self.f_hz = f_hz
         self.amplitude = amplitude
+        self.rf_hz = rf_hz
+        self.band_hz = band_hz
+        n = min(len(getattr(ol, "wave_gens", [ol.wave_gen])), ol.board.n_adcs)
+        self.pairs = pairs if pairs is not None else [(k, k) for k in range(n)]
         self.results = []
+        if rf_hz is not None:
+            self.set_rf("adc", rf_hz)
+            self.set_rf("dac", rf_hz)
 
         self.rc.trig_sel = 0  # internal trigger
         self.rc.trig_delay = 0
@@ -48,6 +67,32 @@ class Mimo5gCheck:
             wg.trigger_mode = 1  # start on the rf_control trigger, like the captures
             wg.wave_length = 0  # play the whole memory (BANK_DEPTH rows)
         self.set_period(0.1)
+
+    def set_rf(self, conv, rf_hz):
+        """Set all DAC or ADC mixers to an RF frequency (NCO frequency and Nyquist zone from rfdc_freq)."""
+        fs = self.ol.dac_sampling_rate if conv == "dac" else self.ol.adc_sampling_rate
+        nco, zone = rf_to_nco(rf_hz / 1e6, fs / 1e6, conv)
+        getattr(self.ol, f"set_{conv}_mixer")(freq_mhz=nco, nyquist=zone)
+
+    def dac_offset(self, offset_hz):
+        """DAC mixers at the test frequency for a constant-I/Q (NCO) tone: offset_hz (direct) or rf_hz + offset_hz."""
+        if self.rf_hz is None:
+            self.ol.set_dac_mixer(freq_mhz=offset_hz / 1e6)
+        else:
+            self.set_rf("dac", self.rf_hz + offset_hz)
+
+    def signal(self, i_buf, q_buf, adc):
+        """ADC samples to analyse: I (real, direct mode) or I + jQ (complex baseband, RF mode)."""
+        if self.rf_hz is None:
+            return i_buf[adc].astype(float)
+        return i_buf[adc].astype(float) + 1j * q_buf[adc].astype(float)
+
+    def capture_signals(self):
+        i_buf, q_buf = self.capture()
+        return {adc: self.signal(i_buf, q_buf, adc) for _, adc in self.pairs}
+
+    def path_name(self, dac, adc):
+        return f"ADC{adc}" if dac == adc else f"DAC{dac} -> ADC{adc}"
 
     def set_period(self, period_s):
         self.period_s = period_s
@@ -130,20 +175,20 @@ class Mimo5gCheck:
         return ok
 
     def check_adc_continuity(self, max_phase_deg, block=200, label=""):
-        i_buf, _ = self.capture()
-        n = i_buf.shape[1]
-        for ch in range(i_buf.shape[0]):
-            x = i_buf[ch].astype(float)
+        sigs = self.capture_signals()
+        for dac, ch in self.pairs:
+            x = sigs[ch]
+            n = x.size
+            name = self.path_name(dac, ch)
             # skip the loopback latency: start where the tone is present
             env = np.abs(x)
             on = np.flatnonzero(env > 0.3 * env.max())
             if on.size == 0 or env.max() < 200:
-                self.report(f"ADC{ch} continuity{label}", False, f"no tone (peak {env.max():.0f} LSB); cable?")
+                self.report(f"{name} continuity{label}", False, f"no tone (peak {env.max():.0f} LSB); cable?")
                 continue
             x = x[on[0] + block :]
             # frequency from the FFT peak, refined by the demodulated phase slope
-            spec = np.abs(np.fft.rfft(x * np.hanning(x.size)))
-            f0 = np.argmax(spec) * self.fs / x.size
+            f0 = tone_freq(x, self.fs, self.band_hz)
             idx = np.arange(x.size)
             z = x * np.exp(-2j * np.pi * f0 * idx / self.fs)
             nb = x.size // block
@@ -162,7 +207,7 @@ class Mimo5gCheck:
                 f"(rms {np.std(resid):.2f}), amplitude min/median {amp.min() / np.median(amp):.3f}, "
                 f"largest step {dstep[j]:+.1f} deg at {t_step_ns:.0f} ns (tone from {on[0] / self.fs * 1e9:.0f} ns)"
             )
-            self.report(f"ADC{ch} continuity{label}", ok, detail)
+            self.report(f"{name} continuity{label}", ok, detail)
 
     def test_writes_during_playback(self, seconds=2.0, chunk=4096):
         self.set_period(20e-6)  # 16.4 us playback every 20 us
@@ -189,19 +234,32 @@ class Mimo5gCheck:
         self.check_dac_capture("DAC capture of a new waveform after the loop", fresh)
 
 
-def adc_tone(x, fs, f_hint=None):
-    """(frequency, complex amplitude) of the strongest tone of a real capture (or at f_hint)."""
-    x = x.astype(float)
+def tone_freq(x, fs, band_hz=100e6):
+    """Frequency of the strongest tone: real x (direct mode) above DC, or complex x within +-band_hz, away from DC."""
+    if np.iscomplexobj(x):
+        spec = np.abs(np.fft.fft(x * np.hanning(x.size)))
+        f = np.fft.fftfreq(x.size, 1 / fs)
+        spec[(np.abs(f) > band_hz) | (np.abs(f) < 0.5e6)] = 0  # the R2C sum-frequency image and the ADC offset
+        return f[int(np.argmax(spec))]
+    spec = np.abs(np.fft.rfft(x * np.hanning(x.size)))
+    spec[:10] = 0
+    return np.argmax(spec) * fs / x.size
+
+
+def adc_tone(x, fs, f_hint=None, band_hz=100e6):
+    """(frequency, complex amplitude) of the strongest tone of a capture (or at f_hint); x real or complex."""
     if f_hint is None:
-        spec = np.abs(np.fft.rfft(x * np.hanning(x.size)))
-        spec[:10] = 0
-        f_hint = np.argmax(spec) * fs / x.size
+        f_hint = tone_freq(x, fs, band_hz)
     n = np.arange(x.size)
-    return f_hint, 2 * np.mean(x * np.exp(-2j * np.pi * f_hint * n / fs))
+    scale = 1 if np.iscomplexobj(x) else 2
+    return f_hint, scale * np.mean(x * np.exp(-2j * np.pi * f_hint * n / fs))
 
 
 def check_per_dac_tones(chk, f0_mhz=100.0, step_mhz=25.0):
-    """Each DAC plays its own tone (f0 + n*step); ADC n must see DAC n's frequency (DAC n -> ADC n cables)."""
+    """
+    Each DAC plays its own tone (f0 + n*step; RF mode: offsets from the RF frequency); the ADC of every cabled pair
+    must see its DAC's frequency (an inverted spectrum in RF mode shows it at minus that offset, also accepted).
+    """
     ol, gens = chk.ol, chk.gens
     n = gens[0].wave_mem.size // 2
     t = np.arange(n) / (ol.dac_sampling_rate / 2)
@@ -209,23 +267,27 @@ def check_per_dac_tones(chk, f0_mhz=100.0, step_mhz=25.0):
         c = chk.amplitude * 32767 * np.exp(2j * np.pi * (f0_mhz + step_mhz * ch) * 1e6 * t)
         ol.write_dac_iq_buf_ch(ch, c.real, c.imag)
     chk.wait_captures()
-    i_buf, _ = chk.capture()
-    for ch in range(min(len(gens), i_buf.shape[0])):
-        f, a = adc_tone(i_buf[ch][2000:], chk.fs)
-        want = (f0_mhz + step_mhz * ch) * 1e6
-        ok = abs(f - want) < 1e6 and abs(a) > 500
+    sigs = chk.capture_signals()
+    for dac, adc in chk.pairs:
+        f, a = adc_tone(sigs[adc][2000:], chk.fs, band_hz=chk.band_hz)
+        want = (f0_mhz + step_mhz * dac) * 1e6
+        ok = abs(abs(f) - want) < 1e6 and abs(a) > 500
         chk.report(
-            f"DAC{ch} -> ADC{ch} own waveform", ok, f"{f / 1e6:.2f} MHz (expected {want / 1e6:.0f}), |a| {abs(a):.0f}"
+            f"DAC{dac} -> ADC{adc} own waveform",
+            ok,
+            f"{f / 1e6:.2f} MHz (expected {'+-' if chk.rf_hz else ''}{want / 1e6:.0f}), |a| {abs(a):.0f}",
         )
 
 
 def check_cw(chk, f_mhz=200.0, step_deg=30.0, tol_deg=1.0):
     """
-    CW mode: all DACs CW at f_mhz from the NCO. Applying per-DAC phase steps n*step_deg at once must move ADC n's phase
-    by n*step_deg; halving the amplitude must halve the ADC amplitude.
+    CW mode: all DACs CW from the NCO (direct: at f_mhz; RF mode: f_mhz off the RF frequency). Applying per-DAC phase
+    steps n*step_deg at once must move the phase of DAC n's ADC by n*step_deg (RF mode: by -n*step_deg if the
+    frequency plan inverts the spectrum, which the check detects); halving the amplitude must halve the ADC amplitude.
     """
     ol, gens = chk.ol, chk.gens
-    ol.set_dac_mixer(freq_mhz=f_mhz)
+    chk.dac_offset(f_mhz * 1e6)
+    hint = f_mhz * 1e6 if chk.rf_hz is None else None
 
     def setup(amp, phases):
         for ch, wg in enumerate(gens):
@@ -233,29 +295,40 @@ def check_cw(chk, f_mhz=200.0, step_deg=30.0, tol_deg=1.0):
             wg.set_cw_amp_phase(amp, phases[ch])
         ol.apply_dac_settings()
         chk.wait_captures()
-        i_buf, _ = chk.capture()
-        return [adc_tone(i_buf[ch][2000:], chk.fs, f_mhz * 1e6)[1] for ch in range(len(gens))]
+        sigs = chk.capture_signals()
+        return {adc: adc_tone(sigs[adc][2000:], chk.fs, hint, chk.band_hz)[1] for _, adc in chk.pairs}
+
+    def wrap(x):
+        return (x + 180) % 360 - 180
 
     base = setup(0.5, [0.0] * len(gens))
     modes = [wg.active_mode for wg in gens]
     chk.report("CW mode active on all DACs", all(m == 2 for m in modes), f"active modes {modes}")
     stepped = setup(0.5, [step_deg * ch for ch in range(len(gens))])
-    for ch in range(len(gens)):
-        d = np.degrees(np.angle(stepped[ch] / base[ch]))
-        want = (step_deg * ch + 180) % 360 - 180
-        err = (d - want + 180) % 360 - 180
+    meas = {adc: np.degrees(np.angle(stepped[adc] / base[adc])) for _, adc in chk.pairs}
+    sign = 1
+    if chk.rf_hz is not None:  # pick the sign that fits (spectrum inversion in the frequency plan)
+        cost = {s: sum(abs(wrap(meas[a] - s * step_deg * d)) for d, a in chk.pairs) for s in (1, -1)}
+        sign = min(cost, key=lambda s: cost[s])
+        if sign < 0:
+            print("  (spectrum inverted in RF mode: phase steps measured with opposite sign)")
+    for dac, adc in chk.pairs:
+        want = wrap(sign * step_deg * dac)
+        err = wrap(meas[adc] - want)
         chk.report(
-            f"DAC{ch} CW phase step", abs(err) < tol_deg, f"{d:+.2f} deg (commanded {want:+.1f}, error {err:+.2f})"
+            f"DAC{dac} CW phase step on ADC{adc}",
+            abs(err) < tol_deg,
+            f"{meas[adc]:+.2f} deg (commanded {want:+.1f}, error {err:+.2f})",
         )
     half = setup(0.25, [step_deg * ch for ch in range(len(gens))])
-    ratios = [abs(half[ch]) / abs(stepped[ch]) for ch in range(len(gens))]
+    ratios = [abs(half[adc]) / abs(stepped[adc]) for _, adc in chk.pairs]
     chk.report(
         "CW amplitude halves", all(abs(r - 0.5) < 0.02 for r in ratios), f"ratios {np.round(ratios, 3).tolist()}"
     )
     for wg in gens:  # back to single playback
         wg.mode = 0
     ol.apply_dac_settings()
-    ol.set_dac_mixer(freq_mhz=0)
+    chk.dac_offset(0.0)
 
 
 def check_loop(chk, rows=1024, f_mhz=200.0, max_phase_deg=5.0):
@@ -379,14 +452,36 @@ def print_dac_status(ol, when):
 
 def main():
     parser = argparse.ArgumentParser(description="Check mimo_mts_5g: generator, banked captures, ADC continuity.")
-    parser.add_argument("--config", default="MIMO_5G_ZCU208", help="overlay configuration in mimo_mts.config")
-    parser.add_argument("--f-mhz", type=float, default=200.0, help="CW tone frequency")
+    parser.add_argument("--config", default="MIMO_5G_ZCU208", help="overlay config (LBL208: MIMO_5G_LBL208)")
+    parser.add_argument(
+        "--f-mhz", type=float, default=None, help="test tone (default 200 MHz; RF mode: offset from --rf-mhz, 5 MHz)"
+    )
     parser.add_argument("--amplitude", type=float, default=0.5, help="tone amplitude, fraction of full scale")
     parser.add_argument("--max-phase-deg", type=float, default=5.0, help="ADC phase residual limit")
     parser.add_argument("--no-adc", action="store_true", help="skip the ADC check (no loopback cables)")
     parser.add_argument("--repeat", type=int, default=1, help="repeat the ADC capture check")
     parser.add_argument(
         "--nco", action="store_true", help="also check with constant I/Q and the DAC NCO making the tone"
+    )
+    parser.add_argument(
+        "--rf-mhz",
+        type=float,
+        default=None,
+        help="RF mode: DAC and ADC NCOs at this RF frequency, complex baseband analysis (LBL208 front end: 3000)",
+    )
+    parser.add_argument(
+        "--pairs", default=None, help="cabled loopback paths DAC:ADC, e.g. 6:7 or 0:0,1:1 (default DAC n -> ADC n)"
+    )
+    parser.add_argument(
+        "--atten",
+        default=None,
+        help="LBL208 front-end attenuators slice:index=dB, e.g. 4:0=20,4:1=2 (others keep 31.5 dB from the load)",
+    )
+    parser.add_argument(
+        "--rx-atten-db",
+        type=float,
+        default=None,
+        help="LBL208: set all RX front-end attenuators (0-31.5 dB; the overlay load sets 31.5)",
     )
     args = parser.parse_args()
 
@@ -399,7 +494,32 @@ def main():
         f"stream; DAC copy capture: {'yes' if ol.dac_capture is not None else 'no'}"
     )
 
-    chk = Mimo5gCheck(ol, args.f_mhz * 1e6, args.amplitude)
+    if args.rx_atten_db is not None:
+        ffe = getattr(ol, "ffe", None)
+        if ffe is None:
+            print("  (--rx-atten-db ignored: no analog front end in this overlay)")
+        else:
+            print(f"  RX attenuators of slices {ffe.set_rx_attenuation(args.rx_atten_db)} set to {args.rx_atten_db} dB")
+    if args.atten:
+        ffe = getattr(ol, "ffe", None)
+        if ffe is None:
+            print("  (--atten ignored: no analog front end in this overlay)")
+        else:
+            for item in args.atten.split(","):
+                key, db = item.split("=")
+                s_id, k = (int(v) for v in key.split(":"))
+                ffe.slices[s_id].attenuators[k].set_db(float(db))
+                print(f"  front-end slice {s_id} attenuator {k} set to {float(db)} dB")
+    pairs = None
+    if args.pairs:
+        pairs = [tuple(int(v) for v in p.split(":")) for p in args.pairs.split(",")]
+    rf_hz = None if args.rf_mhz is None else args.rf_mhz * 1e6
+    f_mhz = args.f_mhz if args.f_mhz is not None else (200.0 if rf_hz is None else 5.0)
+    chk = Mimo5gCheck(ol, f_mhz * 1e6, args.amplitude, rf_hz=rf_hz, pairs=pairs)
+    print(
+        f"  {'RF mode at ' + str(args.rf_mhz) + ' MHz' if rf_hz else 'direct mode'}, tone {f_mhz} MHz, "
+        f"pairs (DAC, ADC) {chk.pairs}"
+    )
     print_dac_status(ol, "at start")
     poll_busy(chk.wg, "at start")
     poll_stream(ol, "at start")
@@ -413,16 +533,19 @@ def main():
             chk.check_adc_continuity(args.max_phase_deg, label=f" (tone from wave_gen, run {r + 1})")
         if args.nco:
             chk.write_dc()
-            ol.set_dac_mixer(freq_mhz=args.f_mhz)
+            chk.dac_offset(f_mhz * 1e6)
             for r in range(args.repeat):
                 chk.wait_captures()
                 chk.check_adc_continuity(args.max_phase_deg, label=f" (tone from DAC NCO, run {r + 1})")
-            ol.set_dac_mixer(freq_mhz=0)
+            chk.dac_offset(0.0)
         if len(gens) > 1:
-            check_per_dac_tones(chk)
+            if rf_hz is None:
+                check_per_dac_tones(chk)
+            else:
+                check_per_dac_tones(chk, f0_mhz=4.0, step_mhz=4.0)
         if getattr(ol.wave_gen, "version", 0):
-            check_cw(chk)
-            check_loop(chk, max_phase_deg=args.max_phase_deg)
+            check_cw(chk, f_mhz=200.0 if rf_hz is None else 3.0)
+            check_loop(chk, f_mhz=f_mhz, max_phase_deg=args.max_phase_deg)
         print_dac_status(ol, "after the tone checks")
     chk.test_writes_during_playback()
     print_dac_status(ol, f"after the write loop (wave_gen busy = {chk.wg.busy})")

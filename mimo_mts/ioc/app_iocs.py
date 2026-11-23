@@ -264,6 +264,14 @@ class MimoZCU216(MimoMtsIoc):
         # self.drive_test_awg()
 
 
+class Mimo5GLBL208(Mimo5GZCU208):
+    """mimo_mts_5g on the LBL208 (CLK104A, analog front end at ol.ffe); the LBL208 runs the ZCU208 PYNQ image."""
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("ol_name", "MIMO_5G_LBL208")
+        super().__init__(**kwargs)
+
+
 def run_app_ioc(ioc_class, description):
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("-d", "--debug", action="store_true", help="Enable debug logging")
@@ -287,6 +295,10 @@ def mimo_zcu208_ioc():
 
 def mimo_5g_zcu208_ioc():
     run_app_ioc(Mimo5GZCU208, "MIMO 5G ZCU208 IOC")
+
+
+def mimo_5g_lbl208_ioc():
+    run_app_ioc(Mimo5GLBL208, "MIMO 5G LBL208 IOC")
 
 
 def mimo_lbl208_ioc():

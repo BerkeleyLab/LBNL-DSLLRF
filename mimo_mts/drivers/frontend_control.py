@@ -259,17 +259,25 @@ class FrontendControl(DefaultIP):
 
     RX_SLICES = (4, 5, 6, 7)
 
+    def set_rx_attenuation(self, db: float):
+        """
+        Set every attenuator of the present RX slices to db (0 to 31.5 in 0.5 dB steps). Per-ADC attenuation needs the
+        verified ADC-to-slice mapping (development plan, related open work).
+        """
+        present = [s for s in self.RX_SLICES if self.slices[s] is not None and self.slices[s].is_present()]
+        for s in present:
+            for att in self.slices[s].attenuators:
+                att.set_db(db)
+        logger.info("RX attenuators of slices %s set to %s dB", present, db)
+        return present
+
     def set_rx_attenuation_max(self):
         """
         Set every attenuator of the present RX slices to the maximum (31.5 dB). Called on every overlay load so the
         receive path starts in a known, safe state (HMC1122 settings are write-only and the power-up state is not
         guaranteed); lower the attenuation explicitly afterwards.
         """
-        present = [s for s in self.RX_SLICES if self.slices[s] is not None and self.slices[s].is_present()]
-        for s in present:
-            for att in self.slices[s].attenuators:
-                att.set_db(31.5)
-        logger.info("RX attenuators of slices %s set to 31.5 dB", present)
+        self.set_rx_attenuation(31.5)
 
     def set_power(self, value: bool):
         """when value is true, enables the power to the frontend

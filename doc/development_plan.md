@@ -263,7 +263,16 @@ logic. Closed-loop CW (amplitude/phase feedback) is item 3.
 - Hardware check with `test_mimo5g.py` and `doc/lbl208/mimo_mts_5g.ipynb` (loopback through the front end; mind the
   reversed ADC-to-slice mapping, see Related open work).
 
-**Done when** the LBL208 passes the same checks as the ZCU208 (bit-exact DAC copy, gap-free captures, alignment).
+**Done when** the LBL208 passes the same checks as the ZCU208 (`test_mimo5g.py --nco`, `test_ioc_dac.py`: per-DAC
+waveforms, CW, loop, gap-free captures, alignment) through its front end.
+
+**In progress** (branch `feature/lbl208-mimo-5g`): the shared `mimo_mts_5g` block design gains the front-end control
+(`frontend_control_axi`, as in `als_llrf_mts`; unused header pins on the ZCU208), so both boards keep one block
+design. `designs/LBL208/mimo_mts_5g` reuses the ZCU208 Makefile and block design script with `BOARD = lbl208` and
+the LBL208 constraints (PL_SYSREF max input delay 0.982 ns). `MIMO_5G_LBL208` (CLK104A `LMK04828_500M_CLKin0_DIST`,
+`LMX2594_5G`, 5.000 GSPS), IOC `Mimo5GLBL208` / `mimo-5g-lbl208-ioc`. No EVR (none of the MIMO overlays has one). The
+front end boots with the RX attenuators at 31.5 dB; the loopback test lowers them through `ol.ffe`. Open: build and
+hardware check; MTS target latencies (copied from the ZCU208) to confirm.
 
 ## 9. Rerun the ADC calibration tests on ZCU208 and LBL208
 
@@ -427,7 +436,7 @@ the all-ones waveform; `test_ioc_dac.py` 39/39 twice, the capture-read check wit
 ## Related open work
 
 - The 4 GSPS ZCU208 `mimo_mts` overlay is no longer built by CI (production overlays: ZCU208 `mimo_mts_5g` and
-  `als_llrf_mts`, LBL208 `als_llrf_mts`, ZCU216 `mimo_mts`; LBL208 `mimo_mts_5g` joins with item 8). It becomes
+  `als_llrf_mts`, LBL208 `als_llrf_mts`, ZCU216 `mimo_mts`; LBL208 `mimo_mts_5g` from item 8 on). It becomes
   obsolete once `mimo_mts_5g` carries the LLRF application on the ZCU208 and the LBL208 (items 3 and 8); its design
   directory stays.
 - ADC calibration, longer term: pilot-tone injection (one spare DAC, splitter, a coupler per phase-critical ADC)
