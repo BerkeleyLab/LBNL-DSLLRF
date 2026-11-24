@@ -13,18 +13,21 @@ first steps and open questions. Update this file as items progress; repository c
 | 5 | Partial reconfiguration of the LLRF logic | 3, 4 | large |
 | 6 | Complete EPICS PV reference (`PVs.md`) — done | – | small |
 | 7 | CW mode for `mimo_mts_5g` (per-DAC constant I/Q) — done | 2 (per-DAC AWG) | medium |
-| 8 | `mimo_mts_5g` for the LBL208 | 2 | medium |
-| 9 | Rerun the ADC calibration tests on ZCU208 and LBL208, update the findings | – (5 GSPS part: 8) | medium |
+| 8 | `mimo_mts_5g` for the LBL208 — done | 2 | medium |
+| 9 | Rerun the ADC calibration tests on ZCU208 and LBL208, update the findings | 8 (5 GSPS part) | medium |
 | 10 | `mimo_mts_iq` at 5 GSPS with `wave_gen` / `wave_cap` | 2 | medium |
 | 11 | IOC capture reads without tearing (one-shot captures) — done | – | small |
 | 12 | `mimo_mts_max`: DAC at 7 GSPS (MTS maximum) with per-DAC `wave_gen` | 2 | medium |
 | 13 | NCO phase repeatability per DAC and ADC (MIMO phase coherence) | – | medium |
 | 14 | `mimo_mts_5g`: common capture arm, `dac_enable` gating of the DAC outputs — done | 2 | small |
+| 15 | LBL208 analog front end in the IOC and Phoebus (attenuators, power, sensors) | – | small |
+| 16 | ALS LLRF at 5 GSPS: `als_llrf_mts` at Fs = 10·f_ref, decimation 10 | 9 (5 GSPS part) | medium |
 
-Next in line: the LBL208 port (8) and the IOC capture reads (11); item 9 can run in parallel on the existing overlays,
-with its 5 GSPS part after item 8. The per-DAC AWG (2) and CW mode (7) are done (branch `feature/per-dac-cw`). Items 4 and 5 both change the Vivado flow; doing
-the tool upgrade first avoids building the DFX flow twice. Item 6 is independent and can be done at any time; items 2, 3
-and 5 add PVs, so generating the reference (below) pays off.
+Next in line: the LBL208 front end in the IOC and Phoebus (15), then the ADC calibration reruns (9) on both
+boards, now including 5 GSPS. Their 5 GSPS spur measurements decide how the ALS LLRF application moves to 5 GSPS
+(16, the route the calibration findings recommend; item 3 keeps the alternative of the LLRF DSP in the
+direct-sampling MIMO overlays). Items 4 and 5 both change the Vivado flow; doing the tool upgrade first avoids
+building the DFX flow twice. Items 2, 3, 5 and 16 add PVs: regenerate `PVs.md` with them.
 
 ## 1. Upgrade cocotb to 2.1
 
@@ -164,6 +167,10 @@ MIMO overlays sample directly (decimation 1).
 
 **Done when** a MIMO overlay closes the amplitude/phase loop in pulsed and CW mode on hardware.
 
+For the ALS application alone, item 16 (the ALS overlays at Fs = 10·f_ref with decimation 10) is the smaller step:
+the DSP keeps its 500 MSPS input. This item stays the route for closed-loop control next to the per-DAC generators
+and banked captures of `mimo_mts_5g`.
+
 ## 4. Upgrade to PYNQ 4.0
 
 **State.** Boards run the PYNQ 3.0.1 image; overlays are built with Vivado 2022.1. `install.sh` patches PYNQ's
@@ -266,13 +273,18 @@ logic. Closed-loop CW (amplitude/phase feedback) is item 3.
 **Done when** the LBL208 passes the same checks as the ZCU208 (`test_mimo5g.py --nco`, `test_ioc_dac.py`: per-DAC
 waveforms, CW, loop, gap-free captures, alignment) through its front end.
 
-**In progress** (branch `feature/lbl208-mimo-5g`): the shared `mimo_mts_5g` block design gains the front-end control
-(`frontend_control_axi`, as in `als_llrf_mts`; unused header pins on the ZCU208), so both boards keep one block
-design. `designs/LBL208/mimo_mts_5g` reuses the ZCU208 Makefile and block design script with `BOARD = lbl208` and
-the LBL208 constraints (PL_SYSREF max input delay 0.982 ns). `MIMO_5G_LBL208` (CLK104A `LMK04828_500M_CLKin0_DIST`,
-`LMX2594_5G`, 5.000 GSPS), IOC `Mimo5GLBL208` / `mimo-5g-lbl208-ioc`. No EVR (none of the MIMO overlays has one). The
-front end boots with the RX attenuators at 31.5 dB; the loopback test lowers them through `ol.ffe`. Open: build and
-hardware check; MTS target latencies (copied from the ZCU208) to confirm.
+**Done** (MR !53): the shared `mimo_mts_5g` block design has the front-end control (`frontend_control_axi`, as in
+`als_llrf_mts`; unused header pins on the ZCU208) and the CLK104 SPI mux pins (PS EMIO GPIO 0/1, needed for the
+LMK/LMX readback check), so both boards keep one block design. `designs/LBL208/mimo_mts_5g` reuses the ZCU208
+Makefile and block design script with `BOARD = lbl208` and the LBL208 constraints (PL_SYSREF max input delay
+0.982 ns). `MIMO_5G_LBL208` (CLK104A `LMK04828_500M_CLKin0_DIST`, `LMX2594_5G`, 5.000 GSPS, MTS ADC target latency
+108; 106 on the ZCU208), IOC `Mimo5GLBL208` / `mimo-5g-lbl208-ioc`. No EVR (none of the MIMO overlays has one). The
+front end boots with the RX attenuators at 31.5 dB.
+
+*Verified Nov 2026* (WNS +0.029 ns at 500 MHz, +0.080 ns at 250 MHz: thin, watch it in CI): the only loopback is
+DAC6 → ADC7 through the 3 GHz filters, RX slice 4 attenuators 0/1 at 20/2 dB. `test_mimo5g.py` in RF mode
+(`--rf-mhz 3000 --pairs 6:7 --atten 4:0=20,4:1=2`) 10/10; `test_ioc_dac.py --rf-mhz 3000 --pairs 6:7` 17/17 (CW
+phase step +89.66°, amplitude ratio 0.506, trigger-to-ADC latency 196 ns, 190 ns on the ZCU208).
 
 ## 9. Rerun the ADC calibration tests on ZCU208 and LBL208
 
@@ -287,8 +299,10 @@ hardware check; MTS target latencies (copied from the ZCU208) to confirm.
   one-shot) and the RF-frequency PVs make this a notebook job.
 - Move the helpers duplicated between the calibration notebooks (capture with trigger wait, spectrum, interleaving
   spur levels, front-end attenuation) into `mimo_mts/utils/adc_cal_test.py` first.
+- On the LBL208 the 5 GSPS case goes through the front end: the DAC6 → ADC7 loopback at 3 GHz (3 GHz filters,
+  slice 4 attenuators 20/2 dB, as in the item 8 check). Other channels need the loopback cable moved.
 - Update `doc/adc_calibration_findings.md`: boot-policy results against 0.1°, the 5 GSPS spur positions, and what
-  remains (pilot tone).
+  remains (pilot tone). The 5 GSPS result is the go/no-go for item 16.
 
 **Done when** the findings document answers the 0.1° question for the ALS boot sequence and shows the 5 GSPS spur
 positions on both boards.
@@ -433,18 +447,58 @@ unrelated to this change; +0.157 ns at 250 MHz): `test_mimo5g.py --nco` passes; 
 the all-ones waveform; `test_ioc_dac.py` 39/39 twice, the capture-read check with no torn read (worst deviation
 0.36°, 96 reads at a 1 ms trigger) and `dac_enable` silencing all 8 DACs.
 
+## 15. LBL208 analog front end in the IOC and Phoebus
+
+**State.** The LBL208 overlays (`als_llrf_mts`, `mimo_mts_5g`) have `frontend_control_axi`; `FrontendControl`
+(`mimo_mts/drivers/frontend_control.py`) sets the HMC1122 attenuators (write-only) and the common power switch and
+reads the three INA239 sensors of each slice (0–2 and 4–7; RX on 4–7; slice 3's chip select is the power switch), but
+only from Python (`ol.ffe`). The IOCs boot the RX attenuators at 31.5 dB and expose nothing of the front end. The
+ADC-to-slice mapping is unverified (see Related open work).
+
+**Steps.**
+1. Hardware level, independent of the mapping: PVs per slice and attenuator (setpoint in dB, readback of the last
+   written value), slice presence, the power switch, sensor voltages, currents and temperatures (periodic scan), in a
+   front-end mixin used by `AlsLlrfLBL208` and `Mimo5GLBL208`. `PVs.md` regenerated.
+2. A generated Phoebus page (`epics/gen_screens.py` → `ffe.bob`) with a button on `waveforms.bob`.
+3. Channel level, after verifying the mapping with the loopback cable on each channel: per-ADC and per-DAC
+   attenuation helpers in `FrontendControl` (map in the board configuration) and the matching PVs.
+
+**Done when** the attenuators and sensors of both LBL208 overlays are set and read from Phoebus, and (step 3) the
+per-channel attenuation is verified on every ADC.
+
+## 16. ALS LLRF at 5 GSPS
+
+**Goal.** Move the ALS LLRF application to Fs = 10·f_ref = 4996.4 MSPS (carrier 3·Fs/5), where the residual ADC
+interleaving errors sit 125 and 250 MHz from the carrier instead of on it
+(`doc/adc_calibration_findings.md`, "Alternative: sample at Fs = 10·f_ref"). The 4 GSPS ZCU208 `mimo_mts` overlay
+then has no remaining user (Related open work).
+
+**Approach.** `als_llrf_mts` with the RFDC at decimation and interpolation 10 instead of 8: the DSP still gets
+499.64 MSPS, so `llrf_dsp`, the PL clocks and the IOC timing stay as they are. The alternative, `llrf_dsp` behind a
+fabric down-converter in `mimo_mts_5g` (item 3), is larger and only needed with the per-DAC generators.
+
+**Steps.**
+- Confirm the spur positions at 5 GSPS on hardware (item 9) first.
+- CLK104 settings for 10·f_ref on both LMX (single-LMX clocking: the DAC also at 10·f_ref, ×10, carrier in its 2nd
+  Nyquist zone; check the image), RFDC decimation/interpolation 10 in the block designs (ZCU208 and LBL208), MTS
+  and SYSREF timing.
+- `ol_configs` entries (new or replacing the 4 GSPS ones, to decide), IOC unchanged apart from the sample rate.
+- `test_axil_llrf.py` unchanged; hardware: closed loop and the phase error against 0.1° with the calibration frozen.
+
+**Done when** the ALS overlays run at 10·f_ref on both boards with the loop closed and the phase error within 0.1°.
+
 ## Related open work
 
-- The 4 GSPS ZCU208 `mimo_mts` overlay is no longer built by CI (production overlays: ZCU208 `mimo_mts_5g` and
-  `als_llrf_mts`, LBL208 `als_llrf_mts`, ZCU216 `mimo_mts`; LBL208 `mimo_mts_5g` from item 8 on). It becomes
-  obsolete once `mimo_mts_5g` carries the LLRF application on the ZCU208 and the LBL208 (items 3 and 8); its design
-  directory stays.
+- The 4 GSPS ZCU208 `mimo_mts` overlay is no longer built by CI (production overlays: ZCU208 and LBL208 `mimo_mts_5g`
+  and `als_llrf_mts`, ZCU216 `mimo_mts`). It becomes
+  obsolete once the LLRF application runs at 5 GSPS (item 16, or item 3 in `mimo_mts_5g`); its design directory
+  stays.
 - ADC calibration, longer term: pilot-tone injection (one spare DAC, splitter, a coupler per phase-critical ADC)
   for training at boot (item 9 covers the reruns).
 - LBL208 analog front end: the ADC-to-RX-slice mapping is apparently reversed on the hardware (loopback on ADC7 is
   controlled by slice 4, attenuators 0/1, which `doc/lbl208/als_llrf_mts_ffe.ipynb` maps to ADC0). Verify all channels,
   fix the map, and add a per-ADC attenuation helper to `FrontendControl` (and IOC PVs) that uses the verified
-  mapping, configurable per board.
+  mapping, configurable per board (item 15, step 3).
 
 ## References
 
